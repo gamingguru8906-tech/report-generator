@@ -1,0 +1,6 @@
+# Fonts are generated at build time by build_fonts.py — no need to commit them
+fonts/*.ttf
+fonts/_src/
+__pycache__/
+*.pyc
+/tmp/

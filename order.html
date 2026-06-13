@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Premium Numerology Report — Veshann Astro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet" />
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<style>
+  :root{
+    --deep:#0E0B1A; --deep2:#161127; --gold:#D4AF37; --gold-l:#E8C766; --gold-d:#A8842A;
+    --cream:#F3ECDD; --mute:#B9AFC9; --line:#3A2F55;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Jost',sans-serif;color:var(--cream);min-height:100vh;
+    background:
+      radial-gradient(120% 80% at 50% 0%, #1B1430 0%, rgba(27,20,48,0) 55%),
+      radial-gradient(90% 60% at 85% 90%, #2A2150 0%, rgba(42,33,80,0) 60%),
+      linear-gradient(180deg,#0B0918 0%,#0D0A1A 55%,#110D22 100%);
+    display:flex;flex-direction:column;align-items:center;padding:0 16px 0;
+  }
+  .site-head{position:relative;z-index:2;width:100%;max-width:1100px;display:flex;
+    align-items:center;justify-content:space-between;padding:18px 4px;}
+  .site-head .logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+  .site-head .logo svg{width:30px;height:30px}
+  .site-head .logo span{font-family:'Cinzel',serif;font-weight:700;letter-spacing:2px;
+    color:var(--gold-l);font-size:15px}
+  .site-head nav{display:flex;gap:22px}
+  .site-head nav a{font-family:'Jost';font-size:12px;letter-spacing:1px;color:var(--mute);
+    text-decoration:none;text-transform:uppercase;transition:.2s}
+  .site-head nav a:hover{color:var(--gold-l)}
+  .wrap{flex:1;display:flex;align-items:center;justify-content:center;width:100%;padding:24px 0 36px}
+  .site-foot{position:relative;z-index:2;width:100%;max-width:1100px;border-top:1px solid var(--line);
+    padding:18px 4px 26px;display:flex;align-items:center;justify-content:space-between;
+    flex-wrap:wrap;gap:10px}
+  .site-foot .copy{font-family:'Jost';font-weight:300;font-size:11px;color:var(--mute);letter-spacing:.5px}
+  .site-foot .links{display:flex;gap:18px;flex-wrap:wrap}
+  .site-foot .links a{font-family:'Jost';font-size:11px;letter-spacing:.5px;color:var(--mute);
+    text-decoration:none;transition:.2s}
+  .site-foot .links a:hover{color:var(--gold-l)}
+  @media(max-width:560px){.site-head nav{gap:14px}.site-head nav a{font-size:11px}}
+  .stars{position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:
+      radial-gradient(1px 1px at 20% 30%, rgba(232,199,102,.5), transparent),
+      radial-gradient(1px 1px at 70% 20%, rgba(232,199,102,.35), transparent),
+      radial-gradient(1.4px 1.4px at 40% 70%, rgba(255,247,230,.45), transparent),
+      radial-gradient(1px 1px at 85% 55%, rgba(232,199,102,.3), transparent),
+      radial-gradient(1px 1px at 12% 80%, rgba(232,199,102,.4), transparent);}
+  .card{position:relative;z-index:1;width:100%;max-width:520px;background:rgba(22,17,39,.72);
+    border:1px solid var(--line);border-radius:14px;padding:34px 30px 30px;
+    box-shadow:0 24px 70px rgba(0,0,0,.55);backdrop-filter:blur(3px);}
+  .card::before{content:"";position:absolute;left:0;top:18px;bottom:18px;width:3px;
+    background:linear-gradient(var(--gold),var(--gold-d));border-radius:3px;}
+  .crest{display:flex;justify-content:center;margin-bottom:10px}
+  .crest svg{width:54px;height:54px}
+  .brand{font-family:'Cinzel',serif;font-weight:700;letter-spacing:3px;color:var(--gold-l);
+    text-align:center;font-size:20px;}
+  .sub{font-family:'Jost';font-weight:300;letter-spacing:3px;font-size:9px;color:var(--mute);
+    text-align:center;margin-top:4px;text-transform:uppercase}
+  .rule{display:flex;align-items:center;gap:10px;justify-content:center;margin:18px 0}
+  .rule i{height:1px;width:60px;background:var(--gold-d);display:block}
+  .rule b{width:7px;height:7px;background:var(--gold);transform:rotate(45deg);display:block}
+  h1{font-family:'Cinzel',serif;font-weight:700;color:var(--gold);font-size:21px;text-align:center;line-height:1.3}
+  .lede{font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--cream);text-align:center;
+    margin:8px 0 4px;font-style:italic}
+  .price{text-align:center;margin:14px 0 22px}
+  .price .amt{font-family:'Cinzel',serif;font-weight:700;color:var(--gold-l);font-size:30px}
+  .price .note{font-size:11px;color:var(--mute);letter-spacing:.5px}
+  label{display:block;font-size:11px;letter-spacing:1px;color:var(--mute);
+    text-transform:uppercase;margin:14px 0 6px}
+  input,select{width:100%;background:#0E0B1A;border:1px solid var(--line);border-radius:8px;
+    color:var(--cream);font-family:'Jost';font-size:15px;padding:12px 14px;outline:none;transition:.2s}
+  input:focus,select:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(212,175,55,.18)}
+  input::placeholder{color:#6A6080}
+  .pay{width:100%;margin-top:24px;padding:15px;border:none;border-radius:9px;cursor:pointer;
+    font-family:'Jost';font-weight:500;font-size:15px;letter-spacing:1px;color:#0E0B1A;
+    background:linear-gradient(180deg,var(--gold-l),var(--gold));transition:.2s}
+  .pay:hover{filter:brightness(1.06);transform:translateY(-1px)}
+  .pay:disabled{opacity:.6;cursor:not-allowed;transform:none}
+  .trust{display:flex;gap:16px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+  .trust span{font-size:10px;color:var(--mute);letter-spacing:.5px}
+  .err{color:#E6A2A2;font-size:12px;text-align:center;margin-top:12px;min-height:14px}
+  .deliver{font-size:11px;color:var(--mute);text-align:center;margin-top:18px;line-height:1.6}
+  .ok{display:none;text-align:center;padding:10px 0}
+  .ok .tick{width:60px;height:60px;margin:0 auto 14px;border-radius:50%;border:2px solid var(--gold);
+    display:flex;align-items:center;justify-content:center;color:var(--gold-l);font-size:30px}
+  .ok h2{font-family:'Cinzel',serif;color:var(--gold-l);font-size:20px;margin-bottom:8px}
+  .ok p{color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:16px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="stars"></div>
+
+<header class="site-head">
+  <a class="logo" href="https://veshannastro.co.in">
+    <svg viewBox="0 0 100 100" fill="none" stroke="#D4AF37">
+      <circle cx="50" cy="50" r="34" stroke-width="2"/>
+      <g stroke="#D4AF37" stroke-width="1.6">
+        <line x1="50" y1="50" x2="50" y2="30"/><line x1="50" y1="50" x2="66" y2="44"/>
+        <line x1="50" y1="50" x2="62" y2="62"/><line x1="50" y1="50" x2="38" y2="62"/>
+        <line x1="50" y1="50" x2="34" y2="44"/>
+      </g>
+      <circle cx="50" cy="50" r="3" fill="#E8C766" stroke="none"/>
+    </svg>
+    <span>VESHANN ASTRO</span>
+  </a>
+  <nav>
+    <!-- adjust hrefs to your real nav -->
+    <a href="https://veshannastro.co.in">Home</a>
+    <a href="https://veshannastro.co.in/#services">Services</a>
+    <a href="https://wa.me/918827684725">Contact</a>
+  </nav>
+</header>
+
+<main class="wrap">
+<div class="card">
+  <!-- FORM -->
+  <div id="form">
+    <div class="crest">
+      <svg viewBox="0 0 100 100" fill="none" stroke="#D4AF37">
+        <circle cx="50" cy="50" r="34" stroke-width="1.4"/>
+        <circle cx="50" cy="50" r="28" stroke="#A8842A" stroke-width=".7"/>
+        <g stroke="#E8C766" stroke-width=".6">
+          <line x1="50" y1="6" x2="50" y2="16"/><line x1="50" y1="84" x2="50" y2="94"/>
+          <line x1="6" y1="50" x2="16" y2="50"/><line x1="84" y1="50" x2="94" y2="50"/>
+        </g>
+        <g stroke="#D4AF37" stroke-width=".9">
+          <line x1="50" y1="50" x2="50" y2="32"/><line x1="50" y1="50" x2="64" y2="44"/>
+          <line x1="50" y1="50" x2="62" y2="60"/><line x1="50" y1="50" x2="38" y2="60"/>
+          <line x1="50" y1="50" x2="36" y2="44"/>
+        </g>
+        <circle cx="50" cy="50" r="2.6" fill="#E8C766" stroke="none"/>
+      </svg>
+    </div>
+    <div class="brand">VESHANN ASTRO</div>
+    <div class="sub">Vedic Numerology · Astrology</div>
+    <div class="rule"><i></i><b></b><i></i></div>
+    <h1 id="title">Numerology Reports</h1>
+    <p class="lede">Choose your reading — delivered to your inbox</p>
+
+    <label for="product">Choose Your Report</label>
+    <select id="product" onchange="updatePrice()"></select>
+
+    <div class="price">
+      <div class="amt" id="priceLabel">—</div>
+      <div class="note">One-time · delivered to your email within the hour</div>
+    </div>
+
+    <label for="name">Full Name (as you use it)</label>
+    <input id="name" type="text" placeholder="e.g. Arjun Sharma" autocomplete="name"/>
+
+    <label for="email">Email (where we send the PDF)</label>
+    <input id="email" type="email" placeholder="you@example.com" autocomplete="email"/>
+
+    <label for="dob">Date of Birth</label>
+    <input id="dob" type="date" max="2025-12-31"/>
+
+    <label for="gender">Gender</label>
+    <select id="gender">
+      <option value="">Prefer not to say</option>
+      <option value="male">Male</option>
+      <option value="female">Female</option>
+      <option value="other">Other</option>
+    </select>
+
+    <button class="pay" id="payBtn" onclick="startPayment()">Generate My Report &nbsp;→</button>
+    <div class="err" id="err"></div>
+    <div class="trust">
+      <span>🔒 Secure Razorpay checkout</span><span>✦ Authentic Chaldean–Vedic system</span>
+    </div>
+    <div class="deliver">After payment, our system instantly builds your personalised report and emails it to you.
+      Most reports arrive within minutes.</div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div class="ok" id="ok">
+    <div class="tick">✦</div>
+    <h2>Payment Received</h2>
+    <p id="okMsg">Your Premium Numerology Report is being prepared and will arrive in your inbox
+      shortly. Do check your spam folder just in case. Thank you for trusting Veshann Astro.</p>
+    <div class="rule" style="margin-top:18px"><i></i><b></b><i></i></div>
+    <p style="font-family:'Cormorant Garamond';color:var(--gold-l);font-size:15px">veshannastro.co.in · @veshann.astro</p>
+  </div>
+</div>
+</main>
+
+<footer class="site-foot">
+  <div class="copy">© 2026 Veshann Astro · Vedic Numerology &amp; Astrology · Chhattisgarh, India</div>
+  <div class="links">
+    <!-- adjust policy hrefs to your real page URLs -->
+    <a href="https://wa.me/918827684725">WhatsApp</a>
+    <a href="https://instagram.com/veshann.astro">Instagram</a>
+    <a href="https://veshannastro.co.in/privacy-policy">Privacy Policy</a>
+    <a href="https://veshannastro.co.in/refund-policy">Refund &amp; Cancellation</a>
+  </div>
+</footer>
+
+<script>
+  /* ── CONFIG ─────────────────────────────────────────────
+     Point this at your deployed Render backend URL.        */
+  const BACKEND_URL = "https://YOUR-RENDER-APP.onrender.com";
+  /* ───────────────────────────────────────────────────────*/
+
+  const $ = id => document.getElementById(id);
+  function showErr(m){ $("err").textContent = m || ""; }
+
+  let PRODUCTS = {};
+  const ORDER = ["complete","career","love","forecast","name","snapshot"];  // display order
+
+  async function loadProducts(){
+    try{
+      const res = await fetch(BACKEND_URL + "/products");
+      PRODUCTS = await res.json();
+    }catch(e){
+      // fallback so the page still works if backend is waking up
+      PRODUCTS = {
+        complete:{amount:49900,label:"Complete Numerology Report (25 pages)"},
+        career:{amount:29900,label:"Career & Wealth Numerology Blueprint"},
+        love:{amount:29900,label:"Love & Relationship Numerology Report"},
+        forecast:{amount:24900,label:"The Year Ahead Numerology Forecast"},
+        name:{amount:24900,label:"Name & Lo Shu Numerology Analysis"},
+        snapshot:{amount:19900,label:"Numerology Snapshot (mini report)"},
+      };
+    }
+    const sel = $("product"); sel.innerHTML = "";
+    ORDER.filter(k=>PRODUCTS[k]).forEach(k=>{
+      const o = document.createElement("option");
+      o.value = k; o.textContent = `${PRODUCTS[k].label} — ₹${(PRODUCTS[k].amount/100).toFixed(0)}`;
+      sel.appendChild(o);
+    });
+    updatePrice();
+  }
+  function updatePrice(){
+    const k = $("product").value; const p = PRODUCTS[k];
+    if(p){ $("priceLabel").textContent = "₹" + (p.amount/100).toFixed(0); }
+  }
+  loadProducts();
+
+  async function startPayment(){
+    const name = $("name").value.trim();
+    const email = $("email").value.trim();
+    const dob = $("dob").value;            // YYYY-MM-DD
+    const gender = $("gender").value;
+    const product = $("product").value || "complete";
+    showErr("");
+    if(!name){ return showErr("Please enter your full name."); }
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ return showErr("Please enter a valid email."); }
+    if(!dob){ return showErr("Please select your date of birth."); }
+
+    const btn = $("payBtn"); btn.disabled = true; btn.textContent = "Preparing checkout…";
+    try{
+      const res = await fetch(BACKEND_URL + "/create-order", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({name, email, dob, gender, product})
+      });
+      if(!res.ok){ throw new Error(await res.text()); }
+      const o = await res.json();
+      const rzp = new Razorpay({
+        key:o.key_id, order_id:o.order_id, amount:o.amount, currency:o.currency,
+        name:"Veshann Astro", description:o.label || "Numerology Report",
+        prefill:{ name, email }, theme:{ color:"#D4AF37" },
+        handler:function(){ $("form").style.display="none"; $("ok").style.display="block"; },
+        modal:{ ondismiss:function(){ btn.disabled=false; btn.innerHTML="Generate My Report &nbsp;→"; } }
+      });
+      rzp.on("payment.failed", function(){ showErr("Payment failed. Please try again."); });
+      rzp.open();
+      btn.disabled=false; btn.innerHTML="Generate My Report &nbsp;→";
+    }catch(e){
+      showErr("Could not start checkout. Please try again in a moment.");
+      btn.disabled=false; btn.innerHTML="Generate My Report &nbsp;→";
+    }
+  }
+</script>
+</body>
+</html>

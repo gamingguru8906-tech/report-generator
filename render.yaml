@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: veshann-report-backend
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && python build_fonts.py
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+      - key: REPORT_AMOUNT_PAISE
+        value: "49900"
+      - key: GOOGLE_SA_JSON
+        sync: false
+      - key: DRIVE_FOLDER_ID
+        sync: false
+      - key: SHEET_ID
+        sync: false
+      - key: SHEET_TAB
+        value: "Orders"
+      - key: SMTP_USER
+        value: "veshannastro@gmail.com"
+      - key: SMTP_PASS
+        sync: false
+      - key: ALLOWED_ORIGINS
+        value: "https://veshannastro.co.in,https://www.veshannastro.co.in"
