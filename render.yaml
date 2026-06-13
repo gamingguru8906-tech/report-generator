@@ -26,5 +26,7 @@ services:
         value: "veshannastro@gmail.com"
       - key: SMTP_PASS
         sync: false
+      - key: ADMIN_TOKEN
+        sync: false
       - key: ALLOWED_ORIGINS
         value: "https://veshannastro.co.in,https://www.veshannastro.co.in"

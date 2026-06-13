@@ -48,6 +48,7 @@ RAZORPAY_KEY_ID         = os.environ.get("RAZORPAY_KEY_ID", "")
 RAZORPAY_KEY_SECRET     = os.environ.get("RAZORPAY_KEY_SECRET", "")
 RAZORPAY_WEBHOOK_SECRET = os.environ.get("RAZORPAY_WEBHOOK_SECRET", "")
 REPORT_AMOUNT_PAISE     = int(os.environ.get("REPORT_AMOUNT_PAISE", "49900"))  # legacy default
+ADMIN_TOKEN             = os.environ.get("ADMIN_TOKEN", "")  # protects /admin/* diagnostic + recovery tools
 
 # Product catalogue: key -> (report_type, price in paise, customer-facing label)
 # Prices are starting suggestions — tune freely (paise: ₹199 = 19900).
@@ -106,7 +107,8 @@ async def create_order(request: Request):
         "amount": amount, "currency": "INR",
         "receipt": f"num-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}",
         "notes": {"name": name, "email": email, "dob": dob, "gender": gender,
-                  "product": product, "report_type": report_type},
+                  "product": product, "report_type": report_type,
+                  "source": "veshann_report"},
     }
     resp = requests.post("https://api.razorpay.com/v1/orders", json=payload,
                          auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET), timeout=20)
@@ -134,8 +136,13 @@ async def webhook(request: Request):
         ent = payload["order"]["entity"]; notes = ent.get("notes", {}) or {}; order_id = ent.get("id", "")
     if not notes and "payment" in payload:
         ent = payload["payment"]["entity"]; notes = ent.get("notes", {}) or {}; order_id = ent.get("order_id", "") or ent.get("id", "")
-    if event in ("order.paid", "payment.captured") and notes.get("email") and notes.get("dob"):
-        report_type = notes.get("report_type") or PRODUCTS.get(notes.get("product",""), ("complete",))[0]
+    print(f"[webhook] event={event} order={order_id} source={notes.get('source')} "
+          f"product={notes.get('product')} email={notes.get('email')} dob={notes.get('dob')}")
+    # Only act on orders THIS report page created (tagged source=veshann_report with a known product).
+    # This makes the backend safely ignore your live-consultation bookings on the same Razorpay account.
+    is_report = notes.get("source") == "veshann_report" and notes.get("product") in PRODUCTS
+    if event in ("order.paid", "payment.captured") and is_report and notes.get("email") and notes.get("dob"):
+        report_type = notes.get("report_type") or PRODUCTS[notes["product"]][0]
         threading.Thread(target=_safe_fulfil, daemon=True, args=(
             notes.get("name", "Customer"), notes["dob"], notes["email"],
             notes.get("gender", ""), order_id, report_type)).start()
@@ -200,3 +207,61 @@ def fulfil_order(name, dob, email, gender="", order_id="", report_type="complete
     send_email(email, name, pdf)
     print(f"Fulfilled {order_id} ({report_type}) for {email}: {link}")
     return link
+
+# ───────────────────────── Admin tools (diagnose + recover) ─────────────────────────
+def _check_admin(token):
+    if not ADMIN_TOKEN or token != ADMIN_TOKEN:
+        raise HTTPException(403, "bad or missing admin token")
+
+@app.get("/admin/selftest")
+def admin_selftest(token: str = ""):
+    """Checks each piece of the pipeline independently and reports pass/fail.
+    Open: https://<your-app>/admin/selftest?token=YOUR_ADMIN_TOKEN"""
+    _check_admin(token)
+    out = {"env": {
+        "RAZORPAY_WEBHOOK_SECRET": bool(RAZORPAY_WEBHOOK_SECRET),
+        "GOOGLE_SA_JSON": bool(GOOGLE_SA_JSON), "DRIVE_FOLDER_ID": bool(DRIVE_FOLDER_ID),
+        "SHEET_ID": bool(SHEET_ID), "SMTP_USER": SMTP_USER, "SMTP_PASS": bool(SMTP_PASS),
+    }}
+    try:
+        creds = _google_creds(); out["google_creds"] = "ok"
+    except Exception as e:
+        out["google_creds"] = f"FAIL: {e}"; return out
+    try:
+        from googleapiclient.discovery import build
+        build("drive", "v3", credentials=creds).files().list(
+            q=f"'{DRIVE_FOLDER_ID}' in parents", pageSize=1, fields="files(id)").execute()
+        out["drive_folder"] = "ok"
+    except Exception as e:
+        out["drive_folder"] = f"FAIL (share the folder with the service-account email as Editor): {e}"
+    try:
+        append_to_sheet(["SELFTEST", "-", "-", "-", "-", "-", "-", "-", datetime.datetime.now().strftime("%H:%M:%S")], creds)
+        out["sheet_append"] = "ok (a SELFTEST row was added — you can delete it)"
+    except Exception as e:
+        out["sheet_append"] = f"FAIL (share the sheet with the service-account email as Editor): {e}"
+    try:
+        import smtplib
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as s:
+            s.starttls(); s.login(SMTP_USER, SMTP_PASS)
+        out["smtp_login"] = "ok"
+    except Exception as e:
+        out["smtp_login"] = f"FAIL (use a Gmail App Password, no spaces): {e}"
+    return out
+
+@app.post("/admin/fulfil")
+async def admin_fulfil(request: Request):
+    """Manually generate + deliver a report (recover a paid order, or test the pipeline).
+    POST JSON: {token, name, dob (YYYY-MM-DD), email, gender?, report_type?}"""
+    data = await request.json()
+    _check_admin(data.get("token", ""))
+    if not (data.get("name") and data.get("dob") and data.get("email")):
+        raise HTTPException(400, "name, dob (YYYY-MM-DD) and email are required")
+    try:
+        link = fulfil_order(data["name"], data["dob"], data["email"],
+                            data.get("gender", ""), data.get("order_id", "manual"),
+                            data.get("report_type", "complete"))
+        return {"status": "sent", "drive_link": link}
+    except Exception as e:
+        import traceback
+        return JSONResponse({"status": "error", "error": repr(e),
+                             "trace": traceback.format_exc()[-1800:]}, status_code=500)
