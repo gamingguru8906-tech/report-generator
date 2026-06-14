@@ -36,9 +36,11 @@ order.html (on your site)  →  POST /create-order  →  Razorpay Checkout  → 
   sheet ID from its URL. First tab named `Orders`.
 - Paste the *entire* JSON key as the value of `GOOGLE_SA_JSON`.
 
-### 3. Gmail
-- On veshannastro@gmail.com: enable **2-Step Verification**, then create a 16-char **App Password**
-  → that's `SMTP_PASS`.
+### 3. Resend (email delivery)
+- Sign up at **resend.com** → API Keys → create a key → copy it → that's `RESEND_API_KEY`.
+- For testing, emails send from `onboarding@resend.dev` (free, works immediately).
+- To send from `reports@veshannastro.co.in`: Resend → Domains → Add Domain → add the 2 DNS records shown → verify (takes ~5 min). Then set `RESEND_FROM=Veshannastro <reports@veshannastro.co.in>`.
+- **Do NOT use Gmail SMTP** — Render blocks all SMTP ports (25, 465, 587).
 
 ## Deploy on Render
 1. Push this folder to a GitHub repo.

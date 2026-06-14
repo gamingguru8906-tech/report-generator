@@ -22,10 +22,10 @@ services:
         sync: false
       - key: SHEET_TAB
         value: "Orders"
-      - key: SMTP_USER
-        value: "veshannastro@gmail.com"
-      - key: SMTP_PASS
+      - key: RESEND_API_KEY
         sync: false
+      - key: RESEND_FROM
+        value: "Veshannastro <onboarding@resend.dev>"
       - key: ADMIN_TOKEN
         sync: false
       - key: ALLOWED_ORIGINS
