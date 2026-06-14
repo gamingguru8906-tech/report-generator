@@ -24,7 +24,6 @@ The customer gets their report within seconds; the 1-hour promise has huge headr
 Run:  uvicorn app:app --host 0.0.0.0 --port $PORT
 """
 import os, json, hmac, hashlib, base64, datetime, threading
-import resend
 
 import requests
 from fastapi import FastAPI, Request, HTTPException
@@ -69,9 +68,9 @@ DRIVE_FOLDER_ID = os.environ.get("DRIVE_FOLDER_ID", "")
 SHEET_ID        = os.environ.get("SHEET_ID", "")
 SHEET_TAB       = os.environ.get("SHEET_TAB", "Orders")
 
-RESEND_API_KEY  = os.environ.get("RESEND_API_KEY", "")
-RESEND_FROM     = os.environ.get("RESEND_FROM", "Veshannastro <onboarding@resend.dev>")
-resend.api_key  = RESEND_API_KEY
+BREVO_API_KEY   = os.environ.get("BREVO_API_KEY", "")
+BREVO_FROM_EMAIL= os.environ.get("BREVO_FROM_EMAIL", "veshannastro@gmail.com")
+BREVO_FROM_NAME = os.environ.get("BREVO_FROM_NAME", "Veshannastro")
 
 BOOK_COVER = os.environ.get("BOOK_COVER_PATH") or None     # optional real Amazon cover
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS",
@@ -290,16 +289,20 @@ def send_email(to_email, name, pdf_path, report_type="Numerology Report"):
 </body>
 </html>"""
 
-    resend.Emails.send({
-        "from": RESEND_FROM,
-        "to": [to_email],
-        "subject": f"✨ Your {label} is Ready, {name}",
-        "html": html_body,
-        "attachments": [{
-            "filename": os.path.basename(pdf_path),
-            "content": pdf_b64,
-        }],
-    })
+    payload = {
+        "sender":      {"name": BREVO_FROM_NAME, "email": BREVO_FROM_EMAIL},
+        "to":          [{"email": to_email, "name": name}],
+        "subject":     f"Your {label} is Ready, {name}",
+        "htmlContent": html_body,
+        "attachment":  [{"name": os.path.basename(pdf_path), "content": pdf_b64}],
+    }
+    resp = requests.post(
+        "https://api.brevo.com/v3/smtp/email",
+        headers={"api-key": BREVO_API_KEY, "Content-Type": "application/json"},
+        json=payload, timeout=30
+    )
+    if resp.status_code >= 300:
+        raise RuntimeError(f"Brevo error {resp.status_code}: {resp.text}")
 
 def fulfil_order(name, dob, email, gender="", order_id="", report_type="complete", extra=""):
     pdf = generate_report(name, dob, gender=gender, out_dir=OUT_DIR,
@@ -325,8 +328,8 @@ def admin_selftest(token: str = ""):
     out = {"env": {
         "RAZORPAY_WEBHOOK_SECRET": bool(RAZORPAY_WEBHOOK_SECRET),
         "GOOGLE_SA_JSON": bool(GOOGLE_SA_JSON), "DRIVE_FOLDER_ID": bool(DRIVE_FOLDER_ID),
-        "SHEET_ID": bool(SHEET_ID), "RESEND_API_KEY": bool(RESEND_API_KEY),
-        "RESEND_FROM": RESEND_FROM,
+        "SHEET_ID": bool(SHEET_ID), "BREVO_API_KEY": bool(BREVO_API_KEY),
+        "BREVO_FROM_EMAIL": BREVO_FROM_EMAIL,
     }}
     try:
         creds = _google_creds(); out["google_creds"] = "ok"
@@ -345,25 +348,17 @@ def admin_selftest(token: str = ""):
     except Exception as e:
         out["sheet_append"] = f"FAIL (share the sheet with the service-account email as Editor): {e}"
     try:
-        if not RESEND_API_KEY:
-            raise ValueError("RESEND_API_KEY is not set")
-        import urllib.request, urllib.error
-        req = urllib.request.Request(
-            "https://api.resend.com/api-keys",
-            headers={"Authorization": f"Bearer {RESEND_API_KEY}"},
-            method="GET")
-        try:
-            urllib.request.urlopen(req, timeout=5)
-            out["resend_key"] = "ok"
-        except urllib.error.HTTPError as he:
-            if he.code in (401, 403):
-                raise ValueError(f"Resend rejected the API key (HTTP {he.code}) — paste a fresh key from resend.com/api-keys")
-            else:
-                out["resend_key"] = "ok"
-    except ValueError as e:
-        out["resend_key"] = f"FAIL: {e}"
+        if not BREVO_API_KEY:
+            raise ValueError("BREVO_API_KEY is not set")
+        resp = requests.get(
+            "https://api.brevo.com/v3/account",
+            headers={"api-key": BREVO_API_KEY}, timeout=5)
+        if resp.status_code == 200:
+            out["brevo_key"] = "ok — account: " + resp.json().get("email", "verified")
+        else:
+            raise ValueError(f"Brevo rejected the API key (HTTP {resp.status_code})")
     except Exception as e:
-        out["resend_key"] = f"FAIL: {e}"
+        out["brevo_key"] = f"FAIL: {e}"
     return out
 
 @app.post("/admin/fulfil")
