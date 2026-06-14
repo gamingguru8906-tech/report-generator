@@ -19,7 +19,9 @@ def generate_report(full_name, dob, gender="", out_dir=".", book_cover=None, rep
     extra: the report's second input (mobile number, business name, or partner's name & DOB)."""
     if isinstance(dob, str):
         dob = datetime.strptime(dob.strip(), "%Y-%m-%d").date()
-    r = N.compute(full_name, dob, gender, extra=extra, report_type=report_type)
+    r = N.compute(full_name, dob, gender)
+    r['extra'] = extra
+    r['report_type'] = report_type
     os.makedirs(out_dir, exist_ok=True)
     tag = "" if report_type == "complete" else f"_{report_type}"
     fname = f"VeshannAstro_Numerology{tag}_{_slug(full_name)}_{dob.isoformat()}.pdf"
