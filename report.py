@@ -71,7 +71,7 @@ def core_section(kick, title, num, intro, *, value_label=None, value_note=None, 
     # strengths + shadow panels side by side
     sp = Table([[
         Panel([h3('Your Strengths')]+bullets(cr['strengths']), bg=DEEP2),
-        Panel([h3('Growth Edges')]+bullets(cr['shadow'], glyph='◇'), bg=HexColor("#1A1330")),
+        Panel([h3('Growth Edges')]+bullets(cr['shadow'], glyph='◇'), bg=HexColor("#EAEDF3")),
     ]], colWidths=[(PW-2*MARGIN-12)/2-4]*2)
     sp.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('LEFTPADDING',(0,0),(-1,-1),0),
         ('RIGHTPADDING',(0,0),(0,0),8),('RIGHTPADDING',(1,0),(1,0),0),('TOPPADDING',(0,0),(-1,-1),0),('BOTTOMPADDING',(0,0),(-1,-1),0)]))
@@ -79,14 +79,14 @@ def core_section(kick, title, num, intro, *, value_label=None, value_note=None, 
     if extra_paras:
         for p in extra_paras: el.append(p); el.append(Spacer(1,4))
     el.append(Spacer(1,4))
-    el.append(Panel([Paragraph(f'<font color="#D4AF37"><b><font face="Cormorant-M">◆</font> Vedic Remedy &nbsp;·&nbsp; {cr["planet"]}</b></font>', ST['h3']),
-                     Spacer(1,3), body(cr['remedy'])], bg=HexColor("#15112A"), border=GOLD_D))
+    el.append(Panel([Paragraph(f'<font color="#7C2E38"><b><font face="Cormorant-M">◆</font> Vedic Remedy &nbsp;·&nbsp; {cr["planet"]}</b></font>', ST['h3']),
+                     Spacer(1,3), body(cr['remedy'])], bg=HexColor("#F6ECEC"), border=GOLD_D))
     el.append(PageBreak())
     return el
 
 def kv_table(rows):
-    data=[[Paragraph(f'<font color="#B9AFC9">{k}</font>', ST['mute']),
-           Paragraph(f'<font color="#F3ECDD">{v}</font>', ST['body'])] for k,v in rows]
+    data=[[Paragraph(f'<font color="#8C8472">{k}</font>', ST['mute']),
+           Paragraph(f'<font color="#262E3D">{v}</font>', ST['body'])] for k,v in rows]
     t=Table(data, colWidths=[42*mm, None])
     t.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('TOPPADDING',(0,0),(-1,-1),3),
         ('BOTTOMPADDING',(0,0),(-1,-1),3),('LINEBELOW',(0,0),(-1,-2),0.4,LINE)]))
@@ -110,10 +110,10 @@ def sec_cover(r, tier="Premium", title="COMPLETE NUMEROLOGY REPORT"):
     S+=[Spacer(1,3), Paragraph(f"Born {fmt_date(r['dob'])}", ST['quote'])]
     S+=[Spacer(1,26)]
     strip=Table([[
-        Paragraph(f'<font color="#B9AFC9" size="7">LIFE PATH</font><br/><font color="#E8C766" size="20" face="Cinzel-B">{r["life_path"]}</font>', ST['mutec']),
-        Paragraph(f'<font color="#B9AFC9" size="7">DESTINY</font><br/><font color="#E8C766" size="20" face="Cinzel-B">{r["destiny"]}</font>', ST['mutec']),
-        Paragraph(f'<font color="#B9AFC9" size="7">SOUL URGE</font><br/><font color="#E8C766" size="20" face="Cinzel-B">{r["soul_urge"]}</font>', ST['mutec']),
-        Paragraph(f'<font color="#B9AFC9" size="7">DRIVER</font><br/><font color="#E8C766" size="20" face="Cinzel-B">{r["driver"]}</font>', ST['mutec']),
+        Paragraph(f'<font color="#8C8472" size="7">LIFE PATH</font><br/><font color="#1E2C50" size="20" face="Cinzel-B">{r["life_path"]}</font>', ST['mutec']),
+        Paragraph(f'<font color="#8C8472" size="7">DESTINY</font><br/><font color="#1E2C50" size="20" face="Cinzel-B">{r["destiny"]}</font>', ST['mutec']),
+        Paragraph(f'<font color="#8C8472" size="7">SOUL URGE</font><br/><font color="#1E2C50" size="20" face="Cinzel-B">{r["soul_urge"]}</font>', ST['mutec']),
+        Paragraph(f'<font color="#8C8472" size="7">DRIVER</font><br/><font color="#1E2C50" size="20" face="Cinzel-B">{r["driver"]}</font>', ST['mutec']),
     ]], colWidths=[(PW-2*MARGIN)/4]*4)
     strip.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'MIDDLE'),('LINEAFTER',(0,0),(-2,-1),0.5,LINE)]))
     S+=[strip, Spacer(1,30)]
@@ -128,7 +128,7 @@ def sec_how_to_read(r):
     S+=[lead("This is not a horoscope to glance at once. It is a personal operating manual — built from the precise mathematics of your name and birth date, decoded through India's oldest numerical science. Treat it as a reference you return to at every crossroad.")]
     S+=[Spacer(1,10)]
     for t,d in C.HOW_TO_READ:
-        S+=[Panel([Paragraph(f'<font color="#E8C766">{t}</font>', ST['h3']), Spacer(1,2), body(d)])]
+        S+=[Panel([Paragraph(f'<font color="#1E2C50">{t}</font>', ST['h3']), Spacer(1,2), body(d)])]
         S+=[Spacer(1,6)]
     S+=[PageBreak()]
     return S
@@ -168,7 +168,7 @@ def sec_snapshot(r):
     if r['missing']: extra.append(f"Missing in Lo Shu grid: <b>{', '.join(map(str,r['missing']))}</b>")
     if r['complete_planes']: extra.append(f"Power planes active: <b>{len(r['complete_planes'])}</b>")
     extra.append(f"Name vibration vs birth: <b>{'Harmonious ✓' if r['name_friendly'] else 'Needs tuning'}</b>")
-    S+=[Panel([Paragraph('<font color="#E8C766">Key Flags</font>', ST['h3'])]+[Paragraph(f'<font face="Cormorant-M" color="#D4AF37">◆</font>&nbsp; {e}', ST['bullet']) for e in extra], border=GOLD_D)]
+    S+=[Panel([Paragraph('<font color="#1E2C50">Key Flags</font>', ST['h3'])]+[Paragraph(f'<font face="Cormorant-M" color="#7C2E38">◆</font>&nbsp; {e}', ST['bullet']) for e in extra], border=GOLD_D)]
     S+=[PageBreak()]
     return S
 
@@ -202,7 +202,7 @@ def sec_personality(r):
     S+=[body(f"Your outer gateway runs on the {cr_p['planet']} vibration — the {cr_p['archetype']} energy. Before anyone meets your inner Soul Urge ({r['soul_urge']}) or understands your Destiny ({r['destiny']}), they meet this. " + cr_p['essence'])]
     S+=[Spacer(1,8)]
     S+=[Panel([h3("What People Notice First")]+bullets(cr_p['strengths'][:4]))]
-    S+=[Spacer(1,6), Panel([h3("The Mask vs The Truth")], bg=HexColor("#15112A")), Spacer(1,2)]
+    S+=[Spacer(1,6), Panel([h3("The Mask vs The Truth")], bg=HexColor("#F6ECEC")), Spacer(1,2)]
     S+=[body(f"Remember: this is the wrapping, not the gift. People who only know your Personality number see the {cr_p['archetype']}; those who earn your trust discover the full depth of your Soul Urge {r['soul_urge']} and Life Path {r['life_path']}.")]
     S+=[PageBreak()]
     return S
@@ -248,13 +248,13 @@ def sec_lo_shu(r):
     if r['repeated']:
         rep=[h3("Repeated Numbers — Amplified Energies")]
         for n,c in sorted(r['repeated'].items()):
-            rep.append(Paragraph(f'<font face="Cormorant-M" color="#D4AF37">◆</font>&nbsp; <b>{str(n)*c} ({n} appears {c}×):</b> {C.REPEATED.get(n,"")}', ST['bullet']))
+            rep.append(Paragraph(f'<font face="Cormorant-M" color="#7C2E38">◆</font>&nbsp; <b>{str(n)*c} ({n} appears {c}×):</b> {C.REPEATED.get(n,"")}', ST['bullet']))
             rep.append(Spacer(1,3))
         S+=[Panel(rep)]; S+=[Spacer(1,6)]
     if r['complete_planes']:
         pl=[h3("Power Planes & Arrows You Possess")]
         for p in r['complete_planes']:
-            pl.append(Paragraph(f'<font face="Cormorant-M" color="#D4AF37">◆</font>&nbsp; {C.PLANE_MEANING.get(p,p)}', ST['bullet']))
+            pl.append(Paragraph(f'<font face="Cormorant-M" color="#7C2E38">◆</font>&nbsp; {C.PLANE_MEANING.get(p,p)}', ST['bullet']))
             pl.append(Spacer(1,3))
         S+=[Panel(pl, border=GOLD_D)]
     else:
@@ -269,7 +269,7 @@ def sec_hidden_passion(r):
     S+=[Spacer(1,8)]
     for n in hp:
         crh=core(n)
-        S+=[Panel([Paragraph(f'<font color="#E8C766" size="22" face="Cinzel-B">{n}</font> &nbsp; <font color="#B9AFC9" face="Cormorant-I" size="13">{crh["planet"]} — {crh["archetype"]}</font>', ST['h3']),
+        S+=[Panel([Paragraph(f'<font color="#1E2C50" size="22" face="Cinzel-B">{n}</font> &nbsp; <font color="#8C8472" face="Cormorant-I" size="13">{crh["planet"]} — {crh["archetype"]}</font>', ST['h3']),
                    Spacer(1,4),
                    body(f"A dominant {n} means {crh['archetype']}'s energy runs through everything you do. " + crh['essence'])], border=GOLD_D)]
         S+=[Spacer(1,6)]
@@ -286,7 +286,7 @@ def sec_karmic_lessons(r):
     S+=[Spacer(1,8)]
     if kl:
         for n in kl:
-            S+=[Panel([Paragraph(f'<font face="Cormorant-M" color="#D4AF37">◆</font>&nbsp; <b>{C.KARMIC_LESSON.get(n,"")}</b>', ST['bullet'])])]
+            S+=[Panel([Paragraph(f'<font face="Cormorant-M" color="#7C2E38">◆</font>&nbsp; <b>{C.KARMIC_LESSON.get(n,"")}</b>', ST['bullet'])])]
             S+=[Spacer(1,5)]
         S+=[Spacer(1,4), body("These are not flaws — they are your curriculum. Each time you consciously practice the missing quality instead of avoiding it, you 'complete' that lesson and unlock the planet's gift.")]
     else:
@@ -301,7 +301,7 @@ def sec_karmic_debt(r):
     S+=[Spacer(1,8)]
     if kd:
         for n in kd:
-            S+=[Panel([Paragraph(f'<font color="#E8C766" size="18" face="Cinzel-B">{n}</font>', ST['h3']), Spacer(1,3),
+            S+=[Panel([Paragraph(f'<font color="#1E2C50" size="18" face="Cinzel-B">{n}</font>', ST['h3']), Spacer(1,3),
                        body(C.KARMIC_DEBT.get(n,""))], border=GOLD_D)]
             S+=[Spacer(1,6)]
         S+=[body("The remedy for every karmic debt is the same in spirit: stop avoiding the lesson. The moment you embrace the discipline it demands, the 'debt' converts into one of your most powerful assets.")]
@@ -314,14 +314,14 @@ def sec_pinnacles(r):
     S=[kicker("The Four Seasons Of Your Life"), h1("Pinnacle Cycles"), GoldRule(), Spacer(1,4)]
     S+=[body("Your life unfolds in four great Pinnacle cycles, each governed by a number and a ruling planet. Each pinnacle brings its own opportunities, themes and 'cosmic weather'. Knowing which season you are in lets you plant the right seeds at the right time.")]
     S+=[Spacer(1,8)]
-    rows=[[Paragraph('<font color="#E8C766">Pinnacle</font>',ST['mute']),
-           Paragraph('<font color="#E8C766">Number</font>',ST['mute']),
-           Paragraph('<font color="#E8C766">Age Span</font>',ST['mute']),
-           Paragraph('<font color="#E8C766">Cosmic Theme</font>',ST['mute'])]]
+    rows=[[Paragraph('<font color="#1E2C50">Pinnacle</font>',ST['mute']),
+           Paragraph('<font color="#1E2C50">Number</font>',ST['mute']),
+           Paragraph('<font color="#1E2C50">Age Span</font>',ST['mute']),
+           Paragraph('<font color="#1E2C50">Cosmic Theme</font>',ST['mute'])]]
     for i,p in enumerate(r['pinnacles'],1):
         note=C.PINNACLE_NOTE.get(p['num'], C.PINNACLE_NOTE.get(N.reduce_num(p['num'],False),''))
         rows.append([Paragraph(f"{i}st" if i==1 else f"{i}{'nd' if i==2 else 'rd' if i==3 else 'th'}",ST['body']),
-                     Paragraph(f'<font color="#E8C766" face="Cinzel-B" size="13">{p["num"]}</font>',ST['body']),
+                     Paragraph(f'<font color="#1E2C50" face="Cinzel-B" size="13">{p["num"]}</font>',ST['body']),
                      Paragraph(p['span'],ST['body']),
                      Paragraph(note,ST['body'])])
     t=Table(rows, colWidths=[16*mm,16*mm,34*mm,None])
@@ -339,7 +339,7 @@ def sec_challenges(r):
     S+=[Spacer(1,8)]
     labels=["First Challenge (early life)","Second Challenge (mid life)","Main Challenge (lifelong)","Fourth Challenge (later life)"]
     for lbl,ch in zip(labels, r['challenges']):
-        S+=[Panel([Paragraph(f'<font color="#E8C766" face="Cinzel-B" size="16">{ch}</font> &nbsp; <font color="#B9AFC9">{lbl}</font>', ST['h3']),
+        S+=[Panel([Paragraph(f'<font color="#1E2C50" face="Cinzel-B" size="16">{ch}</font> &nbsp; <font color="#8C8472">{lbl}</font>', ST['h3']),
                    Spacer(1,2), body(C.CHALLENGE.get(ch, C.CHALLENGE[0]))])]
         S+=[Spacer(1,5)]
     S+=[body("Notice your Main Challenge especially — it recurs throughout life until consciously resolved. The good news: every challenge is winnable, and each victory permanently strengthens that part of your character.")]
@@ -404,7 +404,7 @@ def sec_personal_year(r):
     for k in range(1,4):
         ny=N.reduce_num(py+k if py+k<=9 else py+k-9, False)
         nxt.append(f"<b>{r['personal_year_for']+k} (Personal Year {ny}):</b> {C.PERSONAL_YEAR[ny].split('.')[0]}.")
-    S+=[Panel([Paragraph(f'<font face="Cormorant-M" color="#D4AF37">◆</font>&nbsp; {n}', ST['bullet']) for n in nxt])]
+    S+=[Panel([Paragraph(f'<font face="Cormorant-M" color="#7C2E38">◆</font>&nbsp; {n}', ST['bullet']) for n in nxt])]
     S+=[PageBreak()]
     return S
 
@@ -418,15 +418,15 @@ def sec_roadmap(r):
         mlabel=f"{MONTHS[ph['month']]} {ph['year']}"
         pdates=", ".join(str(d) for d in ph['power_dates']) if ph['power_dates'] else "all favourable days below"
         head=Paragraph(
-            f'<font color="#E8C766" face="Cinzel-B" size="15">{ph["pm"]}</font>'
-            f'&nbsp;&nbsp;<font color="#B9AFC9" face="Jost-M" size="8">{ph["day_range"].upper()} &nbsp;·&nbsp; {mlabel.upper()}</font><br/>'
-            f'<font color="#E8C766" face="Cormorant-SB" size="14">{theme}</font>'
-            f'&nbsp; <font color="#B9AFC9" face="Cormorant-I" size="11">— Personal Month {ph["pm"]}, {crp["planet"].split(" (")[0]}</font>',
+            f'<font color="#1E2C50" face="Cinzel-B" size="15">{ph["pm"]}</font>'
+            f'&nbsp;&nbsp;<font color="#8C8472" face="Jost-M" size="8">{ph["day_range"].upper()} &nbsp;·&nbsp; {mlabel.upper()}</font><br/>'
+            f'<font color="#1E2C50" face="Cormorant-SB" size="14">{theme}</font>'
+            f'&nbsp; <font color="#8C8472" face="Cormorant-I" size="11">— Personal Month {ph["pm"]}, {crp["planet"].split(" (")[0]}</font>',
             ST['h3'])
         rows=[head, Spacer(1,4), body(career_txt), Spacer(1,3), body(luck_txt), Spacer(1,5),
-              Paragraph(f'<font face="Cormorant-M" color="#D4AF37">◆</font>&nbsp; <font color="#B9AFC9">Power dates:</font> <b>{pdates}</b>'
-                        f'&nbsp;&nbsp;|&nbsp;&nbsp; <font color="#B9AFC9">Lucky day:</font> <b>{crd["day"]}</b>'
-                        f'&nbsp;&nbsp;|&nbsp;&nbsp; <font color="#B9AFC9">Colour:</font> <b>{crd["colour"].split(",")[0]}</b>', ST['bullet'])]
+              Paragraph(f'<font face="Cormorant-M" color="#7C2E38">◆</font>&nbsp; <font color="#8C8472">Power dates:</font> <b>{pdates}</b>'
+                        f'&nbsp;&nbsp;|&nbsp;&nbsp; <font color="#8C8472">Lucky day:</font> <b>{crd["day"]}</b>'
+                        f'&nbsp;&nbsp;|&nbsp;&nbsp; <font color="#8C8472">Colour:</font> <b>{crd["colour"].split(",")[0]}</b>', ST['bullet'])]
         S+=[Panel(rows, border=GOLD_D)]
         S+=[Spacer(1,8)]
     S+=[Panel([body("Print this page or set three calendar reminders — one per month. Acting on the right energy at the right time is the single highest-leverage habit in practical numerology. For a deeper, date-by-date personal forecast, a live Veshann Astro consultation maps your entire year.")])]
@@ -450,7 +450,7 @@ def sec_name_analysis(r):
     else:
         S+=[Panel([h3("A Gentle Tuning Is Advised"), body(f"Your name's Destiny vibration ({r['destiny']}) is not fully aligned with your Driver ({r['driver']}) and Conductor ({r['life_path']}). This can create subtle friction — effort that doesn't quite convert into result. A small adjustment (an added or altered letter, or a preferred spelling) can shift the total toward a harmonised number such as {', '.join(map(str,r['lucky_numbers'][:3]))}.")], border=GOLD_D)]
         S+=[Spacer(1,6), Panel([h3("Why We Don't Print A 'Corrected' Spelling Here"), body("Name correction is delicate — it must account for your full chart, family naming, numerological gender rules and practical use. An automated suggestion can mislead. Your Veshann Astro numerologist will hand-craft 2–3 safe, powerful spelling options in a personal session. This is one of our most-requested services for a reason.")])]
-    S+=[Spacer(1,6), Paragraph('<font color="#E8C766" face="Cormorant-I" size="13">Book a personal Name Correction consultation at veshannastro.co.in</font>', ST['quote'])]
+    S+=[Spacer(1,6), Paragraph('<font color="#1E2C50" face="Cormorant-I" size="13">Book a personal Name Correction consultation at veshannastro.co.in</font>', ST['quote'])]
     S+=[PageBreak()]
     return S
 
@@ -466,12 +466,12 @@ def sec_action_plan(r):
         f"Align this year's big moves with your Personal Year {py} theme.",
         "Wear or keep your supportive colours on your power day each week.",
     ]
-    S+=[Panel([Paragraph(f'<font color="#D4AF37" face="Cinzel-B">{i}.</font>&nbsp;&nbsp; {a}', ST['bullet']) for i,a in enumerate(actions,1)], border=GOLD_D)]
+    S+=[Panel([Paragraph(f'<font color="#7C2E38" face="Cinzel-B">{i}.</font>&nbsp;&nbsp; {a}', ST['bullet']) for i,a in enumerate(actions,1)], border=GOLD_D)]
     S+=[Spacer(1,10)]
     S+=[h2("The Veshann Astro Difference")]
     usp_rows=[]; row=[]
     for t,d in C.USP_POINTS:
-        row.append(Panel([Paragraph(f'<font color="#E8C766"><font face="Cormorant-M">◆</font> {t}</font>', ST['h3']), Spacer(1,2),
+        row.append(Panel([Paragraph(f'<font color="#1E2C50"><font face="Cormorant-M">◆</font> {t}</font>', ST['h3']), Spacer(1,2),
                           Paragraph(d, ST['mute'])], pad=9, bg=DEEP2))
         if len(row)==2: usp_rows.append(row); row=[]
     if row: row.append(Spacer(1,1)); usp_rows.append(row)
@@ -489,11 +489,136 @@ def sec_book_ad(r):
     S+=[Paragraph("From the Veshann Astro library", ST['quote']), Spacer(1,12)]
     S+=[BookAd(BOOK)]
     S+=[Spacer(1,16)]
-    S+=[Panel([Paragraph('<font color="#E8C766" face="Cinzel">Your reading doesn\'t end here</font>', ST['h3']), Spacer(1,3),
+    S+=[Panel([Paragraph('<font color="#1E2C50" face="Cinzel">Your reading doesn\'t end here</font>', ST['h3']), Spacer(1,3),
         body("This report reveals your map. A live consultation reveals the road. Explore One-Question Voice Consultations, in-depth Numerology Reports, Palmistry and complete Kundli analysis — each crafted personally by our practising astrologer.")], border=GOLD_D)]
-    S+=[Spacer(1,10), Paragraph('<font color="#E8C766" face="Cormorant-I" size="15">veshannastro.co.in &nbsp;·&nbsp; @veshann.astro</font>',
+    S+=[Spacer(1,10), Paragraph('<font color="#1E2C50" face="Cormorant-I" size="15">veshannastro.co.in &nbsp;·&nbsp; @veshann.astro</font>',
         ParagraphStyle('fin',fontName="Cormorant-I",fontSize=15,textColor=GOLD_L,alignment=TA_CENTER))]
     S+=[Spacer(1,4), Paragraph("Thank you for trusting Veshann Astro with your cosmic blueprint.", ST['mutec'])]
+    return S
+
+def _two_panels(left_title, left_items, right_title, right_items, rg='◇'):
+    sp = Table([[
+        Panel([h3(left_title)] + bullets(left_items), bg=DEEP2),
+        Panel([h3(right_title)] + bullets(right_items, glyph=rg), bg=HexColor("#EAEDF3")),
+    ]], colWidths=[(PW-2*MARGIN-12)/2-4]*2)
+    sp.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('LEFTPADDING',(0,0),(-1,-1),0),
+        ('RIGHTPADDING',(0,0),(0,0),8),('RIGHTPADDING',(1,0),(1,0),0),
+        ('TOPPADDING',(0,0),(-1,-1),0),('BOTTOMPADDING',(0,0),(-1,-1),0)]))
+    return sp
+
+def sec_mobile(r):
+    m = r.get('mobile') or dict(number='(not provided)', total=0, root=r['driver'], planet=core(r['driver'])['planet'])
+    cr = core(m['root']); friendly = m['root'] in set(r['lucky_numbers'])
+    S = [NextPageTemplate('content'), kicker("Your Number's Vibration"), h1("Mobile Number Analysis"), GoldRule(), Spacer(1,4)]
+    S += [BigNum(m['root'], cr['planet']), Spacer(1,2)]
+    S += [Paragraph(f"Number analysed: {m['number']} &nbsp;·&nbsp; total {m['total']} <font face='Cormorant-M'>\u2192</font> {m['root']}", ST['mutec']), Spacer(1,6)]
+    S += [lead(f"Every number you carry repeats a frequency. Your mobile number reduces to {m['root']}, ruled by {short_planet(m['root'])} \u2014 the energy travelling with every call, payment and contact you make.")]
+    S += [body(cr['essence']), Spacer(1,6)]
+    S += [_two_panels('What This Number Supports', cr['strengths'], 'What To Watch', cr['shadow']), Spacer(1,8)]
+    S += [Panel([h3("Harmony With Your Chart"), body(
+        f"Your Driver is {r['driver']} and Life Path {r['life_path']}. A mobile root of {m['root']} is " +
+        ("in natural harmony with your core numbers \u2014 this is a supportive number to keep."
+         if friendly else
+         f"not fully aligned with your core numbers. Numbers whose digits add to {', '.join(map(str,r['lucky_numbers'][:3]))} would support you more strongly."))],
+        border=GOLD_D), Spacer(1,8)]
+    S += [Panel([h3("Lucky-Number Recommendations"), body(
+        f"When choosing any number you use daily \u2014 SIM, UPI handle, key account \u2014 favour totals that reduce to "
+        f"<b>{', '.join(map(str,r['lucky_numbers'][:4]))}</b>. Add all the digits; if the final single digit is one of these, the number sits with your fortune. "
+        "A number is only as strong as the vibration it reduces to \u2014 the individual digits matter less than their total.")])]
+    S += [PageBreak()]
+    return S
+
+def sec_business(r):
+    b = r.get('business') or dict(name='(not provided)', total=0, root=r['destiny'], planet=core(r['destiny'])['planet'])
+    cr = core(b['root']); friendly = b['root'] in set(r['lucky_numbers'])
+    S = [NextPageTemplate('content'), kicker("Your Business Name's Vibration"), h1("Business Name Report"), GoldRule(), Spacer(1,4)]
+    S += [BigNum(b['root'], cr['planet']), Spacer(1,2)]
+    S += [Paragraph(f"Name analysed: {b['name']} &nbsp;·&nbsp; Chaldean total {b['total']} <font face='Cormorant-M'>\u2192</font> {b['root']}", ST['mutec']), Spacer(1,6)]
+    S += [lead(f"A business name is its energetic signature \u2014 the frequency every customer, invoice and signboard repeats. \u201c{b['name']}\u201d reduces to {b['root']}, the vibration of {short_planet(b['root'])}.")]
+    S += [body(cr['essence']), Spacer(1,6)]
+    S += [Panel([h3("Alignment With Growth & Prosperity"), body(
+        "This vibration broadcasts " + ", ".join(s.lower() for s in cr['strengths'][:3]) + ". " +
+        (f"It harmonises with your own numbers (Driver {r['driver']}, Life Path {r['life_path']}) \u2014 a strong foundation to build on."
+         if friendly else
+         f"It is not fully aligned with your own numbers (Driver {r['driver']}, Life Path {r['life_path']}); the alternatives below tune it toward stronger support."))],
+        border=GOLD_D), Spacer(1,8)]
+    S += [h3("Three to Five Aligned Alternatives"), Spacer(1,3)]
+    rows = []
+    for tr in (r['lucky_numbers'][:5] or [1,3,5]):
+        crt = core(tr)
+        rows.append((f"Root {tr} · {short_planet(tr)}",
+                     f"{crt['archetype']} energy \u2014 names totalling {tr} attract {', '.join(s.lower() for s in crt['strengths'][:2])}. Tune the spelling so the Chaldean total reduces to {tr}."))
+    S += [kv_table(rows), Spacer(1,8)]
+    S += [Panel([h3("Putting It Into Practice"), body(
+        "Adopt the chosen name consistently across signage, domain, invoices and social handles \u2014 repetition is what charges a name. "
+        "A small spelling change (an added or doubled letter) is usually enough to reach a target total. For a hand-tuned shortlist verified against your full chart, a personal consultation refines the final choice.")])]
+    S += [PageBreak()]
+    return S
+
+def sec_baby(r):
+    cd, cl = r['driver'], r['life_path']
+    targets = (r.get('baby') or {}).get('target_roots') or (r['lucky_numbers'][:4] or [cd])
+    pref = (r.get('baby') or {}).get('pref', '')
+    bank = N.names_by_root(C.BABY_NAME_POOL)
+    S = [NextPageTemplate('content'), kicker("Your Child's Core Numbers"), h1("Baby Name Report"), GoldRule(), Spacer(1,4)]
+    S += [BigNum(cl, core(cl)['planet']), Spacer(1,2)]
+    S += [Paragraph(f"Born {fmt_date(r['dob'])} &nbsp;·&nbsp; Driver {cd} &nbsp;·&nbsp; Life Path {cl}", ST['mutec']), Spacer(1,6)]
+    S += [lead(f"Your child arrives carrying a Driver of {cd} and a Life Path of {cl} ({short_planet(cl)}). A well-chosen name is one whose vibration supports \u2014 never fights \u2014 these birth numbers.")]
+    S += [body(core(cl)['essence']), Spacer(1,6)]
+    if pref:
+        S += [Panel([h3("Your Preference"), body(f"You noted: \u201c{pref}\u201d. The suggestions below honour this where the numbers allow.")]), Spacer(1,6)]
+    S += [Panel([h3("What Makes a Name Harmonious"), body(
+        f"In the Chaldean system a name's letters add to a total that reduces to a single root. For this child, names reducing to "
+        f"<b>{', '.join(map(str,targets))}</b> sit in harmony with the birth numbers and gently amplify their strengths.")],
+        border=GOLD_D), Spacer(1,8)]
+    S += [h3("Name Suggestions"), Spacer(1,3)]
+    rows = []
+    for tr in targets:
+        names = bank.get(tr, [])[:5]
+        if names:
+            crt = core(tr)
+            rows.append((f"Root {tr} · {short_planet(tr)}",
+                         ", ".join(names) + f" \u2014 carrying {', '.join(s.lower() for s in crt['strengths'][:2])}."))
+    if not rows:
+        rows = [("Guidance", "Choose a name whose Chaldean letters total a number reducing to one of the harmonious roots above.")]
+    S += [kv_table(rows), Spacer(1,8)]
+    S += [Panel([body(
+        "Every name above already reduces to a harmonious root for your child. The final choice should also feel right to you as parents \u2014 sound, family meaning and tradition matter. "
+        "For a hand-verified shortlist tuned to an exact birth time, a personal consultation is available.")])]
+    S += [PageBreak()]
+    return S
+
+def sec_compatibility(r):
+    p = r.get('partner')
+    S = [NextPageTemplate('content'), kicker("Your Two Signatures"), h1("Numerology Compatibility"), GoldRule(), Spacer(1,4)]
+    if not p or not p.get('dob'):
+        note = f" (\u201c{r.get('extra','')}\u201d)" if r.get('extra') else ""
+        S += [lead("A full compatibility reading compares two complete charts. I could not read a clear partner birth date from your entry" + note +
+                   ", so this section focuses on your own relational numbers. Reply with your partner's name and date of birth and the complete couple's reading will follow.")]
+        S += [PageBreak()]; return S
+    rows = [
+        ("", "<b>You</b> &nbsp;&nbsp; <b>Partner</b>"),
+        ("Driver / Mulank", f"{r['driver']} &nbsp;&nbsp;&nbsp; {p['driver']}"),
+        ("Life Path", f"{r['life_path']} &nbsp;&nbsp;&nbsp; {p['life_path']}"),
+        ("Destiny", f"{r['destiny']} &nbsp;&nbsp;&nbsp; {p['destiny']}"),
+        ("Soul Urge", f"{r['soul_urge']} &nbsp;&nbsp;&nbsp; {p['soul_urge']}"),
+    ]
+    harmonious = (p['life_path'] in set(r['lucky_numbers'])) or (r['life_path'] in set(p.get('lucky_numbers', [])))
+    S += [body(f"Comparing <b>{r['name']}</b> and <b>{p['name']}</b> \u2014 two birth dates, one combined picture."), Spacer(1,6)]
+    S += [kv_table(rows), Spacer(1,8)]
+    S += [Panel([h3("Where You Harmonise"), body(
+        ("Your Life Paths sit in a naturally supportive relationship \u2014 a strong foundation of shared rhythm and instinctive understanding."
+         if harmonious else
+         "Your Life Paths run on different tracks \u2014 not a barrier, but it means harmony is built consciously rather than assumed.") +
+        f" Your Soul Urge ({r['soul_urge']}) and your partner's ({p['soul_urge']}) reveal what each heart privately needs; honouring both is the quiet key to closeness.")],
+        border=GOLD_D), Spacer(1,8)]
+    S += [Panel([h3("Where You'll Need Effort"), body(
+        f"Differences between your Drivers ({r['driver']} and {p['driver']}) shape daily friction \u2014 pace, decision-making and how each of you reacts under stress. "
+        "Name these openly; most conflict between numbers is mistranslation, not incompatibility.")], bg=HexColor("#EAEDF3")), Spacer(1,8)]
+    S += [Panel([h3("Growing Closer"), body(
+        "Numbers describe tendency, not destiny. Conscious communication, shared rituals and the remedies in each of your charts can harmonise almost any pairing. "
+        "For a full session reading both charts together \u2014 timing, children, shared ventures \u2014 a personal Veshann Astro consultation goes deeper.")])]
+    S += [PageBreak()]
     return S
 
 # ---- section registry, recipes, tiers ----
@@ -506,6 +631,7 @@ SECTIONS = {
     'career': sec_career, 'wealth': sec_wealth, 'love': sec_love,
     'personal_year': sec_personal_year, 'roadmap': sec_roadmap,
     'name_analysis': sec_name_analysis, 'action_plan': sec_action_plan,
+    'mobile': sec_mobile, 'business': sec_business, 'baby': sec_baby, 'compatibility': sec_compatibility,
 }
 
 RECIPES = {
@@ -515,18 +641,24 @@ RECIPES = {
         'name_analysis','action_plan'],
     'snapshot': ['snapshot','life_path','destiny','birthday','action_plan'],
     'career':   ['snapshot','life_path','career','wealth','roadmap','action_plan'],
-    'love':     ['snapshot','soul_urge','personality','love','action_plan'],
-    'name':     ['snapshot','lo_shu','hidden_passion','name_analysis','action_plan'],
-    'forecast': ['snapshot','personal_year','roadmap','pinnacles','challenges','action_plan'],
+    'love':     ['snapshot','life_path','soul_urge','personality','love','compatibility','personal_year','action_plan'],
+    'name':     ['snapshot','life_path','destiny','lo_shu','hidden_passion','name_analysis','action_plan'],
+    'forecast': ['snapshot','life_path','personal_year','roadmap','pinnacles','challenges','action_plan'],
+    'mobile':   ['snapshot','life_path','birthday','mobile','lo_shu','personal_year','action_plan'],
+    'baby':     ['snapshot','life_path','birthday','maturity','lo_shu','pinnacles','baby','action_plan'],
+    'business': ['snapshot','life_path','destiny','business','career','wealth','action_plan'],
 }
 
 TIERS = {
     'complete': ("Premium",             "COMPLETE NUMEROLOGY REPORT"),
     'snapshot': ("Personal",            "NUMEROLOGY SNAPSHOT"),
     'career':   ("Career & Wealth",     "NUMEROLOGY BLUEPRINT"),
-    'love':     ("Love & Relationship", "NUMEROLOGY REPORT"),
+    'love':     ("Love & Relationship", "NUMEROLOGY COMPATIBILITY"),
     'name':     ("Name & Lo Shu",       "NUMEROLOGY ANALYSIS"),
     'forecast': ("The Year Ahead",      "NUMEROLOGY FORECAST"),
+    'mobile':   ("Mobile Number",       "NUMEROLOGY ANALYSIS"),
+    'baby':     ("Baby Name",           "NUMEROLOGY REPORT"),
+    'business': ("Business Name",       "NUMEROLOGY REPORT"),
 }
 
 def build_story(r, report_type='complete'):
@@ -571,9 +703,9 @@ class BookAd(Flowable):
         def para(txt,style):
             p=PP(txt,style); _,ph=p.wrap(tw, h); return p,ph
         y=h-34
-        p,ph=para('<font color="#B9AFC9" size="8">AMAZON BESTSELLER · VESHANN ASTRO</font>', ST['kicker']); p.drawOn(c,tx,y); y-=16
-        p,ph=para(f'<font color="#E8C766">{self.b["title"]}</font>', ST['h2']); p.drawOn(c,tx,y-ph+14); y-=ph+2
-        p,ph=para(f'<font color="#F3ECDD" face="Cormorant-I" size="12">{self.b["subtitle"]}</font>', ST['cardsub']); p.drawOn(c,tx,y-ph+10); y-=ph+8
+        p,ph=para('<font color="#8C8472" size="8">AMAZON BESTSELLER · VESHANN ASTRO</font>', ST['kicker']); p.drawOn(c,tx,y); y-=16
+        p,ph=para(f'<font color="#1E2C50">{self.b["title"]}</font>', ST['h2']); p.drawOn(c,tx,y-ph+14); y-=ph+2
+        p,ph=para(f'<font color="#262E3D" face="Cormorant-I" size="12">{self.b["subtitle"]}</font>', ST['cardsub']); p.drawOn(c,tx,y-ph+10); y-=ph+8
         p,ph=para(self.b['blurb'], ST['mute']); p.drawOn(c,tx,y-ph+12); y-=ph+12
         bw=150; bh=26; bx=tx; by=y-bh
         c.setFillColor(GOLD); c.roundRect(bx,by,bw,bh,4,stroke=0,fill=1)
@@ -588,7 +720,7 @@ class BookAd(Flowable):
         c.linkURL(self.b['url'], (cx,cy,cx+cover_w,cy+cover_h), relative=0, thickness=0)
     def _placeholder(self, c, x, y, w, hh):
         import math
-        c.setFillColor(HexColor("#1B1530")); c.setStrokeColor(GOLD); c.setLineWidth(1)
+        c.setFillColor(HexColor("#EFE7D5")); c.setStrokeColor(GOLD); c.setLineWidth(1)
         c.roundRect(x,y,w,hh,4,stroke=1,fill=1)
         c.saveState(); c.translate(x+w/2, y+hh*0.62)
         c.setStrokeColor(GOLD_L); c.setLineWidth(0.6)

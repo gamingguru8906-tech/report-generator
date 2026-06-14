@@ -51,15 +51,21 @@ REPORT_AMOUNT_PAISE     = int(os.environ.get("REPORT_AMOUNT_PAISE", "49900"))  #
 ADMIN_TOKEN             = os.environ.get("ADMIN_TOKEN", "")  # protects /admin/* diagnostic + recovery tools
 
 # Product catalogue: key -> (report_type, price in paise, customer-facing label)
-# Prices are starting suggestions — tune freely (paise: ₹199 = 19900).
+# Prices match the live veshannastro.co.in cards (paise: ₹250 = 25000). Override via env vars.
 PRODUCTS = {
-    "complete": ("complete", int(os.environ.get("PRICE_COMPLETE", "49900")), "Complete Numerology Report (25 pages)"),
+    "complete": ("complete", int(os.environ.get("PRICE_COMPLETE", "99900")), "Complete Numerology Report (25 pages)"),
+    "name":     ("name",     int(os.environ.get("PRICE_NAME",     "25000")), "Name Numerology Report"),
+    "mobile":   ("mobile",   int(os.environ.get("PRICE_MOBILE",   "25000")), "Mobile Number Analysis"),
+    "forecast": ("forecast", int(os.environ.get("PRICE_FORECAST", "49900")), "Personal Year Forecast"),
+    "love":     ("love",     int(os.environ.get("PRICE_LOVE",     "25000")), "Numerology Compatibility"),
+    "baby":     ("baby",     int(os.environ.get("PRICE_BABY",     "25000")), "Baby Name Report"),
+    "business": ("business", int(os.environ.get("PRICE_BUSINESS", "49900")), "Business Name Report"),
+    # extra tiers the engine also supports (not shown on the live site by default):
     "snapshot": ("snapshot", int(os.environ.get("PRICE_SNAPSHOT", "19900")), "Numerology Snapshot (mini report)"),
     "career":   ("career",   int(os.environ.get("PRICE_CAREER",   "29900")), "Career & Wealth Numerology Blueprint"),
-    "love":     ("love",     int(os.environ.get("PRICE_LOVE",     "29900")), "Love & Relationship Numerology Report"),
-    "name":     ("name",     int(os.environ.get("PRICE_NAME",     "24900")), "Name & Lo Shu Numerology Analysis"),
-    "forecast": ("forecast", int(os.environ.get("PRICE_FORECAST", "24900")), "The Year Ahead Numerology Forecast"),
 }
+
+_DONE = set()   # in-memory idempotency guard against duplicate webhook deliveries
 
 GOOGLE_SA_JSON  = os.environ.get("GOOGLE_SA_JSON")          # full service-account JSON string
 DRIVE_FOLDER_ID = os.environ.get("DRIVE_FOLDER_ID", "")
@@ -97,6 +103,7 @@ async def create_order(request: Request):
     email = (data.get("email") or "").strip()
     dob   = (data.get("dob") or "").strip()      # YYYY-MM-DD from the <input type=date>
     gender= (data.get("gender") or "").strip()
+    extra = (data.get("extra") or "").strip()      # mobile no. / business name / partner details
     product = (data.get("product") or "complete").strip()
     if product not in PRODUCTS:
         product = "complete"
@@ -107,7 +114,7 @@ async def create_order(request: Request):
         "amount": amount, "currency": "INR",
         "receipt": f"num-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}",
         "notes": {"name": name, "email": email, "dob": dob, "gender": gender,
-                  "product": product, "report_type": report_type,
+                  "extra": extra, "product": product, "report_type": report_type,
                   "source": "veshann_report"},
     }
     resp = requests.post("https://api.razorpay.com/v1/orders", json=payload,
@@ -142,15 +149,32 @@ async def webhook(request: Request):
     # This makes the backend safely ignore your live-consultation bookings on the same Razorpay account.
     is_report = notes.get("source") == "veshann_report" and notes.get("product") in PRODUCTS
     if event in ("order.paid", "payment.captured") and is_report and notes.get("email") and notes.get("dob"):
+        dedup_key = order_id or notes.get("email", "")
+        if dedup_key and dedup_key in _DONE:
+            print(f"[webhook] {dedup_key} already handled — skipping duplicate")
+            return {"status": "ok", "dedup": True}
+        if dedup_key:
+            _DONE.add(dedup_key)
         report_type = notes.get("report_type") or PRODUCTS[notes["product"]][0]
         threading.Thread(target=_safe_fulfil, daemon=True, args=(
             notes.get("name", "Customer"), notes["dob"], notes["email"],
-            notes.get("gender", ""), order_id, report_type)).start()
+            notes.get("gender", ""), order_id, report_type, notes.get("extra", ""))).start()
     return {"status": "ok"}
 
-def _safe_fulfil(*a):
-    try: fulfil_order(*a)
-    except Exception as e: print("FULFILMENT ERROR:", repr(e))
+def _safe_fulfil(name, dob, email, gender="", order_id="", report_type="complete", extra=""):
+    try:
+        fulfil_order(name, dob, email, gender, order_id, report_type, extra)
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        print("FULFILMENT ERROR:", repr(e)); print(tb)
+        # Make the failure VISIBLE in the sheet instead of vanishing into logs.
+        try:
+            creds = _google_creds()
+            ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            append_to_sheet([ts, order_id, name, dob, email, gender, report_type, extra, "", "ERROR: " + repr(e)[:300]], creds)
+        except Exception as e2:
+            print("could not log ERROR row:", repr(e2))
 
 # ───────────────────────── Pipeline pieces ─────────────────────────
 def _google_creds():
@@ -197,13 +221,13 @@ def send_email(to_email, name, pdf_path):
     with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as s:
         s.starttls(); s.login(SMTP_USER, SMTP_PASS); s.send_message(msg)
 
-def fulfil_order(name, dob, email, gender="", order_id="", report_type="complete"):
+def fulfil_order(name, dob, email, gender="", order_id="", report_type="complete", extra=""):
     pdf = generate_report(name, dob, gender=gender, out_dir=OUT_DIR,
-                          book_cover=BOOK_COVER, report_type=report_type)
+                          book_cover=BOOK_COVER, report_type=report_type, extra=extra)
     creds = _google_creds()
     link = upload_to_drive(pdf, creds)
     ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    append_to_sheet([ts, order_id, name, dob, email, gender, report_type, link, "SENT"], creds)
+    append_to_sheet([ts, order_id, name, dob, email, gender, report_type, extra, link, "SENT"], creds)
     send_email(email, name, pdf)
     print(f"Fulfilled {order_id} ({report_type}) for {email}: {link}")
     return link
@@ -259,7 +283,7 @@ async def admin_fulfil(request: Request):
     try:
         link = fulfil_order(data["name"], data["dob"], data["email"],
                             data.get("gender", ""), data.get("order_id", "manual"),
-                            data.get("report_type", "complete"))
+                            data.get("report_type", "complete"), data.get("extra", ""))
         return {"status": "sent", "drive_link": link}
     except Exception as e:
         import traceback

@@ -24,31 +24,36 @@ _reg("Cormorant", "Cormorant-Reg.ttf"); _reg("Cormorant-M", "Cormorant-Med.ttf")
 _reg("Cormorant-SB", "Cormorant-SemiBold.ttf"); _reg("Cormorant-I", "Cormorant-Italic.ttf")
 _reg("Jost", "Jost-Reg.ttf"); _reg("Jost-M", "Jost-Med.ttf"); _reg("Jost-L", "Jost-Light.ttf")
 
-# ---- Brand palette (dark gold-on-deep) ----
-DEEP   = HexColor("#0E0B1A")   # deep cosmic indigo-black
-DEEP2  = HexColor("#161127")   # panel
-GOLD   = HexColor("#D4AF37")   # primary gold
-GOLD_L = HexColor("#E8C766")   # light gold
-GOLD_D = HexColor("#A8842A")   # dark gold
-CREAM  = HexColor("#F3ECDD")   # body text on dark
-MUTE   = HexColor("#B9AFC9")   # muted lilac-grey
-LINE   = HexColor("#3A2F55")   # hairline
-ROSE   = HexColor("#C9A0A0")   # soft accent
+# ---- Brand palette (light editorial: ivory / beige / grey · navy + maroon) ----
+# Names kept stable so the rest of the engine maps automatically to their *role*.
+DEEP   = HexColor("#FAF6EC")   # page background — warm ivory   (role: surface)
+DEEP2  = HexColor("#F1E9D6")   # panel / card fill — soft beige  (role: panel)
+GOLD   = HexColor("#7C2E38")   # PRIMARY ACCENT — maroon (kickers, subheads, rules, circles)
+GOLD_L = HexColor("#1E2C50")   # HEADINGS & NUMBERS — navy
+GOLD_D = HexColor("#5E222B")   # deep maroon (secondary strokes)
+CREAM  = HexColor("#262E3D")   # body text — deep navy-charcoal on light
+MUTE   = HexColor("#8C8472")   # muted warm grey (labels, footer)
+LINE   = HexColor("#DAD1BF")   # hairline / borders — soft taupe
+ROSE   = HexColor("#9C5A62")   # soft maroon accent
+NAVY   = GOLD_L
+MAROON = GOLD
+PAPER  = DEEP
+WATERMARK = HexColor("#1E2C50")  # navy, drawn at very low alpha as a paper watermark
 
 PW, PH = A4
 MARGIN = 20*mm
 
 # ---------------- Decorative canvas painting ----------------
 def _ground(c, cover=False):
-    """Vertical gradient ground — near-black foot rising into deep indigo crown."""
+    """Soft ivory paper — a whisper of warmth toward the foot."""
     if cover:
         c.linearGradient(0, 0, 0, PH,
-            [HexColor("#070510"), HexColor("#0B0918"), HexColor("#161029"), HexColor("#1B1430")],
-            positions=[0.0, 0.40, 0.80, 1.0], extend=True)
+            [HexColor("#F2EAD8"), HexColor("#F8F2E6"), HexColor("#FBF7EE")],
+            positions=[0.0, 0.55, 1.0], extend=True)
     else:
         c.linearGradient(0, 0, 0, PH,
-            [HexColor("#08060F"), HexColor("#0C0A1A"), HexColor("#110D22")],
-            positions=[0.0, 0.55, 1.0], extend=True)
+            [HexColor("#F7F1E4"), HexColor("#FBF7EE")],
+            positions=[0.0, 1.0], extend=True)
 
 def _nebula(c, blobs):
     """Soft translucent radial washes — cosmic clouds caught in moonlight."""
@@ -93,7 +98,7 @@ def _starfield(c, seed, density=1.0):
 def _nakshatra_wheel(c, cx, cy, R, alpha=0.05, full=True):
     """Faint gold sacred-geometry watermark: 27 nakshatra ticks, 12 zodiac spokes, 8-petal lotus heart."""
     import math
-    g = HexColor("#D4AF37")
+    g = WATERMARK
     col = Color(g.red, g.green, g.blue, alpha=alpha)
     colf = Color(g.red, g.green, g.blue, alpha=alpha*0.85)
     c.saveState(); c.translate(cx, cy)
@@ -131,22 +136,9 @@ def _bg(c, cover=False, seed=7):
     c.saveState()
     _ground(c, cover=cover)
     if cover:
-        # one large soft halo CENTERED on-page behind the crest reads as a glow, not a disc
-        _nebula(c, [
-            (PW*0.50, PH*0.84, PW*0.52, "#473672", 0.30),   # indigo halo behind the crest
-        ])
-        _starfield(c, seed, density=1.4)
-        _nakshatra_wheel(c, PW*0.5, PH*0.84, PW*0.34, alpha=0.085)  # behind the crest
-        _vignette(c, strength=0.36)
+        _nakshatra_wheel(c, PW*0.5, PH*0.80, PW*0.34, alpha=0.055)   # faint watermark behind crest
     else:
-        # very restrained: tiny corner halos centered on-page near the corners
-        _nebula(c, [
-            (PW*0.80, PH*0.88, PW*0.30, "#352A5C", 0.13),
-            (PW*0.16, PH*0.14, PW*0.26, "#3A2A4C", 0.10),
-        ])
-        _starfield(c, seed, density=0.8)
-        _nakshatra_wheel(c, PW*0.90, PH*0.10, PW*0.24, alpha=0.05)  # watermark, contained
-        _vignette(c, strength=0.30)
+        _nakshatra_wheel(c, PW*0.87, PH*0.12, PW*0.20, alpha=0.035)  # subtle, contained corner watermark
     c.restoreState()
 
 def _corner_flourish(c, x, y, flip=1, scale=1.0):
@@ -213,7 +205,7 @@ ST = {
  'body'    : S('body'),
  'bodyc'   : S('bodyc', alignment=TA_CENTER, textColor=CREAM),
  'lead'    : S('lead', fontName="Cormorant-M", fontSize=13.5, leading=19, textColor=CREAM, alignment=TA_JUSTIFY),
- 'quote'   : S('quote', fontName="Cormorant-I", fontSize=13, leading=18, textColor=GOLD_L, alignment=TA_CENTER),
+ 'quote'   : S('quote', fontName="Cormorant-I", fontSize=13, leading=18, textColor=GOLD, alignment=TA_CENTER),
  'mute'    : S('mute', fontName="Jost-L", fontSize=9, textColor=MUTE, leading=14),
  'mutec'   : S('mutec', fontName="Jost-L", fontSize=9, textColor=MUTE, leading=14, alignment=TA_CENTER),
  'bullet'  : S('bullet', fontName="Jost", fontSize=9.8, leading=15, textColor=CREAM, leftIndent=12, alignment=TA_LEFT),
@@ -279,7 +271,7 @@ class LoShuGrid(Flowable):
                 cnt=self.counts.get(n,0)
                 c.setStrokeColor(LINE); c.setLineWidth(0.8)
                 if cnt>0:
-                    c.setFillColor(Color(0.83,0.69,0.22, alpha=0.10)); c.rect(x,y,cell,cell,stroke=1,fill=1)
+                    c.setFillColor(Color(0.12,0.17,0.31, alpha=0.07)); c.rect(x,y,cell,cell,stroke=1,fill=1)
                 else:
                     c.setFillColor(DEEP2); c.rect(x,y,cell,cell,stroke=1,fill=1)
                 if cnt>0:
@@ -288,7 +280,7 @@ class LoShuGrid(Flowable):
                     c.setFont("Cinzel-B", fs); c.setFillColor(GOLD_L)
                     c.drawCentredString(x+cell/2, y+cell/2-fs*0.35, txt)
                 else:
-                    c.setFont("Cormorant-I", cell*0.28); c.setFillColor(HexColor("#4A4060"))
+                    c.setFont("Cormorant-I", cell*0.28); c.setFillColor(HexColor("#B7AD99"))
                     c.drawCentredString(x+cell/2, y+cell/2-cell*0.10, str(n))
         c.setStrokeColor(GOLD); c.setLineWidth(1.2); c.rect(ox,oy,self.W,self.H,stroke=1,fill=0)
 
@@ -314,7 +306,7 @@ class Panel(Flowable):
 def bullets(items, style='bullet', glyph='◆'):
     out=[]
     for it in items:
-        out.append(Paragraph(f'<font face="Cormorant-M" color="#D4AF37" size="9">{glyph}</font>&nbsp;&nbsp;{it}', ST[style]))
+        out.append(Paragraph(f'<font face="Cormorant-M" color="#7C2E38" size="9">{glyph}</font>&nbsp;&nbsp;{it}', ST[style]))
         out.append(Spacer(1,2))
     return out
 

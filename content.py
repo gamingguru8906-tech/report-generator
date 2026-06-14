@@ -266,3 +266,18 @@ PERSONAL_MONTH = {
     "Career: a closing month — finish projects, tie loose ends, release what is done, and prepare the ground for a fresh cycle.",
     "Luck: give generously, forgive quickly, and avoid starting anything brand-new. Clearing space is this month's real fortune."),
 }
+
+
+# ── Baby-name pool (bucketed by Chaldean root at runtime via numerology.names_by_root) ──
+# A broad pool of pleasant, common Indian names across genders. The engine computes each
+# name's Chaldean root and only ever shows names that actually harmonise with the child.
+BABY_NAME_POOL = [
+    "Aarav","Aanya","Advait","Aditi","Ahaan","Aisha","Akshara","Amara","Ananya","Anika",
+    "Arjun","Arnav","Aryan","Avni","Ayaan","Bhavya","Chirag","Daksh","Darsh","Devansh",
+    "Dhruv","Diya","Eshan","Gauri","Hriday","Ira","Ishaan","Ishita","Jiya","Kabir",
+    "Kavya","Kiara","Krish","Laksh","Lavanya","Madhav","Mahika","Manan","Meera","Mira",
+    "Mohit","Myra","Naina","Navya","Neel","Nikhil","Nira","Ojas","Pari","Prisha",
+    "Reyansh","Riya","Rohan","Rudra","Saanvi","Sahil","Samar","Sara","Shaurya","Shreya",
+    "Siya","Tara","Tanvi","Tej","Vaani","Vedant","Vihaan","Vivaan","Yash","Zoya",
+    "Anvi","Kiaan","Nitya","Parth","Ridhi","Veer","Tisha","Hitesh","Lakshya","Inaya",
+]
