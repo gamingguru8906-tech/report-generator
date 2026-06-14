@@ -347,21 +347,21 @@ def admin_selftest(token: str = ""):
     try:
         if not RESEND_API_KEY:
             raise ValueError("RESEND_API_KEY is not set")
-        # Lightweight check — just verify the key is accepted by the Resend API
         import urllib.request, urllib.error
         req = urllib.request.Request(
-            "https://api.resend.com/emails",
-            headers={"Authorization": f"Bearer {RESEND_API_KEY}",
-                     "Content-Type": "application/json"},
+            "https://api.resend.com/api-keys",
+            headers={"Authorization": f"Bearer {RESEND_API_KEY}"},
             method="GET")
         try:
             urllib.request.urlopen(req, timeout=5)
+            out["resend_key"] = "ok"
         except urllib.error.HTTPError as he:
-            if he.code == 405:   # Method Not Allowed = key accepted, endpoint exists
-                pass
-            elif he.code in (401, 403):
-                raise ValueError(f"Resend rejected the API key (HTTP {he.code})")
-        out["resend_key"] = "ok"
+            if he.code in (401, 403):
+                raise ValueError(f"Resend rejected the API key (HTTP {he.code}) — paste a fresh key from resend.com/api-keys")
+            else:
+                out["resend_key"] = "ok"
+    except ValueError as e:
+        out["resend_key"] = f"FAIL: {e}"
     except Exception as e:
         out["resend_key"] = f"FAIL: {e}"
     return out
