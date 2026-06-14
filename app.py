@@ -24,10 +24,7 @@ The customer gets their report within seconds; the 1-hour promise has huge headr
 Run:  uvicorn app:app --host 0.0.0.0 --port $PORT
 """
 import os, json, hmac, hashlib, base64, datetime, threading
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-from email.mime.text import MIMEText
-from email import encoders
+import resend
 
 import requests
 from fastapi import FastAPI, Request, HTTPException
@@ -72,9 +69,9 @@ DRIVE_FOLDER_ID = os.environ.get("DRIVE_FOLDER_ID", "")
 SHEET_ID        = os.environ.get("SHEET_ID", "")
 SHEET_TAB       = os.environ.get("SHEET_TAB", "Orders")
 
-SMTP_HOST = "smtp.gmail.com"; SMTP_PORT = 587
-SMTP_USER = os.environ.get("SMTP_USER", "veshannastro@gmail.com")
-SMTP_PASS = os.environ.get("SMTP_PASS")                    # 16-char Gmail app password
+RESEND_API_KEY  = os.environ.get("RESEND_API_KEY", "")
+RESEND_FROM     = os.environ.get("RESEND_FROM", "Veshannastro <onboarding@resend.dev>")
+resend.api_key  = RESEND_API_KEY
 
 BOOK_COVER = os.environ.get("BOOK_COVER_PATH") or None     # optional real Amazon cover
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS",
@@ -202,24 +199,107 @@ def append_to_sheet(row, creds):
         spreadsheetId=SHEET_ID, range=f"{SHEET_TAB}!A1", valueInputOption="USER_ENTERED",
         insertDataOption="INSERT_ROWS", body={"values": [row]}).execute()
 
-def send_email(to_email, name, pdf_path):
-    import smtplib
-    msg = MIMEMultipart()
-    msg["From"] = f"Veshann Astro <{SMTP_USER}>"; msg["To"] = to_email
-    msg["Subject"] = "Your Veshann Astro Premium Numerology Report"
-    body = (f"Namaste {name},\n\nThank you for trusting Veshann Astro. Your personalised "
-            "Premium Numerology Report is attached.\n\nIt decodes your Life Path, Destiny, Soul Urge, "
-            "Lo Shu grid, karmic pattern, life cycles, a 90-day career & luck roadmap and personalised "
-            "remedies — built on the authentic Chaldean–Vedic system.\n\nFor a deeper live consultation, "
-            "visit veshannastro.co.in.\n\nWith cosmic regards,\nTeam Veshann Astro\n@veshann.astro")
-    msg.attach(MIMEText(body, "plain"))
+def send_email(to_email, name, pdf_path, report_type="Numerology Report"):
     with open(pdf_path, "rb") as fh:
-        part = MIMEBase("application", "pdf"); part.set_payload(fh.read())
-    encoders.encode_base64(part)
-    part.add_header("Content-Disposition", f'attachment; filename="{os.path.basename(pdf_path)}"')
-    msg.attach(part)
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as s:
-        s.starttls(); s.login(SMTP_USER, SMTP_PASS); s.send_message(msg)
+        pdf_b64 = base64.b64encode(fh.read()).decode("utf-8")
+
+    label = report_type.replace("_", " ").title()
+
+    html_body = f"""<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Jost:wght@300;400&display=swap');
+    body {{ margin:0; padding:0; background-color:#0a0a0f; font-family:'Jost',Arial,sans-serif; color:#e8e0d0; }}
+    .wrapper {{ max-width:600px; margin:0 auto; background-color:#0d0d18; border:1px solid #2a2040; }}
+    .header {{ background:linear-gradient(135deg,#0d0d18 0%,#1a1030 50%,#0d0d18 100%); text-align:center; padding:48px 40px 32px; border-bottom:1px solid #c9a84c33; }}
+    .brand {{ font-family:'Cormorant Garamond',Georgia,serif; font-size:28px; font-weight:600; letter-spacing:4px; color:#c9a84c; text-transform:uppercase; margin:0 0 6px; }}
+    .brand-sub {{ font-size:11px; font-weight:300; letter-spacing:3px; color:#8a7a9a; text-transform:uppercase; }}
+    .star-divider {{ color:#c9a84c; font-size:18px; letter-spacing:8px; margin:20px 0 0; opacity:0.6; }}
+    .body {{ padding:48px 48px 40px; }}
+    .greeting {{ font-family:'Cormorant Garamond',Georgia,serif; font-size:26px; font-style:italic; color:#c9a84c; margin:0 0 28px; line-height:1.3; }}
+    .para {{ font-size:15px; font-weight:300; line-height:1.9; color:#c8bfb0; margin:0 0 22px; }}
+    .highlight-box {{ border-left:2px solid #c9a84c; background:#ffffff08; padding:18px 24px; margin:32px 0; font-family:'Cormorant Garamond',Georgia,serif; font-size:17px; font-style:italic; color:#d4c9a8; line-height:1.7; }}
+    .attachment-note {{ background:#1a1030; border:1px solid #c9a84c44; border-radius:2px; padding:20px 24px; margin:32px 0; }}
+    .attachment-icon {{ font-size:24px; margin-bottom:8px; }}
+    .attachment-text {{ font-size:13px; font-weight:300; color:#a09080; line-height:1.6; }}
+    .attachment-text strong {{ display:block; color:#c9a84c; font-weight:400; font-size:14px; margin-bottom:3px; }}
+    .closing {{ font-family:'Cormorant Garamond',Georgia,serif; font-size:18px; font-style:italic; color:#c9a84c; margin:36px 0 6px; }}
+    .signature {{ font-size:13px; font-weight:300; letter-spacing:2px; color:#6a5f7a; text-transform:uppercase; }}
+    .footer {{ border-top:1px solid #c9a84c22; padding:28px 48px; text-align:center; background:#08080f; }}
+    .footer-text {{ font-size:11px; font-weight:300; color:#4a4060; line-height:1.8; letter-spacing:0.5px; }}
+    .footer-text a {{ color:#6a5a8a; text-decoration:none; }}
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <div class="brand">Veshannastro</div>
+      <div class="brand-sub">Vedic Astrology &amp; Numerology</div>
+      <div class="star-divider">✦ ✦ ✦</div>
+    </div>
+    <div class="body">
+      <div class="greeting">Namaste, {name} 🙏</div>
+      <p class="para">
+        The cosmos has been consulted, the planets have spoken, and your personal report is now ready.
+        It is with deep gratitude and reverence that I place this reading into your hands — knowing
+        that every chart is a unique story written in the language of the stars.
+      </p>
+      <p class="para">
+        Thank you, from the bottom of my heart, for trusting Veshannastro with something as sacred
+        as your numbers. This is not just a report — it is a mirror of your soul's journey, your
+        strengths, your dharma, and the divine timing that governs your life.
+      </p>
+      <div class="highlight-box">
+        "The stars do not compel — they impel. You hold the power to shape your destiny,
+        and this report is your cosmic compass."
+      </div>
+      <p class="para">
+        Your <strong style="color:#c9a84c;font-weight:400;">{label}</strong> is attached to this
+        email as a PDF. Please save it somewhere safe — you may find yourself returning to its
+        wisdom at different chapters of your life.
+      </p>
+      <div class="attachment-note">
+        <div class="attachment-icon">📜</div>
+        <div class="attachment-text">
+          <strong>Your Report is Attached</strong>
+          Open the PDF attached to this email to access your complete {label}.
+        </div>
+      </div>
+      <p class="para">
+        If you have any questions, feel free to reply to this email or reach out on WhatsApp.
+        I am always here to help you navigate the celestial wisdom within your chart.
+      </p>
+      <p class="para">
+        May this reading bring you clarity, peace, and a deeper understanding of the magnificent
+        soul that you are. Wishing you light, love, and cosmic abundance always. 🌙⭐
+      </p>
+      <div class="closing">With gratitude &amp; starlight,</div>
+      <div class="signature">Veshannastro</div>
+    </div>
+    <div class="footer">
+      <p class="footer-text">
+        &copy; 2025 Veshannastro &middot; Vedic Astrology &amp; Numerology<br>
+        <a href="https://veshannastro.co.in">veshannastro.co.in</a> &middot; Delhi, India<br><br>
+        This report was prepared exclusively for {name} and is intended for personal use only.
+      </p>
+    </div>
+  </div>
+</body>
+</html>"""
+
+    resend.Emails.send({
+        "from": RESEND_FROM,
+        "to": [to_email],
+        "subject": f"✨ Your {label} is Ready, {name}",
+        "html": html_body,
+        "attachments": [{
+            "filename": os.path.basename(pdf_path),
+            "content": pdf_b64,
+        }],
+    })
 
 def fulfil_order(name, dob, email, gender="", order_id="", report_type="complete", extra=""):
     pdf = generate_report(name, dob, gender=gender, out_dir=OUT_DIR,
@@ -228,7 +308,7 @@ def fulfil_order(name, dob, email, gender="", order_id="", report_type="complete
     link = upload_to_drive(pdf, creds)
     ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     append_to_sheet([ts, order_id, name, dob, email, gender, report_type, extra, link, "SENT"], creds)
-    send_email(email, name, pdf)
+    send_email(email, name, pdf, report_type=report_type)
     print(f"Fulfilled {order_id} ({report_type}) for {email}: {link}")
     return link
 
@@ -245,7 +325,8 @@ def admin_selftest(token: str = ""):
     out = {"env": {
         "RAZORPAY_WEBHOOK_SECRET": bool(RAZORPAY_WEBHOOK_SECRET),
         "GOOGLE_SA_JSON": bool(GOOGLE_SA_JSON), "DRIVE_FOLDER_ID": bool(DRIVE_FOLDER_ID),
-        "SHEET_ID": bool(SHEET_ID), "SMTP_USER": SMTP_USER, "SMTP_PASS": bool(SMTP_PASS),
+        "SHEET_ID": bool(SHEET_ID), "RESEND_API_KEY": bool(RESEND_API_KEY),
+        "RESEND_FROM": RESEND_FROM,
     }}
     try:
         creds = _google_creds(); out["google_creds"] = "ok"
@@ -264,12 +345,25 @@ def admin_selftest(token: str = ""):
     except Exception as e:
         out["sheet_append"] = f"FAIL (share the sheet with the service-account email as Editor): {e}"
     try:
-        import smtplib
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as s:
-            s.starttls(); s.login(SMTP_USER, SMTP_PASS)
-        out["smtp_login"] = "ok"
+        if not RESEND_API_KEY:
+            raise ValueError("RESEND_API_KEY is not set")
+        # Lightweight check — just verify the key is accepted by the Resend API
+        import urllib.request, urllib.error
+        req = urllib.request.Request(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {RESEND_API_KEY}",
+                     "Content-Type": "application/json"},
+            method="GET")
+        try:
+            urllib.request.urlopen(req, timeout=5)
+        except urllib.error.HTTPError as he:
+            if he.code == 405:   # Method Not Allowed = key accepted, endpoint exists
+                pass
+            elif he.code in (401, 403):
+                raise ValueError(f"Resend rejected the API key (HTTP {he.code})")
+        out["resend_key"] = "ok"
     except Exception as e:
-        out["smtp_login"] = f"FAIL (use a Gmail App Password, no spaces): {e}"
+        out["resend_key"] = f"FAIL: {e}"
     return out
 
 @app.post("/admin/fulfil")
