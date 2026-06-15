@@ -14,6 +14,26 @@ services:
         sync: false
       - key: REPORT_AMOUNT_PAISE
         value: "49900"
+      # Per-product prices (paise). These pin the live prices in the repo so checkout
+      # never silently falls back to code defaults. Edit a value to change a price.
+      - key: PRICE_COMPLETE
+        value: "99900"   # ₹999
+      - key: PRICE_CAREER
+        value: "29900"   # ₹299
+      - key: PRICE_FORECAST
+        value: "49900"   # ₹499
+      - key: PRICE_BUSINESS
+        value: "49900"   # ₹499
+      - key: PRICE_LOVE
+        value: "25000"   # ₹250
+      - key: PRICE_NAME
+        value: "25000"   # ₹250
+      - key: PRICE_MOBILE
+        value: "25000"   # ₹250
+      - key: PRICE_BABY
+        value: "25000"   # ₹250
+      - key: PRICE_SNAPSHOT
+        value: "19900"   # ₹199
       - key: GOOGLE_SA_JSON
         sync: false
       - key: DRIVE_FOLDER_ID

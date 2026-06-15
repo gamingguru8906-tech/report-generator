@@ -19,6 +19,19 @@ def ordinal(n): return f"{n}{'th' if 11<=n%100<=13 else {1:'st',2:'nd',3:'rd'}.g
 def core(num):  # safe lookup
     return C.CORE.get(num, C.CORE.get(N.reduce_num(num, False), C.CORE[1]))
 
+def outcome_for(num):
+    """The 'expected outcome' line for a number (brief's 5th beat). Falls back to the reduced root."""
+    return C.OUTCOME.get(num) or C.OUTCOME.get(N.reduce_num(num, False), "")
+
+def expect_panel(num):
+    """Compact 'What You Can Expect' panel that closes a core-number section."""
+    txt = outcome_for(num)
+    if not txt:
+        return []
+    return [Spacer(1, 6),
+            Panel([Paragraph('<font color="#1E2C50"><b>What You Can Expect</b></font>', ST['h3']),
+                   Spacer(1, 2), body(txt)], bg=DEEP2)]
+
 def short_planet(num):
     p = core(num)['planet']
     if 'Master' in p or 'Higher' in p:
@@ -81,6 +94,7 @@ def core_section(kick, title, num, intro, *, value_label=None, value_note=None, 
     el.append(Spacer(1,4))
     el.append(Panel([Paragraph(f'<font color="#7C2E38"><b><font face="Cormorant-M">◆</font> Vedic Remedy &nbsp;·&nbsp; {cr["planet"]}</b></font>', ST['h3']),
                      Spacer(1,3), body(cr['remedy'])], bg=HexColor("#F6ECEC"), border=GOLD_D))
+    el += expect_panel(num)
     el.append(PageBreak())
     return el
 
@@ -204,6 +218,7 @@ def sec_personality(r):
     S+=[Panel([h3("What People Notice First")]+bullets(cr_p['strengths'][:4]))]
     S+=[Spacer(1,6), Panel([h3("The Mask vs The Truth")], bg=HexColor("#F6ECEC")), Spacer(1,2)]
     S+=[body(f"Remember: this is the wrapping, not the gift. People who only know your Personality number see the {cr_p['archetype']}; those who earn your trust discover the full depth of your Soul Urge {r['soul_urge']} and Life Path {r['life_path']}.")]
+    S+=expect_panel(r['personality'])
     S+=[PageBreak()]
     return S
 
@@ -222,6 +237,7 @@ def sec_birthday(r):
         f"Supportive gemstone: <b>{cr_b['gem']}</b> (consult before wearing)",
         f"Harmonised numbers: <b>{', '.join(map(str,r['lucky_numbers'][:5]))}</b>",
     ])) ]
+    S+=expect_panel(r['driver'])
     S+=[PageBreak()]
     return S
 
@@ -234,6 +250,7 @@ def sec_maturity(r):
     S+=[body(f"From roughly age 35–40 onward, the {cr_m['planet']} vibration of the {cr_m['archetype']} rises to the surface of your life. " + cr_m['essence'])]
     S+=[Spacer(1,8), Panel([h3("Preparing For Your Harvest")]+bullets(cr_m['strengths'][:4]))]
     S+=[Spacer(1,6), body("Knowing this early is a gift: you can consciously plant, through your 20s and 30s, the seeds whose fruit this number describes — so that your second half arrives as fulfilment rather than surprise.")]
+    S+=expect_panel(r['maturity'])
     S+=[PageBreak()]
     return S
 

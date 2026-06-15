@@ -126,7 +126,6 @@ def compute(full_name: str, dob: date, gender: str = ''):
 
     # Personal year (current year)
     today = date.today()
-    yr = today.year if (today.month, today.day) >= (dob.month, dob.day) else today.year  # calendar-year convention
     py = reduce_num(sum(digits(dob.day)) + sum(digits(dob.month)) + sum(digits(today.year)), False)
     r['personal_year'] = py
     r['personal_year_for'] = today.year

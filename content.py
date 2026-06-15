@@ -306,3 +306,22 @@ CONCLUSION = {
  "signoff": ("May you walk your path with clarity, courage, and the quiet confidence of someone "
    "who has seen the design beneath their own life."),
 }
+
+
+# ---- The 5th beat: "What You Can Expect" (expected outcome per number) ----
+# Closes each core-number section on its payoff — what life looks like when the
+# person works WITH the energy and integrates its lesson. Confident, never inflated.
+OUTCOME = {
+1:"Work with this energy and you grow into authority that feels earned, not forced — your own venture, your name on the door, and people who follow your judgment because they trust it, not because they have to.",
+2:"Honoured well, this vibration brings deep, lasting bonds, a reputation as the one everyone confides in, and real influence that travels through trust rather than pressure.",
+3:"Lived fully, this energy makes you the trusted voice in your field — sought out for guidance, rewarded for wisdom, and rarely short of either opportunity or goodwill.",
+4:"Channelled with discipline, your 'different' way of thinking becomes breakthrough work: recognition for solving what others couldn't, and success on your own unconventional terms.",
+5:"Focused instead of scattered, this energy builds you multiple income streams, a wide and genuinely useful network, and the freedom to profit from change while others fear it.",
+6:"Balanced with healthy boundaries, this vibration brings a beautiful home, devoted relationships, and work that pays you for your taste — comfort that nourishes rather than traps.",
+7:"Embraced rather than resisted, this energy makes you a true authority in your chosen depth — respected for insight others miss, and at peace whether or not the crowd understands.",
+8:"Earned through honest, patient effort, this vibration delivers durable wealth, real authority, and a legacy that compounds — success that arrives late but never leaves.",
+9:"Directed toward a mission, this energy makes you the one who finishes what others abandon — trusted in crisis, remembered for impact, and fulfilled by causes larger than yourself.",
+11:"Grounded and shared, this vibration lets you inspire at scale — guiding, teaching or healing in a way that genuinely changes people, while you stay steady at the centre of it.",
+22:"Anchored in daily systems and dedicated to something larger than yourself, this energy lets you build institutions, companies or movements that outlast you.",
+33:"Held with healthy boundaries, this vibration makes you a transformative presence — uplifting many through compassion, without burning out the one who gives.",
+}
