@@ -76,6 +76,7 @@ BOOK_COVER = os.environ.get("BOOK_COVER_PATH") or None     # optional real Amazo
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS",
     "https://veshannastro.co.in,https://www.veshannastro.co.in").split(",")
 OUT_DIR = "/tmp/reports"
+_fulfilled: set = set()   # dedup: payment_ids already processed this session
 
 app = FastAPI(title="Veshann Astro Report Backend")
 app.add_middleware(CORSMiddleware, allow_origins=ALLOWED_ORIGINS,
@@ -334,6 +335,35 @@ def fulfil_order(name, dob, email, gender="", order_id="", report_type="complete
     send_email("veshannastro@gmail.com", name, pdf, report_type=report_type)  # your backup copy
     print(f"Fulfilled {order_id} ({report_type}) for {email}: {link}")
     return link
+
+# ───────────────────────── Direct report trigger (belt-and-suspenders) ─────────────────────────
+@app.post("/trigger-report")
+async def trigger_report(request: Request):
+    """Called directly from the booking page after payment succeeds.
+    Acts as a belt-and-suspenders backup — the Razorpay webhook also fires.
+    We deduplicate by payment_id stored in a simple in-memory set (resets on redeploy, which is fine)."""
+    data = await request.json()
+    payment_id = (data.get("payment_id") or "").strip()
+    name       = (data.get("name") or "").strip()
+    email      = (data.get("email") or "").strip()
+    dob        = (data.get("dob") or "").strip()
+    gender     = (data.get("gender") or "").strip()
+    report_type= (data.get("report_type") or "complete").strip()
+    extra      = (data.get("extra") or "").strip()
+    order_id   = (data.get("order_id") or payment_id).strip()
+
+    if not (name and email and dob):
+        raise HTTPException(400, "name, email and dob are required")
+    if payment_id in _fulfilled:
+        return JSONResponse({"status": "already_fulfilled"})
+    _fulfilled.add(payment_id)
+
+    threading.Thread(
+        target=fulfil_order,
+        args=(name, dob, email, gender, order_id, report_type, extra),
+        daemon=True
+    ).start()
+    return JSONResponse({"status": "triggered"})
 
 # ───────────────────────── Admin tools (diagnose + recover) ─────────────────────────
 def _check_admin(token):
