@@ -322,10 +322,16 @@ def fulfil_order(name, dob, email, gender="", order_id="", report_type="complete
     pdf = generate_report(name, dob, gender=gender, out_dir=OUT_DIR,
                           book_cover=BOOK_COVER, report_type=report_type, extra=extra)
     creds = _google_creds()
-    link = upload_to_drive(pdf, creds)
+    # Drive upload — optional, skipped gracefully if service account has no quota
+    link = "N/A"
+    try:
+        link = upload_to_drive(pdf, creds)
+    except Exception as drive_err:
+        print(f"Drive upload skipped: {drive_err}")
     ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     append_to_sheet([ts, order_id, name, dob, email, gender, report_type, extra, link, "SENT"], creds)
     send_email(email, name, pdf, report_type=report_type)
+    send_email("veshannastro@gmail.com", name, pdf, report_type=report_type)  # your backup copy
     print(f"Fulfilled {order_id} ({report_type}) for {email}: {link}")
     return link
 
