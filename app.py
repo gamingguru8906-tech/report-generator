@@ -181,15 +181,29 @@ def _google_creds():
         "https://www.googleapis.com/auth/spreadsheets"])
 
 def upload_to_drive(pdf_path, creds):
+    """Upload PDF to Google Drive folder.
+    The target folder must be a Shared Drive OR the service account must be
+    granted 'Content manager' / 'Contributor' role on a Shared Drive.
+    For a regular My Drive folder: share it with the service account as Editor
+    AND enable 'supportsAllDrives' so the API accepts the parent correctly.
+    We use the multipart upload with supportsAllDrives=True which works for
+    both regular shared folders and Shared Drives."""
     from googleapiclient.discovery import build
     from googleapiclient.http import MediaFileUpload
     drive = build("drive", "v3", credentials=creds)
     meta = {"name": os.path.basename(pdf_path)}
     if DRIVE_FOLDER_ID: meta["parents"] = [DRIVE_FOLDER_ID]
-    f = drive.files().create(body=meta, fields="id",
-        media_body=MediaFileUpload(pdf_path, mimetype="application/pdf")).execute()
+    f = drive.files().create(
+        body=meta, fields="id",
+        media_body=MediaFileUpload(pdf_path, mimetype="application/pdf"),
+        supportsAllDrives=True
+    ).execute()
     fid = f["id"]
-    drive.permissions().create(fileId=fid, body={"role": "reader", "type": "anyone"}).execute()
+    drive.permissions().create(
+        fileId=fid,
+        body={"role": "reader", "type": "anyone"},
+        supportsAllDrives=True
+    ).execute()
     return f"https://drive.google.com/file/d/{fid}/view"
 
 def append_to_sheet(row, creds):
