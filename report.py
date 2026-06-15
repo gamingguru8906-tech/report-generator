@@ -621,6 +621,96 @@ def sec_compatibility(r):
     S += [PageBreak()]
     return S
 
+def _arch_noun(num):
+    """Archetype without its leading 'The ' — for flowing prose like 'the wise-teacher road'."""
+    a = core(num)['archetype']
+    return a[4:] if a.lower().startswith('the ') else a
+
+def _strongest_themes(r):
+    """Build up to 3 personalised strength lines from the chart's ACTUAL numbers.
+    This is the 'this report really understood me' beat — never generic.
+    Archetypes are used verbatim as labels (they already begin with 'The')."""
+    cr_lp = core(r['life_path']); cr_d = core(r['destiny']); cr_su = core(r['soul_urge'])
+    lp9 = N.reduce_num(r['life_path'], False)
+    d9  = N.reduce_num(r['destiny'], False)
+    su9 = N.reduce_num(r['soul_urge'], False)
+    lines = [f"<b>{cr_lp['archetype']} — your Life Path {r['life_path']}.</b> {cr_lp['strengths'][0]}; this is where your effort multiplies fastest."]
+    if d9 != lp9:
+        lines.append(f"<b>{cr_d['archetype']} — your Destiny {r['destiny']}.</b> {cr_d['strengths'][0]}; the talent the world organises around you.")
+    # one amplifier (power plane / repeated number / tuned name) — the rarest, most personal flag
+    amp = None
+    if r['complete_planes']:
+        nm = r['complete_planes'][0].split(' (')[0]
+        amp = f"<b>A rare structural gift.</b> Your grid forms the complete {nm} — an advantage most charts never carry."
+    elif r['repeated']:
+        n, cnt = max(r['repeated'].items(), key=lambda kv: kv[1])
+        amp = f"<b>Amplified {short_planet(n)} energy.</b> The number {n} repeats {cnt}× in your chart, concentrating its strengths well above the ordinary."
+    elif r['name_friendly']:
+        amp = "<b>A name already in tune.</b> Your name's vibration supports your birth numbers — a quiet, real advantage you keep simply by using this spelling."
+    # prefer the amplifier; otherwise surface the Soul Urge as the private fuel
+    if amp:
+        lines.append(amp)
+    elif su9 not in (lp9, d9):
+        lines.append(f"<b>{cr_su['archetype']} — your Soul Urge {r['soul_urge']}.</b> {cr_su['strengths'][0]}; the private fuel beneath everything you build.")
+    return lines[:3]
+
+def _growth_edge(r):
+    """Return (heading, body) for the single most important growth area, data-driven."""
+    cr_lp = core(r['life_path'])
+    if r['karmic_lessons']:
+        ns = r['karmic_lessons']
+        return (f"Karmic Lesson {', '.join(map(str, ns))}", C.KARMIC_LESSON.get(ns[0], ""))
+    if r['missing']:
+        ns = r['missing']
+        return (f"The energy missing from your grid ({', '.join(map(str, ns))})", C.MISSING.get(ns[0], ""))
+    shadow = cr_lp['shadow'][0]
+    shadow = shadow[0].lower() + shadow[1:]
+    return (f"The shadow of Life Path {r['life_path']}",
+            f"Stay watchful of {shadow} — the natural cost of your strengths. Awareness alone already begins to soften it.")
+
+def sec_conclusion(r):
+    """Personalised closing: synthesis → strongest themes → growth edge →
+    one final action → a warm, unpushy invitation to go deeper. Sized for one page."""
+    cr_lp = core(r['life_path']); cr_d = core(r['destiny']); py = r['personal_year']
+    cc = C.CONCLUSION
+    first = (r['name'].split() or ['Friend'])[0]
+    lp9 = N.reduce_num(r['life_path'], False); d9 = N.reduce_num(r['destiny'], False)
+    S = [NextPageTemplate('content'), kicker(cc['kicker']), h1(cc['title']), GoldRule(), Spacer(1, 5)]
+    # 1 — synthesis: weave the core numbers into ONE portrait
+    if d9 != lp9:
+        portrait = (f"{first}, your chart is not a list of separate numbers — it is one portrait. The "
+                    f"{_arch_noun(r['life_path']).lower()} road of your Life Path {r['life_path']} and the "
+                    f"{_arch_noun(r['destiny']).lower()} expression of your Destiny {r['destiny']} point the "
+                    f"same way. {cc['lead_tail']}")
+    else:
+        portrait = (f"{first}, your chart speaks with unusual coherence: your Life Path and Destiny both "
+                    f"carry the {_arch_noun(r['life_path']).lower()} vibration of {short_planet(r['life_path'])}, "
+                    f"doubling its clarity in your life. {cc['lead_tail']}")
+    S += [lead(portrait), Spacer(1, 7)]
+    # 2 — strongest themes
+    S += [Panel([h3(cc['themes_title'])] + bullets(_strongest_themes(r)), border=GOLD_D)]
+    S += [Spacer(1, 6)]
+    # 3 — growth edge (framed as curriculum, not flaw)
+    g_head, g_body = _growth_edge(r)
+    S += [Panel([h3(cc['growth_title']), Spacer(1, 2),
+                 Paragraph(f'<font color="#1E2C50"><b>{g_head}.</b></font>&nbsp; {g_body}', ST['body']),
+                 Spacer(1, 3), body(cc['growth_tail'])], bg=HexColor("#F6ECEC"))]
+    S += [Spacer(1, 6)]
+    # 4 — the single most important action
+    step = (f"If you do nothing else from this report, do this: begin the core remedy for your Life Path "
+            f"{r['life_path']} ({cr_lp['planet']}) this coming <b>{cr_lp['day']}</b>, and let your Personal "
+            f"Year {py} theme guide the single biggest decision you make this year. One steady practice, "
+            f"started now, outperforms a dozen good intentions.")
+    S += [Panel([h3(cc['step_title']), Spacer(1, 2), body(step)], border=GOLD_D)]
+    S += [Spacer(1, 7)]
+    # 5 — invitation to go deeper: more depth, never 'something missing'
+    S += [h2(cc['consult_heading'])]
+    S += [body(cc['consult_invite'])]
+    S += [Spacer(1, 6),
+          Paragraph(f'<font color="#1E2C50" face="Cormorant-I" size="13">{cc["signoff"]}</font>', ST['quote'])]
+    S += [PageBreak()]
+    return S
+
 # ---- section registry, recipes, tiers ----
 SECTIONS = {
     'how_to_read': sec_how_to_read, 'snapshot': sec_snapshot, 'life_path': sec_life_path,
@@ -632,21 +722,22 @@ SECTIONS = {
     'personal_year': sec_personal_year, 'roadmap': sec_roadmap,
     'name_analysis': sec_name_analysis, 'action_plan': sec_action_plan,
     'mobile': sec_mobile, 'business': sec_business, 'baby': sec_baby, 'compatibility': sec_compatibility,
+    'conclusion': sec_conclusion,
 }
 
 RECIPES = {
     'complete': ['how_to_read','snapshot','life_path','destiny','soul_urge','personality',
         'birthday','maturity','lo_shu','hidden_passion','karmic_lessons','karmic_debt',
         'pinnacles','challenges','career','wealth','love','personal_year','roadmap',
-        'name_analysis','action_plan'],
-    'snapshot': ['snapshot','life_path','destiny','birthday','action_plan'],
-    'career':   ['snapshot','life_path','career','wealth','roadmap','action_plan'],
-    'love':     ['snapshot','life_path','soul_urge','personality','love','compatibility','personal_year','action_plan'],
-    'name':     ['snapshot','life_path','destiny','lo_shu','hidden_passion','name_analysis','action_plan'],
-    'forecast': ['snapshot','life_path','personal_year','roadmap','pinnacles','challenges','action_plan'],
-    'mobile':   ['snapshot','life_path','birthday','mobile','lo_shu','personal_year','action_plan'],
-    'baby':     ['snapshot','life_path','birthday','maturity','lo_shu','pinnacles','baby','action_plan'],
-    'business': ['snapshot','life_path','destiny','business','career','wealth','action_plan'],
+        'name_analysis','action_plan','conclusion'],
+    'snapshot': ['snapshot','life_path','destiny','birthday','action_plan','conclusion'],
+    'career':   ['snapshot','life_path','career','wealth','roadmap','action_plan','conclusion'],
+    'love':     ['snapshot','life_path','soul_urge','personality','love','compatibility','personal_year','action_plan','conclusion'],
+    'name':     ['snapshot','life_path','destiny','lo_shu','hidden_passion','name_analysis','action_plan','conclusion'],
+    'forecast': ['snapshot','life_path','personal_year','roadmap','pinnacles','challenges','action_plan','conclusion'],
+    'mobile':   ['snapshot','life_path','birthday','mobile','lo_shu','personal_year','action_plan','conclusion'],
+    'baby':     ['snapshot','life_path','birthday','maturity','lo_shu','pinnacles','baby','action_plan','conclusion'],
+    'business': ['snapshot','life_path','destiny','business','career','wealth','action_plan','conclusion'],
 }
 
 TIERS = {

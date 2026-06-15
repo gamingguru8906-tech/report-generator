@@ -281,3 +281,28 @@ BABY_NAME_POOL = [
     "Siya","Tara","Tanvi","Tej","Vaani","Vedant","Vihaan","Vivaan","Yash","Zoya",
     "Anvi","Kiaan","Nitya","Parth","Ridhi","Veer","Tisha","Hitesh","Lakshya","Inaya",
 ]
+
+
+# ---- Closing / Conclusion (editable copy) ----
+# Used by report.sec_conclusion(). The strongest-themes, growth-edge and next-step
+# lines are assembled PER PERSON from their own numbers in report.py; the strings
+# below are only the surrounding framing, so you can re-voice the close freely.
+CONCLUSION = {
+ "kicker": "In Closing",
+ "title": "Where You Stand — And What Comes Next",
+ "lead_tail": ("Read together, these numbers describe one person with a clear direction. Here is the "
+   "essence of everything above, in a few lines you can keep."),
+ "themes_title": "Your Strongest Themes",
+ "growth_title": "Your Growth Edge",
+ "growth_tail": ("This is not a flaw — it is your curriculum. Each time you choose the truer response "
+   "over the familiar one, the energy behind it turns from friction into strength."),
+ "step_title": "Your One Next Step",
+ "consult_heading": "Going One Layer Deeper",
+ "consult_invite": ("A written report hands you the map. What it cannot do is sit with the one question "
+   "you are carrying right now — a decision, a relationship, a turning point — and read your chart against "
+   "that exact moment. That is what a personal consultation is for: the same numbers, applied precisely to "
+   "your situation, with room for your own questions. Whenever you would like that deeper layer of clarity, "
+   "it is here for you."),
+ "signoff": ("May you walk your path with clarity, courage, and the quiet confidence of someone "
+   "who has seen the design beneath their own life."),
+}
