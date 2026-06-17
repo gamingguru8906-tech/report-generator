@@ -10,6 +10,7 @@ from pdfbuild_base import (ReportDoc, ST, HR, GoldRule, LoShuGrid, Panel, bullet
     GOLD, GOLD_L, GOLD_D, CREAM, MUTE, LINE, DEEP, DEEP2, PW, MARGIN, _crest)
 import content as C
 import numerology as N
+import premium_sections as P
 from reportlab.platypus import Flowable
 
 MONTHS=["","January","February","March","April","May","June","July","August","September","October","November","December"]
@@ -741,8 +742,45 @@ SECTIONS = {
     'mobile': sec_mobile, 'business': sec_business, 'baby': sec_baby, 'compatibility': sec_compatibility,
     'conclusion': sec_conclusion,
 }
+SECTIONS.update(P.PREMIUM_SECTIONS)
 
 RECIPES = {
+    'complete_numerology': ['basic_details','core_number_summary','birth_number_analysis',
+        'destiny_number_analysis','name_vibration_audit','lo_shu_grid_chart',
+        'missing_number_analysis','repeated_number_analysis','planes_analysis',
+        'personality_strengths','hidden_weaknesses','current_life_blockage',
+        'career_direction','money_pattern','relationship_pattern','health_energy_pattern',
+        'karmic_lesson_analysis','mobile_compatibility','name_correction_suggestions',
+        'personal_year_forecast','twelve_month_forecast','best_dates_calendar',
+        'lucky_colours_numbers_directions','ninety_day_remedy_plan','manifestation_code',
+        'personalized_affirmations','personal_query_resolution','final_guidance',
+        'disclaimer'],
+    'mobile_number_analysis': ['executive_summary','mobile_number_analysis',
+        'missing_repeated_analysis','money_pattern','current_life_blockage',
+        'best_dates_calendar','ninety_day_remedy_plan','final_guidance'],
+    'name_numerology': ['executive_summary','name_vibration_audit','destiny_number_analysis',
+        'career_direction','money_pattern','relationship_pattern','manifestation_code',
+        'ninety_day_remedy_plan','final_guidance'],
+    'career_numerology': ['executive_summary','current_life_blockage','career_direction',
+        'profession_compatibility_matrix','manifestation_code','best_dates_calendar',
+        'ninety_day_remedy_plan','final_guidance'],
+    'money_numerology': ['executive_summary','money_pattern','career_direction',
+        'best_dates_calendar','ninety_day_remedy_plan','manifestation_code','final_guidance'],
+    'relationship_compatibility': ['executive_summary','relationship_pattern',
+        'compatibility_analysis','current_life_blockage','best_dates_calendar',
+        'ninety_day_remedy_plan','final_guidance'],
+    'business_name_report': ['executive_summary','business_name_analysis','money_pattern',
+        'profession_compatibility_matrix','best_dates_calendar','ninety_day_remedy_plan',
+        'final_guidance'],
+    'baby_name_report': ['executive_summary','baby_name_analysis','core_number_blueprint',
+        'birth_number_analysis','destiny_number_analysis','final_guidance'],
+    'house_number_analysis': ['executive_summary','house_number_analysis','money_pattern',
+        'relationship_pattern','ninety_day_remedy_plan','final_guidance'],
+    'vehicle_number_analysis': ['executive_summary','vehicle_number_analysis',
+        'best_dates_calendar','ninety_day_remedy_plan','final_guidance'],
+    'personal_forecast': ['executive_summary','personal_year_forecast',
+        'twelve_month_forecast','best_dates_calendar','ninety_day_remedy_plan',
+        'final_guidance'],
     'complete': ['how_to_read','snapshot','life_path','destiny','soul_urge','personality',
         'birthday','maturity','lo_shu','hidden_passion','karmic_lessons','karmic_debt',
         'pinnacles','challenges','career','wealth','love','personal_year','roadmap',
@@ -758,6 +796,17 @@ RECIPES = {
 }
 
 TIERS = {
+    'complete_numerology': ("Premium", "COMPLETE NUMEROLOGY REPORT"),
+    'mobile_number_analysis': ("Mobile Number", "PREMIUM NUMEROLOGY ANALYSIS"),
+    'name_numerology': ("Name Numerology", "PREMIUM REPORT"),
+    'career_numerology': ("Career", "PREMIUM NUMEROLOGY REPORT"),
+    'money_numerology': ("Money", "PREMIUM NUMEROLOGY REPORT"),
+    'relationship_compatibility': ("Relationship", "PREMIUM COMPATIBILITY REPORT"),
+    'business_name_report': ("Business Name", "PREMIUM REPORT"),
+    'baby_name_report': ("Baby Name", "PREMIUM REPORT"),
+    'house_number_analysis': ("House Number", "PREMIUM ANALYSIS"),
+    'vehicle_number_analysis': ("Vehicle Number", "PREMIUM ANALYSIS"),
+    'personal_forecast': ("The Year Ahead", "PREMIUM NUMEROLOGY FORECAST"),
     'complete': ("Premium",             "COMPLETE NUMEROLOGY REPORT"),
     'snapshot': ("Personal",            "NUMEROLOGY SNAPSHOT"),
     'career':   ("Career & Wealth",     "NUMEROLOGY BLUEPRINT"),
@@ -774,7 +823,9 @@ def build_story(r, report_type='complete'):
     tier, title = TIERS.get(report_type, TIERS['complete'])
     S = sec_cover(r, tier=tier, title=title)
     for k in keys:
-        S += SECTIONS[k](r)
+        section = SECTIONS[k](r)
+        if section:
+            S += section
     S += sec_book_ad(r)
     return S
 
@@ -783,7 +834,7 @@ BOOK = dict(
     title="Numerology and Navagraha",
     subtitle="The Sacred Science of Numbers & the Nine Planets",
     blurb="The definitive guide blending Chaldean numerology with Vedic Navagraha wisdom — the very system this report is built on. Decode your numbers, understand the planets behind them, and apply authentic remedies. Now available on Amazon.",
-    url="https://www.amazon.in/dp/B0H4P498S4",
+    url="https://amzn.in/d/02f3xwCj",
     cover=None,
 )
 

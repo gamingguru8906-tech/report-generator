@@ -10,6 +10,8 @@ from reportlab.lib.colors import HexColor, Color
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY, TA_RIGHT
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase.pdfmetrics import Font
+from reportlab.lib import fonts
 from reportlab.platypus import (BaseDocTemplate, PageTemplate, Frame, Paragraph, Spacer,
     PageBreak, Table, TableStyle, Flowable, KeepTogether, Image, NextPageTemplate)
 from reportlab.lib.styles import ParagraphStyle
@@ -18,11 +20,26 @@ import content as C
 import numerology as N
 
 FONT_DIR = os.path.join(os.path.dirname(__file__), "fonts")
-def _reg(name, file): pdfmetrics.registerFont(TTFont(name, os.path.join(FONT_DIR, file)))
-_reg("Cinzel", "Cinzel-Med.ttf"); _reg("Cinzel-B", "Cinzel-Bold.ttf")
-_reg("Cormorant", "Cormorant-Reg.ttf"); _reg("Cormorant-M", "Cormorant-Med.ttf")
-_reg("Cormorant-SB", "Cormorant-SemiBold.ttf"); _reg("Cormorant-I", "Cormorant-Italic.ttf")
-_reg("Jost", "Jost-Reg.ttf"); _reg("Jost-M", "Jost-Med.ttf"); _reg("Jost-L", "Jost-Light.ttf")
+def _reg(name, file, fallback="Times-Roman"):
+    path = os.path.join(FONT_DIR, file)
+    try:
+        pdfmetrics.registerFont(TTFont(name, path))
+    except Exception:
+        pdfmetrics.registerFont(Font(name, fallback, "WinAnsiEncoding"))
+_reg("Cinzel", "Cinzel-Med.ttf", "Times-Roman"); _reg("Cinzel-B", "Cinzel-Bold.ttf", "Times-Bold")
+_reg("Cormorant", "Cormorant-Reg.ttf", "Times-Roman"); _reg("Cormorant-M", "Cormorant-Med.ttf", "Times-Roman")
+_reg("Cormorant-SB", "Cormorant-SemiBold.ttf", "Times-Bold"); _reg("Cormorant-I", "Cormorant-Italic.ttf", "Times-Italic")
+_reg("Jost", "Jost-Reg.ttf", "Helvetica"); _reg("Jost-M", "Jost-Med.ttf", "Helvetica-Bold"); _reg("Jost-L", "Jost-Light.ttf", "Helvetica")
+fonts.addMapping("Cinzel", 0, 0, "Cinzel"); fonts.addMapping("Cinzel", 1, 0, "Cinzel-B")
+fonts.addMapping("Cinzel-B", 0, 0, "Cinzel-B"); fonts.addMapping("Cinzel-B", 1, 0, "Cinzel-B")
+fonts.addMapping("Cormorant", 0, 0, "Cormorant"); fonts.addMapping("Cormorant", 1, 0, "Cormorant-SB")
+fonts.addMapping("Cormorant", 0, 1, "Cormorant-I"); fonts.addMapping("Cormorant", 1, 1, "Cormorant-I")
+fonts.addMapping("Cormorant-M", 0, 0, "Cormorant-M"); fonts.addMapping("Cormorant-M", 1, 0, "Cormorant-SB")
+fonts.addMapping("Cormorant-SB", 0, 0, "Cormorant-SB"); fonts.addMapping("Cormorant-SB", 1, 0, "Cormorant-SB")
+fonts.addMapping("Cormorant-I", 0, 1, "Cormorant-I"); fonts.addMapping("Cormorant-I", 1, 1, "Cormorant-I")
+fonts.addMapping("Jost", 0, 0, "Jost"); fonts.addMapping("Jost", 1, 0, "Jost-M")
+fonts.addMapping("Jost-M", 0, 0, "Jost-M"); fonts.addMapping("Jost-M", 1, 0, "Jost-M")
+fonts.addMapping("Jost-L", 0, 0, "Jost-L"); fonts.addMapping("Jost-L", 1, 0, "Jost-M")
 
 # ---- Brand palette (light editorial: ivory / beige / grey · navy + maroon) ----
 # Names kept stable so the rest of the engine maps automatically to their *role*.

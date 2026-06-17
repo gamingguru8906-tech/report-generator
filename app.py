@@ -49,16 +49,21 @@ ADMIN_TOKEN             = os.environ.get("ADMIN_TOKEN", "")  # protects /admin/*
 # Product catalogue: key -> (report_type, price in paise, customer-facing label)
 # Prices match the live veshannastro.co.in cards (paise: ₹250 = 25000). Override via env vars.
 PRODUCTS = {
-    "complete": ("complete", int(os.environ.get("PRICE_COMPLETE", "99900")), "Complete Numerology Report (25 pages)"),
-    "name":     ("name",     int(os.environ.get("PRICE_NAME",     "25000")), "Name Numerology Report"),
-    "mobile":   ("mobile",   int(os.environ.get("PRICE_MOBILE",   "25000")), "Mobile Number Analysis"),
-    "forecast": ("forecast", int(os.environ.get("PRICE_FORECAST", "49900")), "Personal Year Forecast"),
-    "love":     ("love",     int(os.environ.get("PRICE_LOVE",     "25000")), "Numerology Compatibility"),
-    "baby":     ("baby",     int(os.environ.get("PRICE_BABY",     "25000")), "Baby Name Report"),
-    "business": ("business", int(os.environ.get("PRICE_BUSINESS", "49900")), "Business Name Report"),
+    "complete": ("complete_numerology", int(os.environ.get("PRICE_COMPLETE", "99900")), "Complete Numerology Report (25 pages)"),
+    "name":     ("name_numerology",     int(os.environ.get("PRICE_NAME",     "25000")), "Name Numerology Report"),
+    "mobile":   ("mobile_number_analysis", int(os.environ.get("PRICE_MOBILE", "25000")), "Mobile Number Analysis"),
+    "forecast": ("personal_forecast",   int(os.environ.get("PRICE_FORECAST", "49900")), "Personal Year Forecast"),
+    "love":     ("relationship_compatibility", int(os.environ.get("PRICE_LOVE", "25000")), "Numerology Compatibility"),
+    "baby":     ("baby_name_report",    int(os.environ.get("PRICE_BABY",     "25000")), "Baby Name Report"),
+    "business": ("business_name_report", int(os.environ.get("PRICE_BUSINESS", "49900")), "Business Name Report"),
     # extra tiers the engine also supports (not shown on the live site by default):
     "snapshot": ("snapshot", int(os.environ.get("PRICE_SNAPSHOT", "19900")), "Numerology Snapshot (mini report)"),
-    "career":   ("career",   int(os.environ.get("PRICE_CAREER",   "29900")), "Career & Wealth Numerology Blueprint"),
+    "career":   ("career_numerology",   int(os.environ.get("PRICE_CAREER",   "29900")), "Career Numerology Report"),
+    "money":    ("money_numerology",    int(os.environ.get("PRICE_MONEY",    "29900")), "Money Numerology Report"),
+    "house":    ("house_number_analysis", int(os.environ.get("PRICE_HOUSE",  "25000")), "House Number Analysis"),
+    "vehicle":  ("vehicle_number_analysis", int(os.environ.get("PRICE_VEHICLE", "25000")), "Vehicle Number Analysis"),
+    "astrology_life_path": ("premium_astrology_life_path", 199900, "Premium Astrology Life Path Report"),
+    "divorce_separation_report": ("premium_divorce_separation", 199900, "Premium Divorce, Separation & Relationship Karma Report"),
 }
 
 _DONE = set()   # in-memory idempotency guard against duplicate webhook deliveries
@@ -101,16 +106,36 @@ async def create_order(request: Request):
     dob   = (data.get("dob") or "").strip()      # YYYY-MM-DD from the <input type=date>
     gender= (data.get("gender") or "").strip()
     extra = (data.get("extra") or "").strip()      # mobile no. / business name / partner details
+    birth_time = (data.get("birth_time") or "").strip()
+    birth_place = (data.get("birth_place") or "").strip()
+    focus_area = (data.get("focus_area") or "").strip()
+    partner_name = (data.get("partner_name") or "").strip()
+    partner_dob = (data.get("partner_dob") or "").strip()
+    partner_birth_time = (data.get("partner_birth_time") or "").strip()
+    partner_birth_place = (data.get("partner_birth_place") or "").strip()
+    marriage_date = (data.get("marriage_date") or "").strip()
+    current_issue = (data.get("current_issue") or "").strip()
+    children = (data.get("children") or "").strip()
+    main_question = (data.get("main_question") or "").strip()
     product = (data.get("product") or "complete").strip()
     if product not in PRODUCTS:
         product = "complete"
     report_type, amount, label = PRODUCTS[product]
     if not (name and email and dob):
         raise HTTPException(400, "name, email and dob are required")
+    if report_type == "premium_astrology_life_path" and not (birth_time and birth_place and focus_area):
+        raise HTTPException(400, "birth_time, birth_place and focus_area are required for this report")
+    if report_type == "premium_divorce_separation" and not (birth_time and birth_place and partner_name and partner_dob and current_issue and main_question):
+        raise HTTPException(400, "birth_time, birth_place, partner_name, partner_dob, current_issue and main_question are required for this report")
     payload = {
         "amount": amount, "currency": "INR",
         "receipt": f"num-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}",
-        "notes": {"name": name, "email": email, "dob": dob, "gender": gender,
+        "notes": {"name": name, "email": email, "dob": dob, "birth_time": birth_time,
+                  "birth_place": birth_place, "gender": gender, "focus_area": focus_area,
+                  "partner_name": partner_name, "partner_dob": partner_dob,
+                  "partner_birth_time": partner_birth_time, "partner_birth_place": partner_birth_place,
+                  "marriage_date": marriage_date, "current_issue": current_issue,
+                  "children": children, "main_question": main_question,
                   "extra": extra, "product": product, "report_type": report_type,
                   "source": "veshann_report"},
     }
@@ -155,12 +180,23 @@ async def webhook(request: Request):
         report_type = notes.get("report_type") or PRODUCTS[notes["product"]][0]
         threading.Thread(target=_safe_fulfil, daemon=True, args=(
             notes.get("name", "Customer"), notes["dob"], notes["email"],
-            notes.get("gender", ""), order_id, report_type, notes.get("extra", ""))).start()
+            notes.get("gender", ""), order_id, report_type, notes.get("extra", ""),
+            notes.get("birth_time", ""), notes.get("birth_place", ""), notes.get("focus_area", ""),
+            notes.get("partner_name", ""), notes.get("partner_dob", ""),
+            notes.get("partner_birth_time", ""), notes.get("partner_birth_place", ""),
+            notes.get("marriage_date", ""), notes.get("current_issue", ""),
+            notes.get("children", ""), notes.get("main_question", ""))).start()
     return {"status": "ok"}
 
-def _safe_fulfil(name, dob, email, gender="", order_id="", report_type="complete", extra=""):
+def _safe_fulfil(name, dob, email, gender="", order_id="", report_type="complete", extra="",
+                 birth_time="", birth_place="", focus_area="", partner_name="", partner_dob="",
+                 partner_birth_time="", partner_birth_place="", marriage_date="", current_issue="",
+                 children="", main_question=""):
     try:
-        fulfil_order(name, dob, email, gender, order_id, report_type, extra)
+        fulfil_order(name, dob, email, gender, order_id, report_type, extra,
+                     birth_time, birth_place, focus_area, partner_name, partner_dob,
+                     partner_birth_time, partner_birth_place, marriage_date, current_issue,
+                     children, main_question)
     except Exception as e:
         import traceback
         tb = traceback.format_exc()
@@ -169,7 +205,7 @@ def _safe_fulfil(name, dob, email, gender="", order_id="", report_type="complete
         try:
             creds = _google_creds()
             ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            append_to_sheet([ts, order_id, name, dob, email, gender, report_type, extra, "", "ERROR: " + repr(e)[:300]], creds)
+            append_to_sheet([ts, order_id, name, dob, email, gender, report_type, extra, birth_time, birth_place, focus_area, "", "ERROR: " + repr(e)[:300]], creds)
         except Exception as e2:
             print("could not log ERROR row:", repr(e2))
 
@@ -319,9 +355,18 @@ def send_email(to_email, name, pdf_path, report_type="Numerology Report"):
     if resp.status_code >= 300:
         raise RuntimeError(f"Brevo error {resp.status_code}: {resp.text}")
 
-def fulfil_order(name, dob, email, gender="", order_id="", report_type="complete", extra=""):
+def fulfil_order(name, dob, email, gender="", order_id="", report_type="complete", extra="",
+                 birth_time="", birth_place="", focus_area="", partner_name="", partner_dob="",
+                 partner_birth_time="", partner_birth_place="", marriage_date="", current_issue="",
+                 children="", main_question=""):
     pdf = generate_report(name, dob, gender=gender, out_dir=OUT_DIR,
-                          book_cover=BOOK_COVER, report_type=report_type, extra=extra)
+                          book_cover=BOOK_COVER, report_type=report_type, extra=extra,
+                          birth_time=birth_time, birth_place=birth_place,
+                          focus_area=focus_area, email=email,
+                          partner_name=partner_name, partner_dob=partner_dob,
+                          partner_birth_time=partner_birth_time, partner_birth_place=partner_birth_place,
+                          marriage_date=marriage_date, current_issue=current_issue,
+                          children=children, main_question=main_question)
     creds = _google_creds()
     # Drive upload — optional, skipped gracefully if service account has no quota
     link = "N/A"
@@ -330,7 +375,7 @@ def fulfil_order(name, dob, email, gender="", order_id="", report_type="complete
     except Exception as drive_err:
         print(f"Drive upload skipped: {drive_err}")
     ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    append_to_sheet([ts, order_id, name, dob, email, gender, report_type, extra, link, "SENT"], creds)
+    append_to_sheet([ts, order_id, name, dob, email, gender, report_type, extra, birth_time, birth_place, focus_area, partner_name, partner_dob, partner_birth_time, partner_birth_place, marriage_date, current_issue, children, main_question, link, "SENT"], creds)
     send_email(email, name, pdf, report_type=report_type)
     send_email("veshannastro@gmail.com", name, pdf, report_type=report_type)  # your backup copy
     print(f"Fulfilled {order_id} ({report_type}) for {email}: {link}")
@@ -350,6 +395,17 @@ async def trigger_report(request: Request):
     gender     = (data.get("gender") or "").strip()
     report_type= (data.get("report_type") or "complete").strip()
     extra      = (data.get("extra") or "").strip()
+    birth_time = (data.get("birth_time") or "").strip()
+    birth_place= (data.get("birth_place") or "").strip()
+    focus_area = (data.get("focus_area") or "").strip()
+    partner_name = (data.get("partner_name") or "").strip()
+    partner_dob = (data.get("partner_dob") or "").strip()
+    partner_birth_time = (data.get("partner_birth_time") or "").strip()
+    partner_birth_place = (data.get("partner_birth_place") or "").strip()
+    marriage_date = (data.get("marriage_date") or "").strip()
+    current_issue = (data.get("current_issue") or "").strip()
+    children = (data.get("children") or "").strip()
+    main_question = (data.get("main_question") or "").strip()
     order_id   = (data.get("order_id") or payment_id).strip()
 
     if not (name and email and dob):
@@ -360,7 +416,9 @@ async def trigger_report(request: Request):
 
     threading.Thread(
         target=fulfil_order,
-        args=(name, dob, email, gender, order_id, report_type, extra),
+        args=(name, dob, email, gender, order_id, report_type, extra, birth_time, birth_place, focus_area,
+              partner_name, partner_dob, partner_birth_time, partner_birth_place, marriage_date,
+              current_issue, children, main_question),
         daemon=True
     ).start()
     return JSONResponse({"status": "triggered"})
@@ -422,7 +480,13 @@ async def admin_fulfil(request: Request):
     try:
         link = fulfil_order(data["name"], data["dob"], data["email"],
                             data.get("gender", ""), data.get("order_id", "manual"),
-                            data.get("report_type", "complete"), data.get("extra", ""))
+                            data.get("report_type", "complete"), data.get("extra", ""),
+                            data.get("birth_time", ""), data.get("birth_place", ""),
+                            data.get("focus_area", ""), data.get("partner_name", ""),
+                            data.get("partner_dob", ""), data.get("partner_birth_time", ""),
+                            data.get("partner_birth_place", ""), data.get("marriage_date", ""),
+                            data.get("current_issue", ""), data.get("children", ""),
+                            data.get("main_question", ""))
         return {"status": "sent", "drive_link": link}
     except Exception as e:
         import traceback

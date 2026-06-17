@@ -6,3 +6,6 @@ google-api-python-client>=2.100
 google-auth>=2.23
 google-auth-httplib2>=0.2
 fonttools>=4.40
+pyswisseph>=2.10
+geopy>=2.4
+timezonefinder>=6.5

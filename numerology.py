@@ -46,6 +46,14 @@ def name_value(name, subset=None):
         total += CHALDEAN[c]
     return total
 
+def names_by_root(names):
+    """Bucket candidate names by their reduced Chaldean root."""
+    buckets = {}
+    for name in names:
+        root = reduce_num(name_value(name), keep_masters=False)
+        buckets.setdefault(root, []).append(name)
+    return buckets
+
 def lo_shu_digits(d: date, driver, conductor):
     ds = digits(d.day) + digits(d.month) + digits(d.year)
     ds = [x for x in ds if x != 0]

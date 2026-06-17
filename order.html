@@ -84,6 +84,8 @@
   .trust span{font-size:.66rem;color:var(--text-muted);letter-spacing:.04em}
   .err{color:#E2A0A8;font-size:.74rem;text-align:center;margin-top:12px;min-height:14px}
   .deliver{font-size:.7rem;color:var(--text-muted);text-align:center;margin-top:18px;line-height:1.7;opacity:.85}
+  .astro-extra{display:none}
+  .divorce-extra{display:none}
   .ok{display:none;text-align:center;padding:8px 0}
   .ok .tick{width:58px;height:58px;margin:0 auto 16px;border-radius:50%;border:1px solid var(--gold);
     display:flex;align-items:center;justify-content:center;color:var(--gold-light);font-size:26px}
@@ -160,6 +162,66 @@
       <option value="other">Other</option>
     </select>
 
+    <div class="astro-extra" id="astroFields">
+      <label for="birth_time">Exact Time of Birth</label>
+      <input id="birth_time" type="time"/>
+
+      <label for="birth_place">Place of Birth</label>
+      <input id="birth_place" type="text" placeholder="e.g. Bhopal, Madhya Pradesh, India"/>
+
+      <label for="focus_area">Focus Area</label>
+      <select id="focus_area">
+        <option value="general life path">General Life Path</option>
+        <option value="career">Career</option>
+        <option value="marriage">Marriage</option>
+        <option value="money">Money</option>
+        <option value="health">Health</option>
+        <option value="business">Business</option>
+        <option value="education">Education</option>
+        <option value="foreign settlement">Foreign Settlement</option>
+        <option value="spirituality">Spirituality</option>
+      </select>
+    </div>
+
+    <div class="divorce-extra" id="divorceFields">
+      <label for="partner_name">Partner Name</label>
+      <input id="partner_name" type="text" placeholder="e.g. Priya Sharma"/>
+
+      <label for="partner_dob">Partner Date of Birth</label>
+      <input id="partner_dob" type="date" max="2025-12-31"/>
+
+      <label for="partner_birth_time">Partner Time of Birth (if available)</label>
+      <input id="partner_birth_time" type="time"/>
+
+      <label for="partner_birth_place">Partner Place of Birth (if available)</label>
+      <input id="partner_birth_place" type="text" placeholder="e.g. Jaipur, Rajasthan, India"/>
+
+      <label for="marriage_date">Marriage Date (if available)</label>
+      <input id="marriage_date" type="date" max="2026-12-31"/>
+
+      <label for="current_issue">Current Issue</label>
+      <select id="current_issue">
+        <option value="">Select issue</option>
+        <option value="divorce">Divorce</option>
+        <option value="separation">Separation</option>
+        <option value="cheating">Cheating</option>
+        <option value="no communication">No Communication</option>
+        <option value="family interference">Family Interference</option>
+        <option value="court case">Court Case</option>
+        <option value="emotional distance">Emotional Distance</option>
+      </select>
+
+      <label for="children">Children</label>
+      <select id="children">
+        <option value="">Select</option>
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </select>
+
+      <label for="main_question">Main Question</label>
+      <input id="main_question" type="text" placeholder="What do you need clarity on?"/>
+    </div>
+
     <button class="pay" id="payBtn" onclick="startPayment()">Generate My Report</button>
     <div class="err" id="err"></div>
     <div class="trust">
@@ -214,7 +276,8 @@
   function showErr(m){ $("err").textContent = m || ""; }
 
   let PRODUCTS = {};
-  const ORDER = ["complete","career","love","forecast","name","snapshot"];
+  const ORDER = ["astrology_life_path","divorce_separation_report","complete","career","money","love","forecast","name","mobile","business","baby","house","vehicle","snapshot"];
+  const INITIAL_PRODUCT = new URLSearchParams(window.location.search).get("product") || "";
 
   async function loadProducts(){
     try{
@@ -222,6 +285,8 @@
       PRODUCTS = await res.json();
     }catch(e){
       PRODUCTS = {
+        astrology_life_path:{amount:199900,label:"Premium Astrology Life Path Report"},
+        divorce_separation_report:{amount:199900,label:"Premium Divorce, Separation & Relationship Karma Report"},
         complete:{amount:49900,label:"Complete Numerology Report (25 pages)"},
         career:{amount:29900,label:"Career & Wealth Numerology Blueprint"},
         love:{amount:29900,label:"Love & Relationship Numerology Report"},
@@ -236,11 +301,25 @@
       o.value = k; o.textContent = `${PRODUCTS[k].label} — ₹${(PRODUCTS[k].amount/100).toFixed(0)}`;
       sel.appendChild(o);
     });
+    if(INITIAL_PRODUCT && PRODUCTS[INITIAL_PRODUCT]){
+      sel.value = INITIAL_PRODUCT;
+    }
     updatePrice();
   }
   function updatePrice(){
     const p = PRODUCTS[$("product").value];
     if(p){ $("priceLabel").textContent = "₹" + (p.amount/100).toFixed(0); }
+  }
+  const baseUpdatePrice = updatePrice;
+  updatePrice = function(){
+    baseUpdatePrice();
+    const product = $("product").value;
+    const isAstro = product === "astrology_life_path" || product === "divorce_separation_report";
+    const isDivorce = product === "divorce_separation_report";
+    $("astroFields").style.display = isAstro ? "block" : "none";
+    $("divorceFields").style.display = isDivorce ? "block" : "none";
+    document.querySelector(".eyebrow").textContent = isAstro ? "Veshann Astro - Vedic Astrology" : "Veshann Astro - Numerology";
+    document.querySelector("h1").innerHTML = isDivorce ? "Relationship <em>Karma</em>" : (isAstro ? "Astrology <em>Life Path</em>" : "Numerology <em>Reports</em>");
   }
   loadProducts();
 
@@ -250,16 +329,42 @@
     const dob = $("dob").value;
     const gender = $("gender").value;
     const product = $("product").value || "complete";
+    const birth_time = $("birth_time").value;
+    const birth_place = $("birth_place").value.trim();
+    const focus_area = $("focus_area").value;
+    const partner_name = $("partner_name").value.trim();
+    const partner_dob = $("partner_dob").value;
+    const partner_birth_time = $("partner_birth_time").value;
+    const partner_birth_place = $("partner_birth_place").value.trim();
+    const marriage_date = $("marriage_date").value;
+    const current_issue = $("current_issue").value;
+    const children = $("children").value;
+    const main_question = $("main_question").value.trim();
     showErr("");
     if(!name){ return showErr("Please enter your full name."); }
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ return showErr("Please enter a valid email."); }
     if(!dob){ return showErr("Please select your date of birth."); }
+    if(product === "astrology_life_path" || product === "divorce_separation_report"){
+      if(!birth_time){ return showErr("Please enter your exact birth time."); }
+      if(!birth_place){ return showErr("Please enter your birth place."); }
+    }
+    if(product === "astrology_life_path"){
+      if(!focus_area){ return showErr("Please select a focus area."); }
+    }
+    if(product === "divorce_separation_report"){
+      if(!partner_name){ return showErr("Please enter partner name."); }
+      if(!partner_dob){ return showErr("Please enter partner date of birth."); }
+      if(!current_issue){ return showErr("Please select the current issue."); }
+      if(!main_question){ return showErr("Please enter your main question."); }
+    }
 
     const btn = $("payBtn"); btn.disabled = true; btn.textContent = "Preparing checkout…";
     try{
       const res = await fetch(BACKEND_URL + "/create-order", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({name, email, dob, gender, product})
+        body: JSON.stringify({name, email, dob, gender, product, birth_time, birth_place, focus_area,
+          partner_name, partner_dob, partner_birth_time, partner_birth_place, marriage_date,
+          current_issue, children, main_question})
       });
       if(!res.ok){ throw new Error(await res.text()); }
       const o = await res.json();
