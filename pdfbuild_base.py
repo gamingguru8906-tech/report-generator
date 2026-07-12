@@ -175,10 +175,10 @@ def _page_frame(c):
     c.saveState(); c.translate(MARGIN-6, MARGIN-6); c.scale(1,-1); _corner_flourish(c,0,0); c.restoreState()
     c.saveState(); c.translate(PW-(MARGIN-6), MARGIN-6); c.scale(-1,-1); _corner_flourish(c,0,0); c.restoreState()
 
-def _footer(c, page_num):
+def _footer(c, page_num, title="Numerology Report"):
     c.setFont("Jost-L", 7); c.setFillColor(MUTE)
     c.drawString(MARGIN, 11*mm, "VESHANN  ASTRO")
-    c.drawCentredString(PW/2, 11*mm, "Numerology Report")
+    c.drawCentredString(PW/2, 11*mm, title)
     c.drawRightString(PW-MARGIN, 11*mm, f"{page_num:02d}")
     c.setStrokeColor(LINE); c.setLineWidth(0.4)
     c.line(MARGIN, 14*mm, PW-MARGIN, 14*mm)
@@ -329,7 +329,8 @@ def bullets(items, style='bullet', glyph='◆'):
 
 # ---------------- Page template machinery ----------------
 class ReportDoc(BaseDocTemplate):
-    def __init__(self, path, **kw):
+    def __init__(self, path, footer_title="Numerology Report", **kw):
+        self._footer_title = footer_title
         super().__init__(path, pagesize=A4, leftMargin=MARGIN, rightMargin=MARGIN,
                          topMargin=MARGIN, bottomMargin=22*mm, **kw)
         fr = Frame(MARGIN, 22*mm, PW-2*MARGIN, PH-MARGIN-22*mm, id='main',
@@ -343,4 +344,4 @@ class ReportDoc(BaseDocTemplate):
         _bg(c, cover=True, seed=7)
     def _content_bg(self, c, d):
         self._pnum+=1
-        _bg(c, cover=False, seed=self._pnum*13+3); _page_frame(c); _footer(c, self._pnum)
+        _bg(c, cover=False, seed=self._pnum*13+3); _page_frame(c); _footer(c, self._pnum, self._footer_title)

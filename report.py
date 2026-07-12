@@ -39,6 +39,32 @@ def short_planet(num):
         return f"Master {num}"
     return p.split(' (')[0]
 
+def _first_sentences(text, n=2):
+    import re as _re
+    parts = _re.split(r'(?<=[.!?])\s+', (text or "").strip())
+    return " ".join(parts[:n]).strip()
+
+def impact_block(num, role_line=""):
+    """The 'so what' layer of a core number: real-life effects (career, money,
+    relationships), the concrete consequences when the energy runs unmanaged,
+    and practical habit-level corrections alongside the Vedic remedy."""
+    root = N.reduce_num(num, False)
+    cr = core(num)
+    intro = role_line or f"Numbers are not abstractions — each one is a current that shows up in your work, your money and your closest bonds. Here is how this {cr['planet']} vibration plays out in day-to-day reality:"
+    out = [Panel([h3(f"How Your {num} Plays Out In Real Life"), Spacer(1, 2), body(intro), Spacer(1, 4)] + bullets([
+        f"<b>In your career:</b> {_first_sentences(C.CAREER.get(root, ''), 2)}",
+        f"<b>With money:</b> {_first_sentences(C.WEALTH.get(root, ''), 2)}",
+        f"<b>In relationships:</b> {_first_sentences(C.LOVE.get(root, ''), 2)}",
+    ]), border=GOLD_D)]
+    conseq = C.CONSEQUENCE.get(num) or C.CONSEQUENCE.get(root)
+    if conseq:
+        out += [Spacer(1, 6), Panel([h3("If This Energy Goes Unmanaged — The Real Cost"),
+                                     Spacer(1, 2), body(conseq)], bg=HexColor("#F6ECEC"))]
+    pr = C.PRACTICAL_REMEDY.get(num) or C.PRACTICAL_REMEDY.get(root)
+    if pr:
+        out += [Spacer(1, 6), Panel([h3("Practical Corrections — Daily Habits That Rebalance It")] + bullets(pr), bg=DEEP2)]
+    return out
+
 def kicker(t): return Paragraph(t.upper(), ST['kicker'])
 def h1(t): return Paragraph(t, ST['h1'])
 def h2(t): return Paragraph(t, ST['h2'])
@@ -70,7 +96,7 @@ class BigNum(Flowable):
         c.setFont("Cormorant-I", 12); c.setFillColor(MUTE)
         c.drawCentredString(cx, 4, self.cap)
 
-def core_section(kick, title, num, intro, *, value_label=None, value_note=None, extra_paras=None):
+def core_section(kick, title, num, intro, *, value_label=None, value_note=None, extra_paras=None, role_line=""):
     """A reusable two-page-style core-number section."""
     cr=core(num)
     el=[NextPageTemplate('content'), kicker(kick), h1(title), GoldRule(), Spacer(1,4)]
@@ -93,6 +119,9 @@ def core_section(kick, title, num, intro, *, value_label=None, value_note=None, 
     if extra_paras:
         for p in extra_paras: el.append(p); el.append(Spacer(1,4))
     el.append(Spacer(1,4))
+    for f in impact_block(num, role_line):
+        el.append(f)
+    el.append(Spacer(1,6))
     el.append(Panel([Paragraph(f'<font color="#7C2E38"><b><font face="Cormorant-M">◆</font> Vedic Remedy &nbsp;·&nbsp; {cr["planet"]}</b></font>', ST['h3']),
                      Spacer(1,3), body(cr['remedy'])], bg=HexColor("#F6ECEC"), border=GOLD_D))
     el += expect_panel(num)
@@ -193,20 +222,23 @@ def sec_life_path(r):
     return core_section("The Master Road","Life Path Number",r['life_path'],C.LIFE_PATH_INTRO,
         value_note=lp_note,
         extra_paras=[h2("Living Your Life Path Well"),
-            body(f"When you move in the direction of the {cr_lp['planet']} — leading, building, or serving in the ways described above — life feels supported and synchronicities multiply. When you drift against it (chasing approval, comfort, or someone else's road), even success will feel hollow.")])
+            body(f"When you move in the direction of the {cr_lp['planet']} — leading, building, or serving in the ways described above — life feels supported and synchronicities multiply. When you drift against it (chasing approval, comfort, or someone else's road), even success will feel hollow.")],
+        role_line=f"Because {r['life_path']} is your Life Path, these effects are not occasional — they colour the entire journey. Expect them to repeat at every major crossroad until they are consciously handled:")
 
 def sec_destiny(r):
     d_note=f"Your Destiny Number is <b>{r['destiny']}</b>, the Chaldean total of every letter in <b>{r['name']}</b> ({r['destiny_total']} <font face='Cormorant-M'>\u2192</font> {r['destiny']})." + ("" if r['name_friendly'] else " Note: this vibration is not fully harmonised with your birth numbers — the Name Analysis section suggests a refinement.")
     return core_section("Your Public Mission","Destiny / Expression Number",r['destiny'],C.DESTINY_INTRO,
         value_note=d_note,
         extra_paras=[h2("How The World Receives You"),
-            body(f"Your name broadcasts the {core(r['destiny'])['planet']} frequency. This is the talent-set and reputation the universe organises around you — the 'what you're known for'. Where your Life Path ({r['life_path']}) is the road, this {r['destiny']} is the vehicle you drive it in.")])
+            body(f"Your name broadcasts the {core(r['destiny'])['planet']} frequency. This is the talent-set and reputation the universe organises around you — the 'what you're known for'. Where your Life Path ({r['life_path']}) is the road, this {r['destiny']} is the vehicle you drive it in.")],
+        role_line=f"Because {r['destiny']} rides on your name, these effects appear most strongly in your public life — how work finds you, how money answers your reputation, and how people commit to you:")
 
 def sec_soul_urge(r):
     return core_section("Your Heart's Desire","Soul Urge Number",r['soul_urge'],C.SOUL_INTRO,
         value_note=f"Your Soul Urge is <b>{r['soul_urge']}</b>, from the vowels of your name ({r['soul_urge_total']} <font face='Cormorant-M'>\u2192</font> {r['soul_urge']}). This is your private compass — what truly satisfies you beneath every public achievement.",
         extra_paras=[h2("Feeding Your Soul"),
-            body(f"You will feel deeply fulfilled in life only when your daily reality honours this {core(r['soul_urge'])['planet']} need. Many people achieve their Destiny number's goals yet feel empty — that emptiness is almost always a starved Soul Urge. Build at least one part of your life that feeds it directly.")])
+            body(f"You will feel deeply fulfilled in life only when your daily reality honours this {core(r['soul_urge'])['planet']} need. Many people achieve their Destiny number's goals yet feel empty — that emptiness is almost always a starved Soul Urge. Build at least one part of your life that feeds it directly.")],
+        role_line=f"Because {r['soul_urge']} is your inner engine, these effects surface as satisfaction or emptiness — a career, income or relationship that ignores them will succeed on paper and still feel wrong:")
 
 def sec_personality(r):
     cr_p=core(r['personality'])
@@ -219,6 +251,9 @@ def sec_personality(r):
     S+=[Panel([h3("What People Notice First")]+bullets(cr_p['strengths'][:4]))]
     S+=[Spacer(1,6), Panel([h3("The Mask vs The Truth")], bg=HexColor("#F6ECEC")), Spacer(1,2)]
     S+=[body(f"Remember: this is the wrapping, not the gift. People who only know your Personality number see the {cr_p['archetype']}; those who earn your trust discover the full depth of your Soul Urge {r['soul_urge']} and Life Path {r['life_path']}.")]
+    S+=[Spacer(1,6)]
+    S+=impact_block(r['personality'],
+        role_line=f"Because {r['personality']} is the face you broadcast first, these effects concentrate at thresholds — interviews, first meetings, negotiations, introductions — where the impression is formed before the depth is known:")
     S+=expect_panel(r['personality'])
     S+=[PageBreak()]
     return S
@@ -238,6 +273,9 @@ def sec_birthday(r):
         f"Supportive gemstone: <b>{cr_b['gem']}</b> (consult before wearing)",
         f"Harmonised numbers: <b>{', '.join(map(str,r['lucky_numbers'][:5]))}</b>",
     ])) ]
+    S+=[Spacer(1,6)]
+    S+=impact_block(r['driver'],
+        role_line=f"Because {r['driver']} is your daily engine, these effects show up in ordinary weeks — how you start your mornings, react under pressure, spend on impulse and handle the people closest to you:")
     S+=expect_panel(r['driver'])
     S+=[PageBreak()]
     return S
@@ -251,6 +289,9 @@ def sec_maturity(r):
     S+=[body(f"From roughly age 35–40 onward, the {cr_m['planet']} vibration of the {cr_m['archetype']} rises to the surface of your life. " + cr_m['essence'])]
     S+=[Spacer(1,8), Panel([h3("Preparing For Your Harvest")]+bullets(cr_m['strengths'][:4]))]
     S+=[Spacer(1,6), body("Knowing this early is a gift: you can consciously plant, through your 20s and 30s, the seeds whose fruit this number describes — so that your second half arrives as fulfilment rather than surprise.")]
+    S+=[Spacer(1,6)]
+    S+=impact_block(r['maturity'],
+        role_line=f"Because {r['maturity']} rises in your second half, these effects strengthen with age — what feels like a faint tendency in your 20s becomes the dominant theme after 40:")
     S+=expect_panel(r['maturity'])
     S+=[PageBreak()]
     return S
@@ -267,8 +308,21 @@ def sec_lo_shu(r):
         rep=[h3("Repeated Numbers — Amplified Energies")]
         for n,c in sorted(r['repeated'].items()):
             rep.append(Paragraph(f'<font face="Cormorant-M" color="#7C2E38">◆</font>&nbsp; <b>{str(n)*c} ({n} appears {c}×):</b> {C.REPEATED.get(n,"")}', ST['bullet']))
+            balance = (C.PRACTICAL_REMEDY.get(n) or [""])[0]
+            if balance:
+                rep.append(Paragraph(f'&nbsp;&nbsp;&nbsp;<font color="#8C8472">Balancing habit —</font> {balance}', ST['bullet']))
             rep.append(Spacer(1,3))
         S+=[Panel(rep)]; S+=[Spacer(1,6)]
+    if r['missing']:
+        mis=[h3("Missing Numbers — Absent Energies, Their Real-Life Effect & Remedy")]
+        mis.append(body("A missing number is not a curse — it marks a planetary energy your birth date did not pre-load, "
+                        "so its qualities must be built consciously rather than inherited. For each one below: what its absence "
+                        "feels like in daily life, and the specific practice that fills the gap."))
+        mis.append(Spacer(1,4))
+        for n in r['missing']:
+            mis.append(Paragraph(f'<font face="Cormorant-M" color="#7C2E38">◆</font>&nbsp; {C.MISSING.get(n,"")}', ST['bullet']))
+            mis.append(Spacer(1,3))
+        S+=[Panel(mis, bg=HexColor("#F6ECEC"))]; S+=[Spacer(1,6)]
     if r['complete_planes']:
         pl=[h3("Power Planes & Arrows You Possess")]
         for p in r['complete_planes']:

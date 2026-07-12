@@ -13,6 +13,8 @@ import report as R
 import astrology as AST
 import astrology_report as AR
 import divorce_report as DR
+import extra_parse as XP
+from quality_gate import verify_pdf
 
 def _slug(s): return re.sub(r'[^a-zA-Z0-9]+', '_', s).strip('_')[:40]
 
@@ -38,6 +40,10 @@ REPORT_ALIASES = {
     "divorce_separation": "premium_divorce_separation",
     "divorce_separation_report": "premium_divorce_separation",
     "premium_divorce_separation": "premium_divorce_separation",
+    "palmistry": "premium_palmistry",
+    "palm": "premium_palmistry",
+    "palmistry_report": "premium_palmistry",
+    "premium_palmistry": "premium_palmistry",
 }
 
 def _analyse_digits(value):
@@ -107,7 +113,56 @@ def _prepare_optional_data(r, report_type, extra):
     return rt
 
 def _slug_place(s):
-    return re.sub(r'[^a-zA-Z0-9]+', '_', s or '').strip('_')[:32]
+    return re.sub(r'[^a-zA-Z0-9]+', '_', s or 'NA').strip('_')[:32]
+
+# Classical Indian reference point (Ujjain — the traditional prime meridian of
+# Indian astronomy). Used ONLY as a flagged, transparent fallback when the
+# birth place cannot be resolved, so the report still generates and the
+# limitation is stated on the report itself instead of the order failing.
+_FALLBACK_COORDS = "23.1793, 75.7849"
+
+def _compute_chart_with_fallbacks(full_name, dob, birth_time, birth_place, gender="", email="", focus_area="general life path"):
+    """Compute the Vedic chart with graceful degradation instead of crashing.
+
+    - Missing birth time  -> 12:00 noon chart, flagged `birth_time_estimated`.
+    - Missing/unresolvable birth place -> Ujjain reference point, flagged
+      `place_estimated`. Geocoded places are converted to lat/lon so the
+      chart validator accepts them.
+    The renderers turn these flags into visible 'Data Limitation' notices.
+    """
+    limitations = []
+    time_estimated = False
+    if not birth_time:
+        birth_time = "12:00"
+        time_estimated = True
+        limitations.append("birth time not provided; 12:00 noon chart used")
+    display_place = birth_place
+    calc_place = birth_place
+    place_estimated = False
+    if birth_place:
+        try:
+            info = AST.parse_place(birth_place)
+            if info.get("source") == "geopy-nominatim":
+                # validator only trusts built-in/lat-lon sources; feed it the
+                # geocoded coordinates directly so a real lookup is not wasted
+                calc_place = f"{info['lat']:.4f}, {info['lon']:.4f}"
+        except Exception:
+            calc_place = _FALLBACK_COORDS
+            place_estimated = True
+            limitations.append(f"birth place {birth_place!r} could not be resolved; central reference location used")
+    else:
+        calc_place = _FALLBACK_COORDS
+        place_estimated = True
+        limitations.append("birth place not provided; central reference location used")
+    chart = AST.compute_chart(full_name, dob, birth_time, calc_place, gender=gender,
+                              focus_area=focus_area, email=email)
+    chart["birth_place"] = display_place or "Not provided"
+    chart["birth_time_estimated"] = time_estimated
+    chart["place_estimated"] = place_estimated
+    chart["data_limitations"] = limitations
+    if limitations:
+        print("chart fallbacks applied:", "; ".join(limitations))
+    return chart, limitations
 
 def generate_report(full_name, dob, gender="", out_dir=".", book_cover=None, report_type="complete", extra="",
                     birth_time="", birth_place="", focus_area="", email="", partner_name="", partner_dob="",
@@ -117,25 +172,55 @@ def generate_report(full_name, dob, gender="", out_dir=".", book_cover=None, rep
     report_type: complete_numerology plus focused service keys such as
     mobile_number_analysis, name_numerology, career_numerology and legacy aliases.
     extra: the report's second input (mobile number, business name, or partner's name & DOB)."""
+    # sanitize every incoming field (frontend can leak "undefined"/"null"/junk)
+    full_name = XP.sanitize(full_name) or "Customer"
+    gender = XP.sanitize(gender); extra = XP.sanitize(extra)
+    birth_time = XP.sanitize(birth_time); birth_place = XP.sanitize(birth_place)
+    focus_area = XP.sanitize(focus_area)
+    partner_name = XP.sanitize(partner_name); partner_dob = XP.sanitize(partner_dob)
+    partner_birth_time = XP.sanitize(partner_birth_time); partner_birth_place = XP.sanitize(partner_birth_place)
+    marriage_date = XP.sanitize(marriage_date); current_issue = XP.sanitize(current_issue)
+    children = XP.sanitize(children); main_question = XP.sanitize(main_question)
     if isinstance(dob, str):
         dob = datetime.strptime(dob.strip(), "%Y-%m-%d").date()
     canonical_type = REPORT_ALIASES.get((report_type or "complete").strip(), (report_type or "complete").strip())
-    if canonical_type == "premium_astrology_life_path":
-        if not birth_time or not birth_place:
-            raise ValueError("birth_time and birth_place are required for Premium Astrology Life Path reports")
+
+    if canonical_type == "premium_palmistry":
+        import palmistry as PM
+        import palmistry_report as PR
         os.makedirs(out_dir, exist_ok=True)
-        chart = AST.compute_chart(full_name, dob, birth_time, birth_place, gender=gender,
-                                  focus_area=focus_area or extra or "general life path", email=email)
-        fname = f"VeshannAstro_Astrology_Life_Path_{_slug(full_name)}_{dob.isoformat()}_{_slug_place(birth_place)}.pdf"
+        profile = PM.compute_palm_profile(full_name, dob, gender=gender, extra=extra,
+                                          focus_area=focus_area, email=email)
+        fname = f"VeshannAstro_Palmistry_Report_{_slug(full_name)}_{dob.isoformat()}.pdf"
+        out_path = os.path.abspath(os.path.join(out_dir, fname))
+        PR.build_palmistry_report(profile, out_path)
+        verify_pdf(out_path)
+        return out_path
+
+    if canonical_type in ("premium_astrology_life_path", "premium_divorce_separation"):
+        # backfill missing structured fields from the free-text `extra` blob
+        parsed = XP.parse_extra(extra)
+        birth_time = birth_time or parsed["birth_time"]
+        birth_place = birth_place or parsed["birth_place"]
+        gender = gender or parsed["gender"]
+        focus_area = focus_area or parsed["focus_area"]
+        partner_name = partner_name or parsed["partner_name"]
+        partner_dob = partner_dob or parsed["partner_dob"]
+        partner_birth_time = partner_birth_time or parsed["partner_birth_time"]
+        partner_birth_place = partner_birth_place or parsed["partner_birth_place"]
+        chart, limitations = _compute_chart_with_fallbacks(
+            full_name, dob, birth_time, birth_place, gender=gender, email=email,
+            focus_area=(focus_area or (current_issue if canonical_type == "premium_divorce_separation" else extra)
+                        or ("relationship clarity" if canonical_type == "premium_divorce_separation" else "general life path")))
+        os.makedirs(out_dir, exist_ok=True)
+
+    if canonical_type == "premium_astrology_life_path":
+        fname = f"VeshannAstro_Astrology_Life_Path_{_slug(full_name)}_{dob.isoformat()}_{_slug_place(chart['birth_place'])}.pdf"
         out_path = os.path.abspath(os.path.join(out_dir, fname))
         AR.build_astrology_report(chart, out_path)
+        verify_pdf(out_path)
         return out_path
     if canonical_type == "premium_divorce_separation":
-        if not birth_time or not birth_place:
-            raise ValueError("birth_time and birth_place are required for Premium Divorce, Separation & Relationship Karma reports")
-        os.makedirs(out_dir, exist_ok=True)
-        chart = AST.compute_chart(full_name, dob, birth_time, birth_place, gender=gender,
-                                  focus_area=focus_area or current_issue or "relationship crisis", email=email)
         payload = {
             "partner_name": partner_name, "partner_dob": partner_dob,
             "partner_birth_time": partner_birth_time, "partner_birth_place": partner_birth_place,
@@ -146,9 +231,10 @@ def generate_report(full_name, dob, gender="", out_dir=".", book_cover=None, rep
             payload = {}
         import json
         report_extra = json.dumps(payload) if payload else extra
-        fname = f"VeshannAstro_Divorce_Separation_Report_{_slug(full_name)}_{dob.isoformat()}_{_slug_place(birth_place)}.pdf"
+        fname = f"VeshannAstro_Divorce_Separation_Report_{_slug(full_name)}_{dob.isoformat()}_{_slug_place(chart['birth_place'])}.pdf"
         out_path = os.path.abspath(os.path.join(out_dir, fname))
         DR.build_divorce_report(chart, out_path, extra=report_extra)
+        verify_pdf(out_path)
         return out_path
     r = N.compute(full_name, dob, gender)
     report_type = _prepare_optional_data(r, canonical_type, extra)
@@ -157,6 +243,7 @@ def generate_report(full_name, dob, gender="", out_dir=".", book_cover=None, rep
     fname = f"VeshannAstro_Numerology{tag}_{_slug(full_name)}_{dob.isoformat()}.pdf"
     out_path = os.path.abspath(os.path.join(out_dir, fname))
     R.build_report(r, out_path, book_cover=book_cover, report_type=report_type)
+    verify_pdf(out_path)
     return out_path
 
 if __name__ == "__main__":

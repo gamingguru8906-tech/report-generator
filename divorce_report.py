@@ -17,7 +17,9 @@ from reportlab.platypus import Paragraph, Spacer, PageBreak, Table, TableStyle, 
 
 from pdfbuild_base import ReportDoc, ST, GoldRule, Panel, bullets, GOLD, GOLD_L, GOLD_D, CREAM, MUTE, LINE, PW, MARGIN
 import astrology as A
+import astro_content as AC
 import numerology as N
+from quality_gate import audit_story
 
 MONTHS = ["","January","February","March","April","May","June","July","August","September","October","November","December"]
 MAL = {"Saturn", "Mars", "Rahu", "Ketu", "Sun"}
@@ -168,12 +170,12 @@ def repair_word(score):
 
 def verdict_path(score):
     if score >= 5:
-        return "Prepare / Separate respectfully"
+        return "Prepare thoughtfully — a structured, respectful separation may need serious consideration"
     if score >= 3:
-        return "Mediate before final decision"
+        return "Mediate before any final decision"
     if score >= 1:
         return "Wait and repair with structure"
-    return "Repair"
+    return "Repair-focused — the chart supports rebuilding"
 
 def partner_chart_or_partial(data):
     name = data.get("partner_name", "").strip()
@@ -231,8 +233,106 @@ def cover(c, data, partner):
     S += [PageBreak()]
     return S
 
+def limitations_page(c, data, partner):
+    """Relationship Data & Limitations — what was provided, what wasn't, and
+    exactly how missing data limits the reading. Nothing is invented."""
+    missing = []
+    if not data.get("partner_birth_time") or not data.get("partner_birth_place"):
+        missing.append("Partner birth time/place: partner Lagna, houses and D9 are NOT used; partner analysis is limited to Moon-independent factors and DOB numerology.")
+    if not data.get("marriage_date"):
+        missing.append("Marriage date: marriage-chart (muhurta) factors are not analysed.")
+    if not data.get("current_issue"):
+        missing.append("Current issue was not described: the reading addresses general relationship pressure rather than your specific situation.")
+    if c.get("birth_time_estimated"):
+        missing.append(AC.DISCLAIMERS["limited_time"])
+    provided = [
+        f"Your birth details: {fmt_date(c['dob'])}, {c['birth_time']}, {c['birth_place']} — full Vedic chart calculated.",
+        f"Partner: {partner['name']}" + (f", born {fmt_date(partner.get('dob'))}" if partner.get("dob") else " (date of birth not provided)") + ".",
+        f"Concern shared: {data.get('current_issue') or data.get('main_question') or 'not specified'}.",
+    ]
+    return page("Data & Limitations", "Relationship Data & Limitations", [
+        lead("A trustworthy reading starts by being honest about its inputs. This page states exactly what data this report is built on, "
+             "and where missing information limits what can responsibly be said. Where the data is limited, the interpretation is "
+             "deliberately kept more cautious — nothing in this report is invented to fill a gap."),
+        Spacer(1, 8),
+        Panel([h3("Data Used")] + bullets(provided), border=GOLD_D),
+        Spacer(1, 8),
+        Panel([h3("Limitations Applied")] + bullets(missing or ["All requested data was provided; no structural limitation applies to this reading."]), bg=HexColor("#F6ECEC")),
+        Spacer(1, 8),
+        p("Confidentiality: your birth details, your partner's details and the concerns you shared are used only to prepare this report and are never shared or published.", "mute"),
+    ])
+
+def emotional_pattern(c, partner):
+    mn = AC.moon_reading(c["moon_sign"])
+    nk_theme, nk_advice = AC.nakshatra_reading(c["moon_nakshatra"]["name"])
+    items = [
+        f"<b>Your emotional pattern (Moon in {c['moon_sign']}):</b> {mn['pattern']}. Under relationship stress this intensifies — what you genuinely need to stay steady is {mn['need']}.",
+        f"<b>Your nakshatra ({c['moon_nakshatra']['name']}):</b> the underlying theme is {nk_theme}. In a strained marriage this often decides how you fight and how you withdraw.",
+        f"<b>Self-care instruction from the chart:</b> {mn['care']}.",
+    ]
+    pc = partner.get("chart")
+    if pc:
+        pm = AC.moon_reading(pc["moon_sign"])
+        items.append(f"<b>Partner's emotional pattern (Moon in {pc['moon_sign']}):</b> {pm['pattern']}. What steadies them is {pm['need']} — friction often comes from each side offering what *they* need rather than what the other needs.")
+    else:
+        items.append("Partner's Moon-based emotional pattern is not printed because partner birth time/place was incomplete; conclusions here are drawn from your chart only.")
+    return page("Emotional Patterns", "Emotional Pattern Analysis", [
+        lead("Before timing and verdicts, it matters to understand the emotional machinery on both sides. Most relationship crises are not "
+             "caused by events but by two emotional patterns colliding under pressure. This page describes yours — calmly and without blame."),
+        Spacer(1, 8),
+        Panel([h3("What The Charts Show")] + bullets(items), border=GOLD_D),
+        Spacer(1, 8),
+        Panel([h3("Why This Matters"), p(
+            "This matters because the same conversation lands completely differently depending on which emotional pattern receives it. "
+            "Knowing your own pattern lets you separate 'the marriage is failing' from 'my pattern is being starved' — two different problems "
+            "with two different solutions. A practical way to work with this is to meet your own stabilising need deliberately during this period, "
+            "so that decisions come from a regulated mind rather than a depleted one.")]),
+    ])
+
+def communication_guidance(c):
+    tr = c["transits"]
+    return page("Communication", "Communication Do / Avoid Guidance", [
+        lead("Whatever direction this relationship takes, communication quality decides how much damage the journey causes. "
+             "These rules are matched to your chart's emotional pattern and the current planetary pressure."),
+        Spacer(1, 8),
+        Panel([h3("Do")] + bullets([
+            "Speak about specific behaviours and specific dates — not character verdicts. 'What happened on Tuesday' can be resolved; 'what you always do' cannot.",
+            "Put important agreements in writing, calmly — clarity protects both people, and Saturn periods reward documentation.",
+            f"Time serious conversations to calmer windows (the transit-timing page lists them; Jupiter currently supports house {tr['Jupiter']['from_lagna']} matters).",
+            "Keep one trusted, neutral confidant instead of a chorus of advisors; too many voices amplify the crisis.",
+            "State your needs directly at least once, plainly, before concluding they cannot be met.",
+        ]), border=GOLD_D),
+        Spacer(1, 7),
+        Panel([h3("Avoid")] + bullets([
+            "Avoid late-night and message-thread arguments — this Moon pattern loses regulation exactly when the mind is tired.",
+            "Avoid public accusations, family-audience confrontations and social media commentary; they convert a private repair problem into a permanent record.",
+            "Avoid ultimatums issued during anger peaks; in this chart's current dasha they harden positions rather than resolving them.",
+            "Avoid using children, money or silence as leverage — each one creates karma that outlasts the marriage question itself.",
+            "Avoid making irreversible legal or financial moves purely on emotion; take decisions with a clear head and, where needed, professional advice.",
+        ]), bg=HexColor("#F6ECEC")),
+    ])
+
+def emotional_safety(c):
+    return page("Wellbeing", "Emotional Safety Note", [
+        lead("A report can map timing and patterns; it cannot hold you through a hard season. This page is about you, not the marriage."),
+        Spacer(1, 8),
+        Panel([h3("Please Read This Carefully")] + bullets([
+            "Relationship crisis is one of the heaviest stresses a person carries. Sleep, food and daily structure are not optional during this period — they are the foundation every good decision stands on.",
+            "If there is any physical danger, threat or abuse in the relationship, your safety comes first — before astrology, before timing, before this report. Contact local authorities or a trusted person immediately.",
+            "If you notice persistent hopelessness, anxiety or inability to function, please speak to a qualified mental-health professional. Seeking that help is strength, and nothing in this chart argues against it.",
+            "Legal rights, custody and financial protection are matters for qualified lawyers. Use this report for reflection and timing — use professionals for the mechanics.",
+        ]), border=GOLD_D),
+        Spacer(1, 8),
+        p("This report offers reflective, astrology-based guidance only. It does not, and cannot, instruct you to stay in or leave a marriage. "
+          "That decision is yours, and it deserves both the timing wisdom in these pages and the professional support named above.", "mute"),
+    ])
+
 def snapshot(c, data, partner, score, factors):
-    return page("Direct Conclusions", "Relationship Crisis Snapshot", [
+    return page("Confidential Summary", "Confidential Executive Summary", [
+        lead(f"{c['name']}, this summary condenses the whole report: the calculated pressure level, the repair potential, the current planetary "
+             "phase, and the immediate best action. It is written for you alone and handled confidentially. Every figure here is expanded, "
+             "with its basis, in the pages that follow — and none of it is a fixed sentence on your marriage."),
+        Spacer(1, 8),
         table([
             ("Separation risk", level(score)),
             ("Reconciliation possibility", repair_word(score)),
@@ -344,13 +444,13 @@ def separation_indicators(c):
     return page("Risk Factors", "Separation / Divorce Indicators", [
         Panel([h3(f"Indication Level: {strength_word(relation_score(c)[0])}")] + bullets(items), border=GOLD_D),
         Spacer(1, 8),
-        p("This is not a guaranteed divorce statement. It is a technical strength label based on calculated pressure factors.", "mute"),
+        p("This page does not predict a divorce. It is a technical strength label based on calculated pressure factors, and it can change with time and handling.", "mute"),
         Spacer(1, 8),
         premium_block(
             "6th/8th/12th links, Rahu/Ketu axis, Saturn/Mars affliction, weak 2nd house, D9 proxy and transit pressure",
             f"Divorce indication is {strength_word(relation_score(c)[0])}.",
             "The indication rises only when multiple technical pressure factors repeat; one factor alone is not treated as destiny.",
-            "Use this page for caution and timing. Do not convert it into fear or a guaranteed outcome."),
+            "Use this page for caution and timing. Do not convert it into fear or a fixed conclusion."),
     ])
 
 def reconciliation_indicators(c):
@@ -464,6 +564,7 @@ def action_plan(c):
     ])
 
 def build_divorce_report(client_chart, out_path, extra="", **kwargs):
+    strict = kwargs.pop("strict", False)
     data = parse_payload(extra, **kwargs)
     client_chart["numerology"] = N.compute(client_chart["name"], client_chart["dob"], client_chart.get("gender", ""))
     partner = partner_chart_or_partial(data)
@@ -471,6 +572,8 @@ def build_divorce_report(client_chart, out_path, extra="", **kwargs):
     story = []
     story += cover(client_chart, data, partner)
     story += snapshot(client_chart, data, partner, score, factors)
+    story += limitations_page(client_chart, data, partner)
+    story += emotional_pattern(client_chart, partner)
     story += seventh_house(client_chart)
     story += navamsa(client_chart)
     story += compatibility(client_chart, partner)
@@ -478,9 +581,15 @@ def build_divorce_report(client_chart, out_path, extra="", **kwargs):
     story += reconciliation_indicators(client_chart)
     story += dasha_timing(client_chart)
     story += transit_timing(client_chart)
+    story += communication_guidance(client_chart)
     story += final_verdict(client_chart)
     story += remedies(client_chart)
     story += action_plan(client_chart)
-    doc = ReportDoc(out_path)
+    story += emotional_safety(client_chart)
+    audit_story(story, report_name="premium_divorce_separation",
+                required_disclaimers=[("professional-help note", "mental-health professional"),
+                                      ("no-instruction note", "cannot, instruct you to stay in or leave")],
+                strict=strict)
+    doc = ReportDoc(out_path, footer_title="Confidential Relationship Report")
     doc.build(story)
     return out_path

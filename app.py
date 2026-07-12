@@ -64,6 +64,7 @@ PRODUCTS = {
     "vehicle":  ("vehicle_number_analysis", int(os.environ.get("PRICE_VEHICLE", "25000")), "Vehicle Number Analysis"),
     "astrology_life_path": ("premium_astrology_life_path", 199900, "Premium Astrology Life Path Report"),
     "divorce_separation_report": ("premium_divorce_separation", 199900, "Premium Divorce, Separation & Relationship Karma Report"),
+    "palmistry": ("premium_palmistry", int(os.environ.get("PRICE_PALMISTRY", "149900")), "Premium Palmistry Analysis Report"),
 }
 
 _DONE = set()   # in-memory idempotency guard against duplicate webhook deliveries
@@ -127,6 +128,8 @@ async def create_order(request: Request):
         raise HTTPException(400, "birth_time, birth_place and focus_area are required for this report")
     if report_type == "premium_divorce_separation" and not (birth_time and birth_place and partner_name and partner_dob and current_issue and main_question):
         raise HTTPException(400, "birth_time, birth_place, partner_name, partner_dob, current_issue and main_question are required for this report")
+    if report_type == "premium_palmistry" and not extra.lower().startswith("palm"):
+        raise HTTPException(400, "palm observation data is required for this report")
     payload = {
         "amount": amount, "currency": "INR",
         "receipt": f"num-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}",
@@ -170,9 +173,37 @@ async def webhook(request: Request):
     # Only act on orders THIS report page created (tagged source=veshann_report with a known product).
     # This makes the backend safely ignore your live-consultation bookings on the same Razorpay account.
     is_report = notes.get("source") == "veshann_report" and notes.get("product") in PRODUCTS
+
+    # Hosted Razorpay Payment Pages (rzp.io links on veshannastro.co.in) carry no
+    # source tag — recognise them from their form-answer notes and fulfil automatically.
+    if event in ("order.paid", "payment.captured") and not is_report:
+        pay_ent = (payload.get("payment") or {}).get("entity", {})
+        mapped = None
+        try:
+            import payment_pages as PP
+            mapped = PP.match_payment_page(notes or pay_ent.get("notes") or {}, pay_ent, PRODUCTS)
+        except Exception as e:
+            print(f"[webhook] payment-page match error: {e!r}")
+        if mapped:
+            dedup_key = order_id or pay_ent.get("id", "")
+            if dedup_key and (dedup_key in _DONE or dedup_key in _fulfilled):
+                print(f"[webhook] {dedup_key} already handled — skipping duplicate")
+                return {"status": "ok", "dedup": True}
+            if dedup_key:
+                _DONE.add(dedup_key)
+            report_type = PRODUCTS[mapped["product"]][0]
+            print(f"[webhook] payment-page order matched: product={mapped['product']} "
+                  f"email={mapped['email']} dob={mapped['dob']} order={dedup_key}")
+            threading.Thread(target=_safe_fulfil, daemon=True, args=(
+                mapped["name"], mapped["dob"], mapped["email"], mapped["gender"],
+                dedup_key, report_type, mapped["extra"])).start()
+            return {"status": "ok", "payment_page": True}
+
     if event in ("order.paid", "payment.captured") and is_report and notes.get("email") and notes.get("dob"):
         dedup_key = order_id or notes.get("email", "")
-        if dedup_key and dedup_key in _DONE:
+        # _fulfilled is also checked so a /trigger-report call from the booking
+        # page and this webhook never both send the same report
+        if dedup_key and (dedup_key in _DONE or dedup_key in _fulfilled):
             print(f"[webhook] {dedup_key} already handled — skipping duplicate")
             return {"status": "ok", "dedup": True}
         if dedup_key:
@@ -197,6 +228,9 @@ def _safe_fulfil(name, dob, email, gender="", order_id="", report_type="complete
                      birth_time, birth_place, focus_area, partner_name, partner_dob,
                      partner_birth_time, partner_birth_place, marriage_date, current_issue,
                      children, main_question)
+    except _LoggedFailure as e:
+        # Failure is already visible on the order's own Sheet row (status=FAILED).
+        print("FULFILMENT ERROR (logged on order row):", repr(e))
     except Exception as e:
         import traceback
         tb = traceback.format_exc()
@@ -248,6 +282,67 @@ def append_to_sheet(row, creds):
     build("sheets", "v4", credentials=creds).spreadsheets().values().append(
         spreadsheetId=SHEET_ID, range=f"{SHEET_TAB}!A1", valueInputOption="USER_ENTERED",
         insertDataOption="INSERT_ROWS", body={"values": [row]}).execute()
+
+# ─────────── Status lifecycle + durable idempotency (Sheet-backed) ───────────
+# Row layout (backwards compatible — legacy rows ended at U="SENT"):
+#   A..S = ts, order_id, name, dob, email, gender, report_type, extra,
+#          birth_time, birth_place, focus_area, partner_* (4), marriage_date,
+#          current_issue, children, main_question
+#   T = report URL (Drive link)   U = status   V = status timestamp
+#   W = error message             X = pipeline version
+PIPELINE_VERSION = "report-pipeline-v2-sheet-status-2026-07-12"
+TERMINAL_STATUSES = {"SENT", "DELIVERED"}
+
+class _LoggedFailure(Exception):
+    """Failure already recorded on the order's own Sheet row."""
+
+def _now_ts():
+    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+def _sheets(creds):
+    from googleapiclient.discovery import build
+    return build("sheets", "v4", credentials=creds).spreadsheets()
+
+def append_status_row(row, creds):
+    """Append a row and return its 1-based row index (from updatedRange)."""
+    resp = _sheets(creds).values().append(
+        spreadsheetId=SHEET_ID, range=f"{SHEET_TAB}!A1", valueInputOption="USER_ENTERED",
+        insertDataOption="INSERT_ROWS", body={"values": [row]}).execute()
+    rng = resp.get("updates", {}).get("updatedRange", "")   # e.g. Orders!A17:X17
+    try:
+        return int("".join(ch for ch in rng.split("!")[1].split(":")[0] if ch.isdigit()))
+    except Exception:
+        return None
+
+def update_status_cells(row_idx, creds, status, link=None, error=None):
+    """Update T (link), U (status), V (timestamp), W (error) on an order row."""
+    if not row_idx:
+        return
+    values = [[("" if link is None else link), status, _now_ts(),
+               ("" if error is None else str(error)[:300])]]
+    _sheets(creds).values().update(
+        spreadsheetId=SHEET_ID, range=f"{SHEET_TAB}!T{row_idx}:W{row_idx}",
+        valueInputOption="USER_ENTERED", body={"values": values}).execute()
+    print(f"[fulfil] row={row_idx} status={status}" + (f" link={link}" if link else "")
+          + (f" error={error}" if error else ""))
+
+def _already_fulfilled_in_sheet(order_id, creds):
+    """Durable dedup: True if this order_id already has a terminal-status row.
+    Survives redeploys (unlike the in-memory _DONE/_fulfilled sets)."""
+    if not order_id:
+        return False
+    try:
+        got = _sheets(creds).values().get(
+            spreadsheetId=SHEET_ID, range=f"{SHEET_TAB}!B:U").execute().get("values", [])
+        for r in got:
+            if r and r[0] == order_id:
+                status = (r[19] if len(r) > 19 else "").strip().upper()
+                if status in TERMINAL_STATUSES:
+                    return True
+        return False
+    except Exception as e:
+        print(f"[fulfil] dedup check failed (continuing): {e!r}")
+        return False
 
 def send_email(to_email, name, pdf_path, report_type="Numerology Report"):
     with open(pdf_path, "rb") as fh:
@@ -359,27 +454,140 @@ def fulfil_order(name, dob, email, gender="", order_id="", report_type="complete
                  birth_time="", birth_place="", focus_area="", partner_name="", partner_dob="",
                  partner_birth_time="", partner_birth_place="", marriage_date="", current_issue="",
                  children="", main_question=""):
-    pdf = generate_report(name, dob, gender=gender, out_dir=OUT_DIR,
-                          book_cover=BOOK_COVER, report_type=report_type, extra=extra,
-                          birth_time=birth_time, birth_place=birth_place,
-                          focus_area=focus_area, email=email,
-                          partner_name=partner_name, partner_dob=partner_dob,
-                          partner_birth_time=partner_birth_time, partner_birth_place=partner_birth_place,
-                          marriage_date=marriage_date, current_issue=current_issue,
-                          children=children, main_question=main_question)
-    creds = _google_creds()
-    # Drive upload — optional, skipped gracefully if service account has no quota
-    link = "N/A"
+    # 0. Sheet credentials + durable idempotency check (survives redeploys).
+    creds, row_idx = None, None
     try:
-        link = upload_to_drive(pdf, creds)
-    except Exception as drive_err:
-        print(f"Drive upload skipped: {drive_err}")
-    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    append_to_sheet([ts, order_id, name, dob, email, gender, report_type, extra, birth_time, birth_place, focus_area, partner_name, partner_dob, partner_birth_time, partner_birth_place, marriage_date, current_issue, children, main_question, link, "SENT"], creds)
-    send_email(email, name, pdf, report_type=report_type)
-    send_email("veshannastro@gmail.com", name, pdf, report_type=report_type)  # your backup copy
-    print(f"Fulfilled {order_id} ({report_type}) for {email}: {link}")
+        creds = _google_creds()
+    except Exception as cred_err:
+        print(f"[fulfil] WARNING: no Sheet credentials, running without status log: {cred_err!r}")
+    if creds and _already_fulfilled_in_sheet(order_id, creds):
+        print(f"[fulfil] order={order_id} already has a terminal Sheet row — skipping duplicate")
+        return "duplicate-skipped"
+
+    # 1. RECEIVED — the order gets its own row immediately, before any work.
+    if creds:
+        try:
+            row_idx = append_status_row(
+                [_now_ts(), order_id, name, dob, email, gender, report_type, extra,
+                 birth_time, birth_place, focus_area, partner_name, partner_dob,
+                 partner_birth_time, partner_birth_place, marriage_date, current_issue,
+                 children, main_question, "", "RECEIVED", _now_ts(), "", PIPELINE_VERSION],
+                creds)
+        except Exception as e:
+            print(f"[fulfil] could not append RECEIVED row: {e!r}")
+
+    def _fail(stage, exc):
+        print(f"[fulfil] order={order_id} FAILED at {stage}: {exc!r}")
+        if creds and row_idx:
+            try:
+                update_status_cells(row_idx, creds, "FAILED", error=f"{stage}: {exc}")
+                raise _LoggedFailure(f"{stage}: {exc}") from exc
+            except _LoggedFailure:
+                raise
+            except Exception as e2:
+                print(f"[fulfil] could not mark FAILED: {e2!r}")
+        raise exc
+
+    # 2. GENERATING → GENERATED
+    if creds and row_idx:
+        update_status_cells(row_idx, creds, "GENERATING")
+    try:
+        pdf = generate_report(name, dob, gender=gender, out_dir=OUT_DIR,
+                              book_cover=BOOK_COVER, report_type=report_type, extra=extra,
+                              birth_time=birth_time, birth_place=birth_place,
+                              focus_area=focus_area, email=email,
+                              partner_name=partner_name, partner_dob=partner_dob,
+                              partner_birth_time=partner_birth_time, partner_birth_place=partner_birth_place,
+                              marriage_date=marriage_date, current_issue=current_issue,
+                              children=children, main_question=main_question)
+    except Exception as e:
+        _fail("generate", e)
+    if creds and row_idx:
+        update_status_cells(row_idx, creds, "GENERATED")
+
+    # 3. Drive upload — optional, skipped gracefully if service account has no quota
+    link = "N/A"
+    if creds:
+        try:
+            link = upload_to_drive(pdf, creds)
+        except Exception as drive_err:
+            print(f"Drive upload skipped: {drive_err}")
+
+    # 4. Email delivery → DELIVERED
+    try:
+        send_email(email, name, pdf, report_type=report_type)
+    except Exception as e:
+        _fail("email", e)
+    try:
+        send_email("veshannastro@gmail.com", name, pdf, report_type=report_type)  # backup copy
+    except Exception as e:
+        print(f"[fulfil] backup-copy email failed (customer copy already sent): {e!r}")
+    if creds and row_idx:
+        update_status_cells(row_idx, creds, "DELIVERED", link=link)
+    print(f"Fulfilled {order_id} ({report_type}) for {email}: {link} [{PIPELINE_VERSION}]")
     return link
+
+# ───────────────────────── Palm photo upload (before payment) ─────────────────────────
+PALM_UPLOAD_DIR = os.environ.get("PALM_UPLOAD_DIR", "/tmp/palm_uploads")
+_PALM_MAX_BYTES = 8 * 1024 * 1024   # 8 MB per photo
+
+def _save_palm_image(b64_data: str, dest_path: str):
+    """Decode a base64/data-URL image, verify it IS an image, save as JPEG."""
+    if "," in b64_data[:80] and b64_data.lstrip().lower().startswith("data:"):
+        b64_data = b64_data.split(",", 1)[1]
+    raw = base64.b64decode(b64_data, validate=False)
+    if len(raw) > _PALM_MAX_BYTES:
+        raise ValueError("image exceeds 8 MB limit")
+    from io import BytesIO
+    from PIL import Image
+    im = Image.open(BytesIO(raw))
+    im.verify()                       # reject non-images
+    im = Image.open(BytesIO(raw)).convert("RGB")
+    im.thumbnail((1600, 1600))        # normalise size for storage/PDF embedding
+    im.save(dest_path, "JPEG", quality=88)
+
+@app.post("/upload-palm")
+async def upload_palm(request: Request):
+    """Called by the booking page BEFORE payment. Accepts JSON
+    {left: <base64/dataURL>, right: <base64/dataURL>} (either side optional,
+    at least one required). Stores photos under a random upload id that the
+    page then packs into the order's `extra` field. Photos are also backed up
+    to Drive (best-effort) so fulfilment survives an instance restart."""
+    import secrets
+    data = await request.json()
+    left, right = data.get("left") or "", data.get("right") or ""
+    if not (left or right):
+        raise HTTPException(400, "at least one palm photo is required")
+    upload_id = secrets.token_urlsafe(12).replace("-", "x").replace("_", "y")
+    dest = os.path.join(PALM_UPLOAD_DIR, upload_id)
+    os.makedirs(dest, exist_ok=True)
+    saved = {}
+    try:
+        if left:
+            _save_palm_image(left, os.path.join(dest, "left.jpg")); saved["left"] = True
+        if right:
+            _save_palm_image(right, os.path.join(dest, "right.jpg")); saved["right"] = True
+    except Exception as e:
+        raise HTTPException(400, f"could not read palm photo: {e}")
+    # best-effort Drive backup so photos survive redeploys until fulfilment
+    try:
+        creds = _google_creds()
+        for side in saved:
+            _upload_palm_to_drive(os.path.join(dest, f"{side}.jpg"), f"palm_{upload_id}_{side}.jpg", creds)
+    except Exception as e:
+        print(f"palm Drive backup skipped: {e}")
+    return {"upload_id": upload_id, "saved": sorted(saved)}
+
+def _upload_palm_to_drive(path, name, creds):
+    from googleapiclient.discovery import build
+    from googleapiclient.http import MediaFileUpload
+    drive = build("drive", "v3", credentials=creds)
+    meta = {"name": name}
+    if DRIVE_FOLDER_ID:
+        meta["parents"] = [DRIVE_FOLDER_ID]
+    drive.files().create(body=meta, fields="id",
+                         media_body=MediaFileUpload(path, mimetype="image/jpeg"),
+                         supportsAllDrives=True).execute()
 
 # ───────────────────────── Direct report trigger (belt-and-suspenders) ─────────────────────────
 @app.post("/trigger-report")
@@ -410,12 +618,14 @@ async def trigger_report(request: Request):
 
     if not (name and email and dob):
         raise HTTPException(400, "name, email and dob are required")
-    if payment_id in _fulfilled:
+    if payment_id in _fulfilled or (order_id and (order_id in _fulfilled or order_id in _DONE)):
         return JSONResponse({"status": "already_fulfilled"})
     _fulfilled.add(payment_id)
+    if order_id:
+        _fulfilled.add(order_id)
 
     threading.Thread(
-        target=fulfil_order,
+        target=_safe_fulfil,
         args=(name, dob, email, gender, order_id, report_type, extra, birth_time, birth_place, focus_area,
               partner_name, partner_dob, partner_birth_time, partner_birth_place, marriage_date,
               current_issue, children, main_question),

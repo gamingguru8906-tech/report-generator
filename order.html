@@ -86,6 +86,12 @@
   .deliver{font-size:.7rem;color:var(--text-muted);text-align:center;margin-top:18px;line-height:1.7;opacity:.85}
   .astro-extra{display:none}
   .divorce-extra{display:none}
+  .palm-extra{display:none}
+  .palm-note{font-size:.72rem;color:var(--text-muted);line-height:1.6;margin-top:6px;opacity:.85}
+  input[type=file]{padding:10px 12px;font-size:13px;color:var(--text-muted)}
+  input[type=file]::file-selector-button{background:var(--night2);border:1px solid var(--line);border-radius:2px;
+    color:var(--gold);font-family:'Cinzel',serif;font-size:8px;letter-spacing:.2em;text-transform:uppercase;
+    padding:7px 12px;margin-right:12px;cursor:pointer}
   .ok{display:none;text-align:center;padding:8px 0}
   .ok .tick{width:58px;height:58px;margin:0 auto 16px;border-radius:50%;border:1px solid var(--gold);
     display:flex;align-items:center;justify-content:center;color:var(--gold-light);font-size:26px}
@@ -222,6 +228,77 @@
       <input id="main_question" type="text" placeholder="What do you need clarity on?"/>
     </div>
 
+    <div class="palm-extra" id="palmFields">
+      <label for="dominant_hand">Dominant Hand (the one you write with)</label>
+      <select id="dominant_hand">
+        <option value="">Select</option>
+        <option value="right">Right</option>
+        <option value="left">Left</option>
+      </select>
+
+      <label for="palm_left">Left Palm Photo</label>
+      <input id="palm_left" type="file" accept="image/*"/>
+      <label for="palm_right">Right Palm Photo</label>
+      <input id="palm_right" type="file" accept="image/*"/>
+      <div class="palm-note">Bright, indirect daylight · fingers gently spread · palm fills the frame.
+        At least one palm photo is required; both palms give the deepest reading.</div>
+
+      <label for="hand_shape">Your Hand Shape (look at your palm)</label>
+      <select id="hand_shape">
+        <option value="">Not sure / skip</option>
+        <option value="earth">Square palm, shorter fingers (Earth)</option>
+        <option value="air">Square palm, longer fingers (Air)</option>
+        <option value="fire">Longer palm, shorter fingers (Fire)</option>
+        <option value="water">Longer palm, longer fingers (Water)</option>
+      </select>
+
+      <label for="life_line">Life Line (curves around the thumb ball)</label>
+      <select id="life_line">
+        <option value="">Not sure / skip</option>
+        <option value="long_curved">Long &amp; clearly curved</option>
+        <option value="short_faint">Shorter or faint</option>
+        <option value="broken_chained">Has breaks or chained sections</option>
+        <option value="double">Has a parallel sister line</option>
+      </select>
+
+      <label for="head_line">Head Line (crosses the middle of the palm)</label>
+      <select id="head_line">
+        <option value="">Not sure / skip</option>
+        <option value="straight_long">Straight &amp; long</option>
+        <option value="sloping">Slopes gently toward the wrist</option>
+        <option value="short">Short, ends near palm centre</option>
+        <option value="forked">Forked at the end</option>
+      </select>
+
+      <label for="heart_line">Heart Line (runs beneath the fingers)</label>
+      <select id="heart_line">
+        <option value="">Not sure / skip</option>
+        <option value="ends_index">Ends under the index finger</option>
+        <option value="ends_middle">Ends under the middle finger</option>
+        <option value="deep_curved">Deep &amp; clearly curved upward</option>
+        <option value="straight_faint">Straight or faint</option>
+      </select>
+
+      <label for="fate_line">Fate Line (rises up the centre toward the middle finger)</label>
+      <select id="fate_line">
+        <option value="">Not sure / skip</option>
+        <option value="strong">Strong &amp; unbroken</option>
+        <option value="faint">Faint or partial</option>
+        <option value="broken_shifting">Broken / restarts in a new position</option>
+        <option value="absent">Can't see one</option>
+      </select>
+
+      <label for="palm_focus">Focus Area</label>
+      <select id="palm_focus">
+        <option value="general life patterns">General Life Patterns</option>
+        <option value="career">Career</option>
+        <option value="relationships">Relationships</option>
+        <option value="money">Money</option>
+        <option value="health & energy">Health &amp; Energy</option>
+        <option value="life direction">Life Direction</option>
+      </select>
+    </div>
+
     <button class="pay" id="payBtn" onclick="startPayment()">Generate My Report</button>
     <div class="err" id="err"></div>
     <div class="trust">
@@ -276,7 +353,7 @@
   function showErr(m){ $("err").textContent = m || ""; }
 
   let PRODUCTS = {};
-  const ORDER = ["astrology_life_path","divorce_separation_report","complete","career","money","love","forecast","name","mobile","business","baby","house","vehicle","snapshot"];
+  const ORDER = ["astrology_life_path","divorce_separation_report","palmistry","complete","career","money","love","forecast","name","mobile","business","baby","house","vehicle","snapshot"];
   const INITIAL_PRODUCT = new URLSearchParams(window.location.search).get("product") || "";
 
   async function loadProducts(){
@@ -285,9 +362,10 @@
       PRODUCTS = await res.json();
     }catch(e){
       PRODUCTS = {
-        astrology_life_path:{amount:199900,label:"Premium Astrology Life Path Report"},
-        divorce_separation_report:{amount:199900,label:"Premium Divorce, Separation & Relationship Karma Report"},
-        complete:{amount:49900,label:"Complete Numerology Report (25 pages)"},
+        astrology_life_path:{amount:199900,label:"Premium Astrology Life Path Report",report_type:"premium_astrology_life_path"},
+        divorce_separation_report:{amount:199900,label:"Premium Divorce, Separation & Relationship Karma Report",report_type:"premium_divorce_separation"},
+        palmistry:{amount:149900,label:"Premium Palmistry Analysis Report",report_type:"premium_palmistry"},
+        complete:{amount:49900,label:"Complete Numerology Report (25 pages)",report_type:"complete_numerology"},
         career:{amount:29900,label:"Career & Wealth Numerology Blueprint"},
         love:{amount:29900,label:"Love & Relationship Numerology Report"},
         forecast:{amount:24900,label:"The Year Ahead Numerology Forecast"},
@@ -316,12 +394,44 @@
     const product = $("product").value;
     const isAstro = product === "astrology_life_path" || product === "divorce_separation_report";
     const isDivorce = product === "divorce_separation_report";
+    const isPalm = product === "palmistry";
     $("astroFields").style.display = isAstro ? "block" : "none";
     $("divorceFields").style.display = isDivorce ? "block" : "none";
-    document.querySelector(".eyebrow").textContent = isAstro ? "Veshann Astro - Vedic Astrology" : "Veshann Astro - Numerology";
-    document.querySelector("h1").innerHTML = isDivorce ? "Relationship <em>Karma</em>" : (isAstro ? "Astrology <em>Life Path</em>" : "Numerology <em>Reports</em>");
+    $("palmFields").style.display = isPalm ? "block" : "none";
+    document.querySelector(".eyebrow").textContent = isPalm ? "Veshann Astro - Palmistry" : (isAstro ? "Veshann Astro - Vedic Astrology" : "Veshann Astro - Numerology");
+    document.querySelector("h1").innerHTML = isPalm ? "Palmistry <em>Analysis</em>" : (isDivorce ? "Relationship <em>Karma</em>" : (isAstro ? "Astrology <em>Life Path</em>" : "Numerology <em>Reports</em>"));
   }
   loadProducts();
+
+  function fileToDataURL(file){
+    return new Promise((resolve,reject)=>{
+      const r = new FileReader();
+      r.onload = ()=>resolve(r.result); r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+  }
+
+  async function uploadPalmPhotos(){
+    const leftFile = $("palm_left").files[0];
+    const rightFile = $("palm_right").files[0];
+    const payload = {};
+    if(leftFile){ payload.left = await fileToDataURL(leftFile); }
+    if(rightFile){ payload.right = await fileToDataURL(rightFile); }
+    const res = await fetch(BACKEND_URL + "/upload-palm", {
+      method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload)
+    });
+    if(!res.ok){ throw new Error(await res.text()); }
+    return (await res.json()).upload_id;
+  }
+
+  function buildPalmExtra(uploadId){
+    const parts = ["palm"];
+    const f = (tag,id)=>{ const v = $(id).value; if(v) parts.push(tag + ":" + v); };
+    f("dh","dominant_hand"); f("hs","hand_shape"); f("ll","life_line");
+    f("hd","head_line"); f("ht","heart_line"); f("ft","fate_line"); f("fc","palm_focus");
+    if(uploadId) parts.push("up:" + uploadId);
+    return parts.join("|");
+  }
 
   async function startPayment(){
     const name = $("name").value.trim();
@@ -357,22 +467,50 @@
       if(!current_issue){ return showErr("Please select the current issue."); }
       if(!main_question){ return showErr("Please enter your main question."); }
     }
+    if(product === "palmistry"){
+      if(!$("dominant_hand").value){ return showErr("Please select your dominant hand."); }
+      if(!$("palm_left").files[0] && !$("palm_right").files[0]){
+        return showErr("Please upload at least one palm photo.");
+      }
+    }
 
     const btn = $("payBtn"); btn.disabled = true; btn.textContent = "Preparing checkout…";
     try{
+      let extra = "";
+      if(product === "palmistry"){
+        btn.textContent = "Uploading palm photos…";
+        const uploadId = await uploadPalmPhotos();
+        extra = buildPalmExtra(uploadId);
+        btn.textContent = "Preparing checkout…";
+      }
       const res = await fetch(BACKEND_URL + "/create-order", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({name, email, dob, gender, product, birth_time, birth_place, focus_area,
+        body: JSON.stringify({name, email, dob, gender, product, extra, birth_time, birth_place, focus_area,
           partner_name, partner_dob, partner_birth_time, partner_birth_place, marriage_date,
           current_issue, children, main_question})
       });
       if(!res.ok){ throw new Error(await res.text()); }
       const o = await res.json();
+      const reportType = (PRODUCTS[product] && PRODUCTS[product].report_type) || "complete";
       const rzp = new Razorpay({
         key:o.key_id, order_id:o.order_id, amount:o.amount, currency:o.currency,
-        name:"Veshannastro", description:o.label || "Numerology Report",
+        name:"Veshannastro", description:o.label || "Personalised Report",
         prefill:{ name, email }, theme:{ color:"#C9A84C" },
-        handler:function(){ $("form").style.display="none"; $("ok").style.display="block"; },
+        handler:function(rsp){
+          $("form").style.display="none"; $("ok").style.display="block";
+          // instant generation trigger; the Razorpay webhook is the backup and
+          // the backend deduplicates so the report is only ever sent once
+          fetch(BACKEND_URL + "/trigger-report", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({
+              payment_id: rsp.razorpay_payment_id, order_id: o.order_id,
+              name, email, dob, gender, report_type: reportType, extra,
+              birth_time, birth_place, focus_area, partner_name, partner_dob,
+              partner_birth_time, partner_birth_place, marriage_date,
+              current_issue, children, main_question
+            })
+          }).catch(function(){ /* webhook will deliver */ });
+        },
         modal:{ ondismiss:function(){ btn.disabled=false; btn.textContent="Generate My Report"; } }
       });
       rzp.on("payment.failed", function(){ showErr("Payment failed. Please try again."); });

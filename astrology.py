@@ -94,6 +94,11 @@ def parse_place(place: str):
     if key in PLACE_DB:
         lat, lon, tz = PLACE_DB[key]
         return {"input": txt, "lat": lat, "lon": lon, "timezone": tz, "source": "built-in"}
+    # "Jaipur, Rajasthan, India" -> try the city component alone
+    city = key.split(",")[0].strip()
+    if city in PLACE_DB:
+        lat, lon, tz = PLACE_DB[city]
+        return {"input": txt, "lat": lat, "lon": lon, "timezone": tz, "source": "built-in"}
     nums = re.findall(r"[-+]?\d+(?:\.\d+)?", txt)
     if len(nums) >= 2:
         lat, lon = float(nums[0]), float(nums[1])
