@@ -48,19 +48,42 @@ def _reg_ttf(name, path, builtin_fallback):
 def _alias(name, builtin):
     pdfmetrics.registerFont(Font(name, builtin, "WinAnsiEncoding"))
 # headline slots (regular + bold)
-_reg_ttf("Headline", _HEAD_R or "", "Helvetica")
-_reg_ttf("Headline-B", _HEAD_B or "", "Helvetica-Bold")
-_reg_ttf("Cinzel", _HEAD_B or "", "Helvetica-Bold")      # legacy heading slot -> headline bold
-_reg_ttf("Cinzel-B", _HEAD_B or "", "Helvetica-Bold")
-# body slots -> Helvetica family (built into every PDF viewer)
-_alias("Cormorant", "Helvetica"); _alias("Cormorant-M", "Helvetica-Bold")
-_alias("Cormorant-SB", "Helvetica-Bold"); _alias("Cormorant-I", "Helvetica-Oblique")
-_alias("Jost", "Helvetica"); _alias("Jost-M", "Helvetica-Bold"); _alias("Jost-L", "Helvetica")
+_reg("Headline", "Jost-Reg.ttf", "Helvetica")
+_reg("Headline-B", "Oswald-Bold.ttf", "Helvetica-Bold")
+# legacy slot names now point at the REAL embedded OFL faces, so any lingering
+# reference embeds a proper font (never a built-in Helvetica / DejaVu).
+_reg("Cinzel", "Cinzel-Med.ttf", "Helvetica-Bold")
+_reg("Cinzel-B", "Cinzel-Bold.ttf", "Helvetica-Bold")
+_reg("Cormorant", "Cormorant-Reg.ttf", "Helvetica")
+_reg("Cormorant-M", "Cormorant-Med.ttf", "Helvetica")
+_reg("Cormorant-SB", "Cormorant-SemiBold.ttf", "Helvetica")
+_reg("Cormorant-I", "Cormorant-Italic.ttf", "Helvetica")
+_reg("Jost", "Jost-Reg.ttf", "Helvetica")
+_reg("Jost-M", "Jost-Med.ttf", "Helvetica")
+_reg("Jost-L", "Jost-Light.ttf", "Helvetica")
 # ---- Cover-only faces: the REAL serifs (used exclusively on the premium cover) ----
 _reg("CoverTitle",   "Cormorant-SemiBold.ttf", "Helvetica-Bold")
 _reg("CoverItalic",  "Cormorant-Italic.ttf",   "Helvetica-Oblique")
 _reg("CoverEngrave", "Cinzel-Bold.ttf",        "Helvetica-Bold")
 _reg("CoverSans",    "Jost-Light.ttf",         "Helvetica")
+# ---- Cover (Studio Fieldnotes) faces: Cinzel / Cormorant / Jost, exact OFL ----
+_reg("SF_Cinzel",    "Cinzel-Med.ttf",         "Helvetica")
+_reg("SF_CinzelB",   "Cinzel-Bold.ttf",        "Helvetica-Bold")
+_reg("SF_CormItal",  "Cormorant-Italic.ttf",   "Helvetica-Oblique")
+_reg("SF_CormLight", "Cormorant-Reg.ttf",      "Helvetica")
+_reg("SF_Jost",      "Jost-Reg.ttf",           "Helvetica")
+_reg("SF_JostL",     "Jost-Light.ttf",         "Helvetica")
+# ---- Interior (Studio Fieldnotes) faces: OFL look-alikes for the proprietary set ----
+#   DIN Condensed Bold  -> Oswald Bold        (condensed editorial display)
+#   Bradley Hand Bold   -> Caveat SemiBold    (handwritten annotation)
+#   Trebuchet MS Reg/Bd -> Source Sans 3 R/Bd (editorial body + labels)
+_reg("SF_DIN",       "Oswald-Bold.ttf",        "Helvetica-Bold")
+_reg("SF_DINmed",    "Oswald-Med.ttf",         "Helvetica-Bold")
+_reg("SF_Hand",      "Caveat-SemiBold.ttf",    "Helvetica-Oblique")
+_reg("SF_HandB",     "Caveat-Bold.ttf",        "Helvetica-Oblique")
+_reg("SF_Sans",      "SourceSans3-Reg.ttf",    "Helvetica")
+_reg("SF_SansB",     "SourceSans3-Bold.ttf",   "Helvetica-Bold")
+_reg("SF_SansSB",    "SourceSans3-SemiBold.ttf","Helvetica-Bold")
 fonts.addMapping("Headline", 0, 0, "Headline"); fonts.addMapping("Headline", 1, 0, "Headline-B")
 fonts.addMapping("Headline-B", 0, 0, "Headline-B"); fonts.addMapping("Headline-B", 1, 0, "Headline-B")
 fonts.addMapping("Cinzel", 0, 0, "Cinzel"); fonts.addMapping("Cinzel", 1, 0, "Cinzel-B")
@@ -304,29 +327,92 @@ def _crest(c, cx, cy, R=42):
     c.restoreState()
 
 # ---------------- Paragraph styles ----------------
+# ============================================================================
+#  STUDIO FIELDNOTES — interior design system (default)
+#  Palette sampled from the reference PDF. Typography per the client spec:
+#    DIN Condensed Bold -> SF_DIN (Oswald)   titles + giant page numbers
+#    Bradley Hand Bold  -> SF_Hand (Caveat)  handwritten annotations
+#    Trebuchet MS R/Bd  -> SF_Sans / SF_SansB labels, cards, body
+# ============================================================================
+SF_BG      = HexColor("#F0EDF4")   # lavender notebook page
+SF_INK     = HexColor("#2E2C38")   # charcoal body text
+SF_BLUE    = HexColor("#2449D8")   # primary blue (headings, links, accents)
+SF_CORAL   = HexColor("#D98670")   # coral accent (squares, coral cards)
+SF_PAGENUM = HexColor("#E4E1EA")   # giant background page number (pale)
+SF_RULE    = HexColor("#E1DDEC")   # faint ruled notebook lines
+SF_MUTE    = HexColor("#8E88A0")   # muted grey-purple (footers, sublabels)
+SF_HANDMUT = HexColor("#7C7391")   # muted grey-purple handwriting (intros)
+SF_CARD    = HexColor("#FFFFFF")   # white card fill
+SF_CARDBD  = HexColor("#C4CCF2")   # light blue card border
+SF_CORALBD = HexColor("#E7B4A3")   # light coral card border
+SF_PREMBG  = HexColor("#17171F")   # black Premium Reading card
+SF_PREMTX  = HexColor("#ECE6DC")   # warm off-white on black cards
+SF_PUNCH   = HexColor("#DAD4E6")   # left-margin punch-hole dots
+SF_FRAME_TOP = PH - 46*mm           # content frame top (title baseline sits here)
+SF_FRAME_BOT = 24*mm                # content frame bottom (above footer)
+
+# Two personalised interior colourways. The whole notebook (paper, ruled lines,
+# top bar, giant number, headings, cards, footer) recolours to match the cover:
+#   'pink'  -> violet/pink   (goes with the geometric cover)
+#   'green' -> soft sage      (goes with the agave cover)
+# Values are mutated in place so the ST styles + chrome pick them up at draw.
+_SF_THEMES = {
+    "pink":  dict(BG="#F0EDF4", INK="#2E2C38", BLUE="#2449D8", CORAL="#D98670",
+                  PAGENUM="#E4E1EA", RULE="#E1DDEC", MUTE="#8E88A0", HANDMUT="#7C7391",
+                  CARD="#FFFFFF", CARDBD="#C4CCF2", CORALBD="#E7B4A3",
+                  PREMBG="#17171F", PREMTX="#ECE6DC", PUNCH="#DAD4E6"),
+    "green": dict(BG="#EAF1E4", INK="#27302A", BLUE="#34715A", CORAL="#BE8842",
+                  PAGENUM="#DEE7D6", RULE="#D9E4D1", MUTE="#7E8A76", HANDMUT="#6C7A64",
+                  CARD="#FFFFFF", CARDBD="#C3D6BE", CORALBD="#DFC79A",
+                  PREMBG="#182019", PREMTX="#ECE7D8", PUNCH="#CFDBC8"),
+}
+def apply_studio_theme(variant="pink"):
+    """Recolour the whole interior palette in place. Never raises."""
+    t = _SF_THEMES.get(variant, _SF_THEMES["pink"])
+    for obj, key in ((SF_BG,"BG"),(SF_INK,"INK"),(SF_BLUE,"BLUE"),(SF_CORAL,"CORAL"),
+                     (SF_PAGENUM,"PAGENUM"),(SF_RULE,"RULE"),(SF_MUTE,"MUTE"),
+                     (SF_HANDMUT,"HANDMUT"),(SF_CARD,"CARD"),(SF_CARDBD,"CARDBD"),
+                     (SF_CORALBD,"CORALBD"),(SF_PREMBG,"PREMBG"),(SF_PREMTX,"PREMTX"),
+                     (SF_PUNCH,"PUNCH")):
+        try:
+            nc = HexColor(t[key]); obj.red, obj.green, obj.blue = nc.red, nc.green, nc.blue
+        except Exception as e:
+            print(f"[studio-theme] {key}: {e!r}")
+
 def S(name, **kw):
-    base = dict(fontName="Jost", fontSize=10.2, leading=16, textColor=CREAM, alignment=TA_JUSTIFY)
+    base = dict(fontName="SF_Sans", fontSize=7.85, leading=10, textColor=SF_INK, alignment=TA_LEFT)
     base.update(kw); return ParagraphStyle(name, **base)
 
 ST = {
- 'kicker'  : S('kicker', fontName="Jost-M", fontSize=8.5, textColor=GOLD, alignment=TA_LEFT, leading=12, spaceAfter=2, tracking=2),
- 'h1'      : S('h1', fontName="Cinzel-B", fontSize=21, textColor=GOLD_L, alignment=TA_LEFT, leading=25, spaceAfter=2),
- 'h1c'     : S('h1c', fontName="Cinzel-B", fontSize=22, textColor=GOLD_L, alignment=TA_CENTER, leading=27),
- 'h2'      : S('h2', fontName="Cinzel", fontSize=13, textColor=GOLD, alignment=TA_LEFT, leading=18, spaceBefore=8, spaceAfter=4),
- 'h3'      : S('h3', fontName="Jost-M", fontSize=10.5, textColor=GOLD_L, alignment=TA_LEFT, leading=15, spaceBefore=6, spaceAfter=2, autoLeading="max"),
+ # chapter kicker style (also drawn top-right by ChapterLabel)
+ 'kicker'  : S('kicker', fontName="SF_SansB", fontSize=7, textColor=SF_BLUE, leading=10, spaceAfter=2, tracking=1),
+ # MAIN PAGE TITLE — DIN Condensed Bold 29/28, uppercase, left
+ 'h1'      : S('h1', fontName="SF_DIN", fontSize=29, textColor=SF_INK, leading=28, spaceAfter=2, tracking=0.5),
+ 'h1c'     : S('h1c', fontName="SF_DIN", fontSize=24, textColor=SF_INK, alignment=TA_CENTER, leading=26),
+ # sub-heading inside flow
+ 'h2'      : S('h2', fontName="SF_DIN", fontSize=15, textColor=SF_BLUE, leading=17, spaceBefore=8, spaceAfter=3, tracking=0.4),
+ # CARD / SECTION heading — Trebuchet Bold 7.45/10 uppercase blue
+ 'h3'      : S('h3', fontName="SF_SansB", fontSize=7.45, textColor=SF_BLUE, leading=10, spaceBefore=4, spaceAfter=2, tracking=0.6, autoLeading="max"),
+ # body — Trebuchet Regular 7.85/10 charcoal
  'body'    : S('body'),
- 'bodyc'   : S('bodyc', alignment=TA_CENTER, textColor=CREAM),
- 'lead'    : S('lead', fontName="Cormorant-M", fontSize=13.5, leading=19, textColor=CREAM, alignment=TA_JUSTIFY),
- 'quote'   : S('quote', fontName="Cormorant-I", fontSize=13, leading=18, textColor=GOLD, alignment=TA_CENTER),
- 'mute'    : S('mute', fontName="Jost-L", fontSize=9, textColor=MUTE, leading=14),
- 'mutec'   : S('mutec', fontName="Jost-L", fontSize=9, textColor=MUTE, leading=14, alignment=TA_CENTER),
- 'bullet'  : S('bullet', fontName="Jost", fontSize=9.8, leading=15, textColor=CREAM, leftIndent=12, alignment=TA_LEFT),
- 'big'     : S('big', fontName="Cinzel-B", fontSize=46, textColor=GOLD, alignment=TA_CENTER, leading=46),
- 'planet'  : S('planet', fontName="Cormorant-I", fontSize=14, textColor=GOLD_L, alignment=TA_CENTER, leading=16),
- 'cardlbl' : S('cardlbl', fontName="Jost-M", fontSize=7.5, textColor=MUTE, alignment=TA_CENTER, leading=10, tracking=1),
- 'cardnum' : S('cardnum', fontName="Cinzel-B", fontSize=24, textColor=GOLD_L, alignment=TA_CENTER, leading=26),
- 'cardsub' : S('cardsub', fontName="Cormorant-I", fontSize=10, textColor=MUTE, alignment=TA_CENTER, leading=12),
+ 'bodyc'   : S('bodyc', alignment=TA_CENTER),
+ # intro handwriting — Bradley Hand -> Caveat, muted grey-purple
+ 'lead'    : S('lead', fontName="SF_Hand", fontSize=13, leading=14, textColor=SF_HANDMUT, alignment=TA_LEFT),
+ 'quote'   : S('quote', fontName="SF_Hand", fontSize=14, leading=16, textColor=SF_BLUE, alignment=TA_CENTER),
+ 'mute'    : S('mute', fontName="SF_Sans", fontSize=7, textColor=SF_MUTE, leading=10),
+ 'mutec'   : S('mutec', fontName="SF_Sans", fontSize=7, textColor=SF_MUTE, leading=10, alignment=TA_CENTER),
+ 'bullet'  : S('bullet', fontName="SF_Sans", fontSize=7.85, leading=10.5, textColor=SF_INK, leftIndent=11, alignment=TA_LEFT),
+ 'big'     : S('big', fontName="SF_DIN", fontSize=46, textColor=SF_BLUE, alignment=TA_CENTER, leading=46),
+ 'planet'  : S('planet', fontName="SF_Hand", fontSize=14, textColor=SF_BLUE, alignment=TA_CENTER, leading=15),
+ 'cardlbl' : S('cardlbl', fontName="SF_SansB", fontSize=7, textColor=SF_MUTE, alignment=TA_CENTER, leading=10, tracking=0.8),
+ 'cardnum' : S('cardnum', fontName="SF_DIN", fontSize=24, textColor=SF_BLUE, alignment=TA_CENTER, leading=26),
+ 'cardsub' : S('cardsub', fontName="SF_Sans", fontSize=8, textColor=SF_MUTE, alignment=TA_CENTER, leading=11),
 }
+# premium (dark card) text variants
+ST['body_on_dark'] = S('body_on_dark', textColor=SF_PREMTX)
+ST['label_on_dark'] = S('label_on_dark', fontName="SF_SansB", fontSize=7.3, textColor=SF_PREMTX, leading=10)
+ST['h3_coral'] = S('h3_coral', fontName="SF_SansB", fontSize=7.45, textColor=SF_CORAL, leading=10, tracking=0.6, spaceAfter=2)
+ST['bullet_dark'] = S('bullet_dark', fontName="SF_Sans", fontSize=7.85, leading=11, textColor=SF_PREMTX, leftIndent=11)
 
 # ---------------- Custom flowables ----------------
 class HR(Flowable):
@@ -338,16 +424,13 @@ class HR(Flowable):
         self.canv.line(0, self.pad, self._w, self.pad)
 
 class GoldRule(Flowable):
-    """Centered ornamental divider with a diamond."""
+    """Studio Fieldnotes: a short blue underline sitting under the section title."""
     def __init__(self, w=None): super().__init__(); self.w=w
-    def wrap(self, aw, ah): self._w=self.w or aw; return (self._w, 14)
+    def wrap(self, aw, ah): self._aw=aw; return (aw, 12)
     def draw(self):
-        c=self.canv; w=self._w; m=w/2
-        c.setStrokeColor(GOLD_D); c.setLineWidth(0.7)
-        c.line(m-70,7,m-9,7); c.line(m+9,7,m+70,7)
-        c.setFillColor(GOLD); c.saveState(); c.translate(m,7); c.rotate(45)
-        c.rect(-3,-3,6,6, stroke=0, fill=1); c.restoreState()
-        c.setFillColor(GOLD_L); c.circle(m-72,7,1.3,fill=1,stroke=0); c.circle(m+72,7,1.3,fill=1,stroke=0)
+        c=self.canv
+        c.setStrokeColor(SF_BLUE); c.setLineWidth(1.6)
+        c.line(0, 5, 132, 5)
 
 class NumberBadge(Flowable):
     """Large circular number badge with planet ring."""
@@ -360,13 +443,13 @@ class NumberBadge(Flowable):
         R=self.size/2; cx=R; cy=R
         import math
         c.saveState(); c.translate(self.size/2, R)
-        c.setStrokeColor(GOLD); c.setLineWidth(1.4); c.circle(0,0,R-4, stroke=1, fill=0)
-        c.setStrokeColor(GOLD_D); c.setLineWidth(0.6); c.circle(0,0,R-10, stroke=1, fill=0)
+        c.setStrokeColor(SF_BLUE); c.setLineWidth(1.4); c.circle(0,0,R-4, stroke=1, fill=0)
+        c.setStrokeColor(SF_CORAL); c.setLineWidth(0.6); c.circle(0,0,R-10, stroke=1, fill=0)
         for i in range(24):
-            a=math.radians(i*15); c.setStrokeColor(GOLD_L); c.setLineWidth(0.4)
+            a=math.radians(i*15); c.setStrokeColor(SF_CARDBD); c.setLineWidth(0.4)
             c.line((R-10)*math.cos(a),(R-10)*math.sin(a),(R-7)*math.cos(a),(R-7)*math.sin(a))
-        c.setFont("Cinzel-B", R*0.8); c.setFillColor(GOLD_L)
-        c.drawCentredString(0, -R*0.28, self.num)
+        c.setFont("SF_DIN", R*0.9); c.setFillColor(SF_BLUE)
+        c.drawCentredString(0, -R*0.30, self.num)
         c.restoreState()
 
 class LoShuGrid(Flowable):
@@ -381,25 +464,45 @@ class LoShuGrid(Flowable):
             for ci,n in enumerate(row):
                 x=ox+ci*cell; y=oy+(2-ri)*cell
                 cnt=self.counts.get(n,0)
-                c.setStrokeColor(LINE); c.setLineWidth(0.8)
+                c.setStrokeColor(SF_CARDBD); c.setLineWidth(0.8)
                 if cnt>0:
-                    c.setFillColor(Color(0.12,0.17,0.31, alpha=0.07)); c.rect(x,y,cell,cell,stroke=1,fill=1)
+                    c.setFillColor(HexColor("#E9EDFB")); c.rect(x,y,cell,cell,stroke=1,fill=1)
                 else:
-                    c.setFillColor(DEEP2); c.rect(x,y,cell,cell,stroke=1,fill=1)
+                    c.setFillColor(SF_CARD); c.rect(x,y,cell,cell,stroke=1,fill=1)
                 if cnt>0:
                     txt=str(n)*cnt
-                    fs = cell*0.42 if len(txt)<=2 else (cell*0.30 if len(txt)==3 else cell*0.22)
-                    c.setFont("Cinzel-B", fs); c.setFillColor(GOLD_L)
+                    fs = 15.7 if len(txt)<=2 else (cell*0.30 if len(txt)==3 else cell*0.22)
+                    c.setFont("SF_DIN", fs); c.setFillColor(SF_BLUE)
                     c.drawCentredString(x+cell/2, y+cell/2-fs*0.35, txt)
                 else:
-                    c.setFont("Cormorant-I", cell*0.28); c.setFillColor(HexColor("#B7AD99"))
-                    c.drawCentredString(x+cell/2, y+cell/2-cell*0.10, str(n))
-        c.setStrokeColor(GOLD); c.setLineWidth(1.2); c.rect(ox,oy,self.W,self.H,stroke=1,fill=0)
+                    c.setFont("SF_Sans", cell*0.24); c.setFillColor(HexColor("#B9B3C6"))
+                    c.drawCentredString(x+cell/2, y+cell/2-cell*0.09, str(n))
+        c.setStrokeColor(SF_BLUE); c.setLineWidth(1.2); c.rect(ox,oy,self.W,self.H,stroke=1,fill=0)
 
 class Panel(Flowable):
-    """A rounded translucent panel behind a set of flowables."""
-    def __init__(self, flowables, pad=12, bg=DEEP2, border=LINE, radius=6):
-        super().__init__(); self.fl=flowables; self.pad=pad; self.bg=bg; self.border=border; self.radius=radius
+    """Studio Fieldnotes card. Variants:
+       'light'   — white fill, light-blue rounded border, small blue heading dot
+       'coral'   — white fill, coral border + coral dot
+       'premium' — near-black fill, coral heading dot (children must be on-dark)
+    The legacy (bg, border) kwargs still work but default to the light card so
+    every existing Panel(...) call renders in the notebook style automatically.
+    """
+    def __init__(self, flowables, pad=12, bg=None, border=None, radius=9, variant="light"):
+        super().__init__(); self.fl=flowables; self.pad=pad; self.radius=radius
+        # legacy dark backgrounds map to the premium card
+        if variant == "light" and bg is not None:
+            try:
+                if (bg.red + bg.green + bg.blue) < 0.5:
+                    variant = "premium"
+            except Exception:
+                pass
+        self.variant = variant
+        if variant == "premium":
+            self.bg, self.border, self.dot = SF_PREMBG, SF_PREMBG, SF_CORAL
+        elif variant == "coral":
+            self.bg, self.border, self.dot = SF_CARD, SF_CORALBD, SF_CORAL
+        else:
+            self.bg, self.border, self.dot = SF_CARD, SF_CARDBD, SF_BLUE
     def wrap(self, aw, ah):
         self.aw=aw; self._heights=[]; tot=0
         for f in self.fl:
@@ -407,18 +510,19 @@ class Panel(Flowable):
         self.h=tot+2*self.pad; return (aw, self.h)
     def draw(self):
         c=self.canv
-        c.setFillColor(self.bg); c.setStrokeColor(self.border); c.setLineWidth(0.6)
+        c.setFillColor(self.bg); c.setStrokeColor(self.border); c.setLineWidth(1.0)
         c.roundRect(0,0,self.aw,self.h,self.radius,stroke=1,fill=1)
-        # gold left accent
-        c.setFillColor(GOLD); c.rect(0,0,2.5,self.h,stroke=0,fill=1)
+        # small heading dot, top-left of the card
+        c.setFillColor(self.dot); c.circle(self.pad+1.5, self.h-self.pad+1.5, 2.1, stroke=0, fill=1)
         y=self.h-self.pad
         for f,h in zip(self.fl,self._heights):
             y-=h; f.drawOn(c, self.pad, y)
 
-def bullets(items, style='bullet', glyph='◆'):
+def bullets(items, style='bullet', glyph='●', color=None):
+    col = color or ("#D98670")   # coral bullets by default
     out=[]
     for it in items:
-        out.append(Paragraph(f'<font face="Cormorant-M" color="#7C2E38" size="9">{glyph}</font>&nbsp;&nbsp;{it}', ST[style]))
+        out.append(Paragraph(f'<font color="{col}" size="6">{glyph}</font>&nbsp;&nbsp;{it}', ST[style]))
         out.append(Spacer(1,2))
     return out
 
@@ -568,54 +672,168 @@ def draw_premium_cover(c, cd):
         c.setFillColor(HexColor(st["footer_ink"])); c.setFont("CoverSans", 7.5)
         c.drawCentredString(cx, 32, "V E S H A N N A S T R O . C O . I N")
 
+# ============================================================================
+#  STUDIO FIELDNOTES — cover (page 1) + notebook page chrome (pages 2..N)
+# ============================================================================
+CV_CREAM  = HexColor("#F6F1E4")
+CV_INK    = HexColor("#34302A")
+CV_MUTE   = HexColor("#8A8175")
+CV_MAROON = HexColor("#6E2A2A")
+CV_NAVY   = HexColor("#2A2E52")
+CV_LINE   = HexColor("#C7B492")
+
+def _studio_crest(c, cx, cy, R=40):
+    import math
+    c.saveState(); c.translate(cx, cy)
+    c.setStrokeColor(CV_MAROON); c.setLineWidth(1.4); c.circle(0,0,R, stroke=1, fill=0)
+    c.setStrokeColor(CV_MAROON); c.setLineWidth(0.5); c.circle(0,0,R-4, stroke=1, fill=0)
+    for i in range(60):
+        a=math.radians(i*6); r0=R-4; r1=R-(7 if i%5==0 else 5)
+        c.setLineWidth(0.7 if i%5==0 else 0.35)
+        c.line(r0*math.cos(a), r0*math.sin(a), r1*math.cos(a), r1*math.sin(a))
+    # compass star: 4 long + 4 short points
+    for i in range(4):
+        a=math.radians(i*90)
+        c.setFillColor(CV_MAROON)
+        p=c.beginPath(); L=R-9; wns=4
+        p.moveTo(L*math.cos(a), L*math.sin(a))
+        p.lineTo(wns*math.cos(a+math.radians(90)), wns*math.sin(a+math.radians(90)))
+        p.lineTo(wns*math.cos(a-math.radians(90)), wns*math.sin(a-math.radians(90)))
+        p.close(); c.drawPath(p, fill=1, stroke=0)
+    c.setFillColor(CV_NAVY); c.circle(0,0,2.4, stroke=0, fill=1)
+    c.restoreState()
+
+def draw_studio_cover(c, cd):
+    """Page 1 — cream editorial cover (Cinzel / Cormorant / Jost). Kept distinct
+    from the notebook interior per the typography brief."""
+    c.setFillColor(CV_CREAM); c.rect(0,0,PW,PH, stroke=0, fill=1)
+    cx = PW/2
+    # faint sacred-geometry watermark behind the crest
+    try: _nakshatra_wheel(c, cx, PH*0.80, PW*0.32, alpha=0.05)
+    except Exception: pass
+    _studio_crest(c, cx, PH-150, 40)
+    _cv_centred(c, cx, PH-214, "VESHANN ASTRO", "SF_Cinzel", 22, CV_INK, 3.0)
+    _cv_centred(c, cx, PH-232, "VEDIC NUMEROLOGY   ·   ASTROLOGY", "SF_Jost", 8.5, CV_MUTE, 2.4)
+    # ornament
+    oy=PH-250
+    c.setStrokeColor(CV_LINE); c.setLineWidth(0.8)
+    c.line(cx-46,oy,cx-9,oy); c.line(cx+9,oy,cx+46,oy)
+    c.saveState(); c.translate(cx,oy); c.rotate(45); c.setFillColor(CV_MAROON); c.rect(-3,-3,6,6,fill=1,stroke=0); c.restoreState()
+    # Premium + title
+    _cv_centred(c, cx, PH-290, "Premium", "SF_CormItal", 30, CV_MAROON)
+    title = cd.get("title","Complete Numerology Report").upper()
+    _cv_centred(c, cx, PH-320, title, "SF_Cinzel", 24, CV_MAROON, 1.0)
+    # prepared for + name
+    _cv_centred(c, cx, PH-360, "Prepared exclusively for", "SF_Jost", 9, CV_MUTE, 0.6)
+    _cv_centred(c, cx, PH-386, cd.get("name","").upper(), "SF_Cinzel", 18, CV_NAVY, 2.0)
+    _cv_centred(c, cx, PH-406, cd.get("born",""), "SF_CormItal", 13, CV_MAROON)
+    # number strip
+    nums = cd.get("nums", [])
+    if nums:
+        sy=PH-452; n=len(nums); gap=42*mm
+        xs=[cx+(i-(n-1)/2)*gap for i in range(n)]
+        for i,(lbl,val) in enumerate(nums):
+            x=xs[i]
+            _cv_centred(c, x, sy-14, lbl.upper(), "SF_Jost", 7, CV_MUTE, 1.4)
+            _cv_centred(c, x, sy-2, str(val), "SF_Cinzel", 20, CV_NAVY)
+            if i<n-1:
+                mx=(xs[i]+xs[i+1])/2; c.setStrokeColor(CV_LINE); c.setLineWidth(0.6); c.line(mx,sy-16,mx,sy+8)
+    # footer ornament + text
+    fy=PH-520
+    c.setStrokeColor(CV_LINE); c.setLineWidth(0.7)
+    c.line(cx-52,fy,cx-9,fy); c.line(cx+9,fy,cx+52,fy)
+    c.saveState(); c.translate(cx,fy); c.rotate(45); c.setFillColor(CV_MAROON); c.rect(-2.5,-2.5,5,5,fill=1,stroke=0); c.restoreState()
+    _cv_centred(c, cx, 74, "veshannastro.co.in   ·   @veshann.astro", "SF_Jost", 8, CV_MUTE, 0.8)
+    _cv_centred(c, cx, 60, "This report is generated using the authentic Chaldean numerology system integrated with Vedic Graha wisdom.",
+                "SF_Jost", 9, CV_INK, 0.2)
+
+def _sf_chrome(c, page_num, client_first, footer_title):
+    """Notebook page chrome: lavender paper, ruled lines, punch holes, top bar,
+    giant page number, handwritten client note, footer."""
+    c.saveState()
+    c.setFillColor(SF_BG); c.rect(0,0,PW,PH, stroke=0, fill=1)
+    # ruled notebook lines across the lower body
+    c.setStrokeColor(SF_RULE); c.setLineWidth(0.6)
+    y = 70
+    while y < PH-150:
+        c.line(40, y, PW-30, y); y += 21
+    # left-margin punch holes
+    c.setFillColor(SF_PUNCH)
+    n_holes = 13
+    for i in range(n_holes):
+        hy = PH*0.06 + i*((PH*0.88)/(n_holes-1))
+        c.circle(26, hy, 4.2, stroke=0, fill=1)
+    # top bar: blue + coral tab
+    c.setFillColor(SF_BLUE); c.rect(0, PH-9, PW*0.82, 9, stroke=0, fill=1)
+    c.setFillColor(SF_CORAL); c.rect(PW*0.82, PH-9, PW*0.18, 9, stroke=0, fill=1)
+    # giant background page number (top-right)
+    c.setFillColor(SF_PAGENUM); c.setFont("SF_DIN", 175)
+    c.drawRightString(PW-16, PH-168, f"{page_num:02d}")
+    # handwritten client note (top-left)
+    c.setFillColor(SF_BLUE); c.setFont("SF_Hand", 13)
+    c.drawString(52, PH-40, f"{client_first}'s studio field notes")
+    # footer
+    c.setFont("SF_SansB", 6.1)
+    c.setFillColor(SF_MUTE); c.drawString(52, 24, "VESHANN ASTRO / STUDIO FIELDNOTES")
+    c.setFillColor(SF_BLUE); c.drawRightString(PW-32, 24, f"PRIVATE CLIENT COPY / {page_num:02d}")
+    c.restoreState()
+
 # ---------------- Page template machinery ----------------
 class ReportDoc(BaseDocTemplate):
     def __init__(self, path, footer_title="Numerology Report", cover_data=None, **kw):
         self._footer_title = footer_title
-        self._cover_data = cover_data
+        self._cover_data = cover_data or {}
+        nm = (self._cover_data.get("name") or "Client").strip()
+        self._client_first = nm.split()[0] if nm else "Client"
         super().__init__(path, pagesize=A4, leftMargin=MARGIN, rightMargin=MARGIN,
                          topMargin=MARGIN, bottomMargin=22*mm, **kw)
-        fr = Frame(MARGIN, 22*mm, PW-2*MARGIN, PH-MARGIN-22*mm, id='main',
-                   leftPadding=6, rightPadding=6, topPadding=2, bottomPadding=2)
+        # content frame clears punch-holes (left), header band (top), footer (bottom)
+        fr = Frame(52, SF_FRAME_BOT, PW-52-30, SF_FRAME_TOP-SF_FRAME_BOT, id='main',
+                   leftPadding=4, rightPadding=4, topPadding=0, bottomPadding=0)
         self.addPageTemplates([
-            PageTemplate(id='cover', frames=[Frame(MARGIN,MARGIN,PW-2*MARGIN,PH-2*MARGIN,id='c')], onPage=self._cover_bg),
+            PageTemplate(id='cover', frames=[Frame(0,0,PW,PH,id='c')], onPage=self._cover_bg),
             PageTemplate(id='content', frames=[fr], onPage=self._content_bg),
         ])
         self._pnum=1
     def _cover_bg(self, c, d):
         cd = self._cover_data or {}
         style = COVER_STYLES.get(cd.get("style", "agave"), COVER_STYLES["agave"])
-        # per-service cover image (falls back to the global default)
         img = os.path.join(ASSET_DIR, style["image"])
         if not os.path.exists(img):
             img = _cover_image_path()
-        if img:
-            try:
+        try:
+            if img:
                 from reportlab.lib.utils import ImageReader
-                ir = ImageReader(img)
-                iw, ih = ir.getSize()
-                # scale to FILL the page (center-crop horizontally)
-                scale = max(PW / iw, PH / ih)
-                w, h = iw * scale, ih * scale
+                ir = ImageReader(img); iw, ih = ir.getSize()
+                scale = max(PW/iw, PH/ih); w, h = iw*scale, ih*scale
                 c.saveState()
-                c.drawImage(ir, (PW - w) / 2, PH - h, w, h, mask='auto')
-                # premium centred serif cover text + ghost numeral
-                if self._cover_data:
-                    try:
-                        draw_premium_cover(c, self._cover_data)
-                    except Exception:
-                        pass
-                # small web footer — only on the agave (top-anchored) cover, where
-                # the lower photo area is empty; the geometric cover fills it with text.
+                c.drawImage(ir, (PW-w)/2, PH-h, w, h, mask='auto')
+                draw_premium_cover(c, cd)
                 if style["anchor"] == "top":
-                    c.setFillColor(HexColor("#F4F7EC"))
-                    c.setFont("CoverSans", 8)
-                    c.drawCentredString(PW / 2, 12 * mm, "V E S H A N N A S T R O . C O . I N")
-                c.restoreState()
-                return
-            except Exception:
-                pass
-        _bg(c, cover=True, seed=7)
+                    c.setFillColor(HexColor("#F4F7EC")); c.setFont("CoverSans", 8)
+                    c.drawCentredString(PW/2, 12*mm, "V E S H A N N A S T R O . C O . I N")
+                c.restoreState(); return
+        except Exception as e:
+            print("[cover] photo cover failed, using cream fallback:", repr(e))
+        try:
+            draw_studio_cover(c, cd)
+        except Exception:
+            c.setFillColor(CV_CREAM); c.rect(0,0,PW,PH,stroke=0,fill=1)
     def _content_bg(self, c, d):
         self._pnum+=1
-        _bg(c, cover=False, seed=self._pnum*13+3); _page_frame(c); _footer(c, self._pnum, self._footer_title)
+        _sf_chrome(c, self._pnum, self._client_first, self._footer_title)
+    def afterFlowable(self, flowable):
+        # draw the chapter label in the header band of the page it appears on
+        if isinstance(flowable, ChapterLabel):
+            c=self.canv
+            c.saveState()
+            c.setFont("SF_SansB", 7); c.setFillColor(SF_BLUE)
+            c.drawRightString(PW-32, PH-38, f"{flowable.text}  /  {self.page:02d}")
+            c.restoreState()
+
+class ChapterLabel(Flowable):
+    """Zero-height marker carrying the chapter name. ReportDoc.afterFlowable
+    draws it in the top-right header band, on whatever page it lands on."""
+    def __init__(self, text): super().__init__(); self.text=(text or "").upper()
+    def wrap(self, aw, ah): return (aw, 0)
+    def draw(self): pass

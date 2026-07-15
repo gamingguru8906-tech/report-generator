@@ -23,6 +23,11 @@ SOURCES = {
     "Cormorant":       f"{RAW}/cormorantgaramond/CormorantGaramond%5Bwght%5D.ttf",
     "CormorantItalic": f"{RAW}/cormorantgaramond/CormorantGaramond-Italic%5Bwght%5D.ttf",
     "Jost":            f"{RAW}/jost/Jost%5Bwght%5D.ttf",
+    # Studio Fieldnotes interior look-alikes (OFL) for the proprietary set:
+    #   Oswald  ~ DIN Condensed Bold, Caveat ~ Bradley Hand, Source Sans 3 ~ Trebuchet MS
+    "Oswald":          f"{RAW}/oswald/Oswald%5Bwght%5D.ttf",
+    "Caveat":          f"{RAW}/caveat/Caveat%5Bwght%5D.ttf",
+    "SourceSans3":     f"{RAW}/sourcesans3/SourceSans3%5Bwght%5D.ttf",
 }
 
 # (source key, weight, output filename) — exactly what the report registers
@@ -36,6 +41,13 @@ INSTANCES = [
     ("Jost", 400, "Jost-Reg.ttf"),
     ("Jost", 500, "Jost-Med.ttf"),
     ("Jost", 300, "Jost-Light.ttf"),
+    ("Oswald", 700, "Oswald-Bold.ttf"),
+    ("Oswald", 500, "Oswald-Med.ttf"),
+    ("Caveat", 600, "Caveat-SemiBold.ttf"),
+    ("Caveat", 700, "Caveat-Bold.ttf"),
+    ("SourceSans3", 400, "SourceSans3-Reg.ttf"),
+    ("SourceSans3", 600, "SourceSans3-SemiBold.ttf"),
+    ("SourceSans3", 700, "SourceSans3-Bold.ttf"),
 ]
 
 def main():

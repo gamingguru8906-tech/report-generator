@@ -7,7 +7,9 @@ from reportlab.platypus import (Paragraph, Spacer, PageBreak, Table, TableStyle,
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.lib.styles import ParagraphStyle
 from pdfbuild_base import (ReportDoc, ST, HR, GoldRule, LoShuGrid, Panel, bullets,
-    GOLD, GOLD_L, GOLD_D, CREAM, MUTE, LINE, DEEP, DEEP2, PW, MARGIN, _crest, apply_theme)
+    GOLD, GOLD_L, GOLD_D, CREAM, MUTE, LINE, DEEP, DEEP2, PW, MARGIN, _crest, apply_theme,
+    ChapterLabel, SF_CORAL, apply_studio_theme)
+from reportlab.platypus import Spacer as _Spacer
 import content as C
 import numerology as N
 import premium_sections as P
@@ -65,12 +67,14 @@ def impact_block(num, role_line=""):
         out += [Spacer(1, 6), Panel([h3("Practical Corrections — Daily Habits That Rebalance It")] + bullets(pr), bg=DEEP2)]
     return out
 
-def kicker(t): return Paragraph(t.upper(), ST['kicker'])
-def h1(t): return Paragraph(t, ST['h1'])
-def h2(t): return Paragraph(t, ST['h2'])
-def h3(t): return Paragraph(t, ST['h3'])
+def _up(t): return t.upper() if '<' not in t else t      # never uppercase inline markup
+def kicker(t): return ChapterLabel(t)                    # drawn top-right of the page
+def h1(t): return Paragraph(_up(t), ST['h1'])            # DIN Condensed, uppercase
+def h2(t): return Paragraph(_up(t), ST['h2'])
+def h3(t): return Paragraph(_up(t), ST['h3'])            # card headings uppercase
 def body(t): return Paragraph(t, ST['body'])
-def lead(t): return Paragraph(t, ST['lead'])
+def lead(t):                                              # handwritten intro w/ coral square
+    return Paragraph(f'<font color="#D98670">■</font>&nbsp;&nbsp;{t}', ST['lead'])
 def mute(t): return Paragraph(t, ST['mute'])
 
 class CrestF(Flowable):
@@ -969,18 +973,17 @@ _BUILD_LOCK = _threading.Lock()
 def build_report(r, out_path, book_cover=None, report_type='complete'):
     if book_cover: BOOK['cover']=book_cover
     tier, title = TIERS.get(report_type, TIERS['complete'])
-    style = SERVICE_COVER.get(report_type, "agave")
+    style = SERVICE_COVER.get(report_type, "agave")   # 'geometric' | 'agave'
+    interior = "pink" if style == "geometric" else "green"
     with _BUILD_LOCK:
         try:
-            apply_theme(style)   # re-colour the whole interior to match the cover
+            apply_studio_theme(interior)   # recolour whole interior to match the cover
         except Exception as e:
-            print(f"[build_report] theme skipped: {e!r}")
+            print(f"[build_report] studio theme skipped: {e!r}")
         try:
             doc=ReportDoc(out_path, cover_data=cover_data(r, tier=tier, title=title, style=style))
             doc.build(build_story(r, report_type=report_type))
         finally:
-            # restore the default palette so any later astrology/palmistry/
-            # divorce report (built outside this function) keeps its own colours
-            try: apply_theme("agave")
+            try: apply_studio_theme("pink")   # restore default palette
             except Exception: pass
     return out_path

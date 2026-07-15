@@ -12,7 +12,8 @@ from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.platypus import Paragraph, Spacer, PageBreak, Table, TableStyle, NextPageTemplate
 
-from pdfbuild_base import ST, GoldRule, LoShuGrid, Panel, bullets, GOLD_D, DEEP2, LINE, PW, MARGIN, mm
+from pdfbuild_base import (ST, GoldRule, LoShuGrid, Panel, bullets, GOLD_D, DEEP2, LINE,
+    PW, MARGIN, mm, ChapterLabel)
 import content as C
 import numerology as N
 
@@ -22,12 +23,13 @@ def fmt_date(d): return f"{d.day} {MONTHS[d.month]} {d.year}"
 def core(num): return C.CORE.get(num, C.CORE.get(N.reduce_num(num, False), C.CORE[1]))
 def root(num): return N.reduce_num(num, keep_masters=False)
 def short_planet(num): return core(num)["planet"].split(" (")[0].replace("Higher ", "")
-def kicker(t): return Paragraph(t.upper(), ST["kicker"])
-def h1(t): return Paragraph(t, ST["h1"])
-def h2(t): return Paragraph(t, ST["h2"])
-def h3(t): return Paragraph(t, ST["h3"])
+def _up(t): return t.upper() if '<' not in t else t
+def kicker(t): return ChapterLabel(t)
+def h1(t): return Paragraph(_up(t), ST["h1"])
+def h2(t): return Paragraph(_up(t), ST["h2"])
+def h3(t): return Paragraph(_up(t), ST["h3"])
 def body(t): return Paragraph(t, ST["body"])
-def lead(t): return Paragraph(t, ST["lead"])
+def lead(t): return Paragraph(f'<font color="#D98670">■</font>&nbsp;&nbsp;{t}', ST["lead"])
 
 def _page(kick, title, parts):
     return [NextPageTemplate("content"), kicker(kick), h1(title), GoldRule(), Spacer(1, 4)] + parts + [PageBreak()]
@@ -77,12 +79,14 @@ def _remedy_items(r, focus="core"):
 
 def _premium_reading(r, basis, verdict, why, guidance):
     """Compact consultation-style block used across focused reports."""
-    return Panel([h3("Premium Reading")]+bullets([
+    from pdfbuild_base import ST as _ST
+    from reportlab.platypus import Paragraph as _P
+    return Panel([_P("PREMIUM READING", _ST['h3_coral'])]+bullets([
         f"<b>Calculation basis:</b> {basis}",
         f"<b>Clear verdict:</b> {verdict}",
         f"<b>Why this result came:</b> {why}",
         f"<b>Practical guidance:</b> {guidance}",
-    ]), border=GOLD_D)
+    ], style='bullet_dark'), variant="premium")
 
 def sec_executive_summary(r):
     py = r["personal_year"]

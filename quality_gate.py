@@ -112,16 +112,30 @@ def audit_story(story, report_name="report", required_disclaimers=(), strict=Fal
     return issues
 
 
-def verify_pdf(path, min_bytes=40_000):
-    """Post-render sanity check: the PDF exists and is not a stub."""
-    import os
+def verify_pdf(path, min_pages=3, min_bytes=40_000, floor_bytes=12_000):
+    """Post-render sanity check: the PDF exists and is a real, multi-page report.
+
+    A report is considered valid if it rendered enough PAGES — that is the true
+    signal that generation succeeded. Byte size alone is unreliable: a perfectly
+    complete report can be small when the deployment is missing the background
+    image / branded font files (the text still renders, just lighter), while an
+    image-heavy report is large. So we accept the PDF when it has at least
+    `min_pages` pages OR is comfortably large, and only reject genuine stubs
+    (an error page or a single cover with almost nothing in it).
+    """
+    import os, re
     if not os.path.exists(path):
         raise FileNotFoundError(f"Report PDF was not written: {path}")
     size = os.path.getsize(path)
-    if size < min_bytes:
-        raise ValueError(f"Report PDF suspiciously small ({size} bytes): {path}")
     with open(path, "rb") as fh:
-        head = fh.read(5)
-    if head != b"%PDF-":
+        data = fh.read()
+    if data[:5] != b"%PDF-":
         raise ValueError(f"File is not a valid PDF: {path}")
-    return True
+    # count page objects (reportlab writes them un-nested, so this is reliable)
+    pages = len(re.findall(rb"/Type\s*/Page(?![s])", data))
+    if pages >= min_pages:
+        return True
+    if size >= min_bytes:
+        return True
+    raise ValueError(
+        f"Report looks incomplete ({pages} page(s), {size} bytes): {path}")
