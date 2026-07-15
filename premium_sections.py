@@ -12,7 +12,7 @@ from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.platypus import Paragraph, Spacer, PageBreak, Table, TableStyle, NextPageTemplate
 
-from pdfbuild_base import ST, GoldRule, LoShuGrid, Panel, bullets, GOLD_D, DEEP2, LINE, PW, MARGIN
+from pdfbuild_base import ST, GoldRule, LoShuGrid, Panel, bullets, GOLD_D, DEEP2, LINE, PW, MARGIN, mm
 import content as C
 import numerology as N
 
@@ -35,7 +35,7 @@ def _page(kick, title, parts):
 def _two(left_title, left_items, right_title, right_items):
     tbl = Table([[
         Panel([h3(left_title)] + bullets(left_items), bg=DEEP2),
-        Panel([h3(right_title)] + bullets(right_items, glyph="◇"), bg=HexColor("#EAEDF3")),
+        Panel([h3(right_title)] + bullets(right_items, glyph="◇"), bg=DEEP2),
     ]], colWidths=[(PW - 2 * MARGIN - 12) / 2 - 4] * 2)
     tbl.setStyle(TableStyle([
         ("VALIGN", (0,0), (-1,-1), "TOP"), ("LEFTPADDING", (0,0), (-1,-1), 0),
@@ -47,7 +47,7 @@ def _two(left_title, left_items, right_title, right_items):
 def _kv(rows):
     data = [[Paragraph(f'<font color="#8C8472">{k}</font>', ST["mute"]),
              Paragraph(v, ST["body"])] for k, v in rows if v]
-    t = Table(data, colWidths=[42, None])
+    t = Table(data, colWidths=[44*mm, None])
     t.setStyle(TableStyle([
         ("VALIGN", (0,0), (-1,-1), "TOP"), ("TOPPADDING", (0,0), (-1,-1), 4),
         ("BOTTOMPADDING", (0,0), (-1,-1), 4), ("LINEBELOW", (0,0), (-1,-2), 0.35, LINE),
@@ -95,7 +95,7 @@ def sec_executive_summary(r):
             f"<b>Personal Year {py}.</b> {C.PERSONAL_YEAR[py]}",
         ]), border=GOLD_D),
         Spacer(1, 7),
-        Panel([h3("Priority Action")] + bullets(_remedy_items(r)[:2]), bg=HexColor("#F6ECEC")),
+        Panel([h3("Priority Action")] + bullets(_remedy_items(r)[:2]), bg=DEEP2),
         Spacer(1, 7),
         _premium_reading(r,
             f"Birth Number {r['driver']}, Life Path {r['life_path']}, Destiny {r['destiny']}, Personal Year {py}, Lo Shu missing {', '.join(map(str,r['missing'])) or 'none'}",
@@ -138,7 +138,7 @@ def sec_basic_details(r):
         lead("These are the inputs used for the numerology calculations in this report."),
         Spacer(1, 8), _kv(rows),
         Spacer(1, 8),
-        Panel([body("If any spelling or date detail is incorrect, regenerate the report after correction because name totals and birth-number calculations depend on exact input.")], bg=HexColor("#F6ECEC")),
+        Panel([body("If any spelling or date detail is incorrect, regenerate the report after correction because name totals and birth-number calculations depend on exact input.")], bg=DEEP2),
     ])
 
 def sec_core_number_summary(r):
@@ -294,7 +294,7 @@ def sec_hidden_weaknesses(r):
         items.append(f"<b>Missing-number sensitivity</b>: {C.MISSING.get(r['missing'][0], 'A missing grid number needs conscious practice.')}")
     return _page("Growth Edges", "Hidden Weaknesses", [
         lead("Hidden weaknesses are better read as growth edges. The purpose is awareness and correction, not fear."),
-        Spacer(1, 8), Panel([h3("Patterns To Watch")] + bullets(items), bg=HexColor("#F6ECEC"), border=GOLD_D),
+        Spacer(1, 8), Panel([h3("Patterns To Watch")] + bullets(items), bg=DEEP2, border=GOLD_D),
     ])
 
 def sec_missing_repeated(r):
@@ -321,7 +321,7 @@ def sec_current_blockage(r):
         detail = core(r["life_path"])["shadow"][0]
     return _page("Where Energy Sticks", "Current Life Blockage", [
         lead("This section identifies the most practical blockage to work with now. It is guidance, not a verdict."),
-        Spacer(1, 8), Panel([h3(title), body(detail)], bg=HexColor("#F6ECEC"), border=GOLD_D),
+        Spacer(1, 8), Panel([h3(title), body(detail)], bg=DEEP2, border=GOLD_D),
         Spacer(1, 8), Panel([h3("Correction Path"), body("Turn the blockage into one repeated weekly habit: one conversation, one saved amount, one practice session, one completed promise. Numerology becomes useful when it changes behaviour.")]),
     ])
 
@@ -372,7 +372,7 @@ def sec_money_pattern(r):
         Spacer(1, 7),
         Panel([h3("Saving / Spending Pattern"), body(C.WEALTH.get(r["driver"], C.WEALTH[root(r["driver"])]))]),
         Spacer(1, 7),
-        Panel([h3("Money Leakage"), body("The main leakage usually appears through the shadow of your Life Path: " + core(r["life_path"])["shadow"][0] + ". Track this in real expenses, not emotion.")], bg=HexColor("#F6ECEC")),
+        Panel([h3("Money Leakage"), body("The main leakage usually appears through the shadow of your Life Path: " + core(r["life_path"])["shadow"][0] + ". Track this in real expenses, not emotion.")], bg=DEEP2),
         Spacer(1, 7),
         _premium_reading(r,
             f"Life Path {r['life_path']} for earning style, Driver {r['driver']} for spending rhythm, Personal Year {r['personal_year']} for timing",
@@ -389,7 +389,7 @@ def sec_relationship_pattern(r):
         Spacer(1, 7),
         Panel([h3("Emotional Needs"), body(C.LOVE.get(r["soul_urge"], C.LOVE[root(r["soul_urge"])]))]),
         Spacer(1, 7),
-        Panel([h3("Conflict Pattern And Communication Advice"), body(f"Under pressure, the shadow of Life Path {r['life_path']} can show as {core(r['life_path'])['shadow'][0].lower()}. Repair it by naming needs early, asking one clear question, and avoiding silent scorekeeping.")], bg=HexColor("#F6ECEC")),
+        Panel([h3("Conflict Pattern And Communication Advice"), body(f"Under pressure, the shadow of Life Path {r['life_path']} can show as {core(r['life_path'])['shadow'][0].lower()}. Repair it by naming needs early, asking one clear question, and avoiding silent scorekeeping.")], bg=DEEP2),
         Spacer(1, 7),
         _premium_reading(r,
             f"Life Path {r['life_path']} for behaviour, Soul Urge {r['soul_urge']} for emotional need, Driver {r['driver']} for reaction style",
@@ -459,7 +459,7 @@ def sec_compatibility_analysis(r):
     return _page("Two Charts", "Compatibility Analysis", [
         lead(f"Compatibility for {r['name']} and {p['name']} is read by comparing daily nature, life direction, public style and emotional need."),
         Spacer(1, 8), _kv(rows), Spacer(1, 8),
-        Panel([h3("Marriage Delay Indicators"), body("Delay indicators are treated as timing friction, not fixed fate. Strong 4, 7 or 8 pressure, difficult personal years, or clashing Drivers suggest patience, family clarity and mature communication before formal commitment.")], bg=HexColor("#F6ECEC")),
+        Panel([h3("Marriage Delay Indicators"), body("Delay indicators are treated as timing friction, not fixed fate. Strong 4, 7 or 8 pressure, difficult personal years, or clashing Drivers suggest patience, family clarity and mature communication before formal commitment.")], bg=DEEP2),
         Spacer(1, 7), _premium_reading(r,
             f"Driver, Life Path, Destiny and Soul Urge compared for both partners",
             "Compatibility depends on rhythm and emotional need, not one number alone.",
@@ -506,7 +506,7 @@ def sec_business_name_analysis(r):
         Spacer(1, 7),
         Panel([h3("Money Vibration And Industry Compatibility"), body(f"This name works best where {', '.join(s.lower() for s in cr['strengths'][:3])} are commercially valuable. Compare this with the owner's Driver {r['driver']} and Life Path {r['life_path']} before final registration.")]),
         Spacer(1, 7),
-        Panel([h3("Launch Date Guidance And Correction Options"), body(f"Launch on dates reducing to {', '.join(map(str, r['lucky_numbers'][:4]))}. If correcting, tune spellings toward those roots and keep the final name consistent across GST, domain, signage and invoices.")], bg=HexColor("#F6ECEC")),
+        Panel([h3("Launch Date Guidance And Correction Options"), body(f"Launch on dates reducing to {', '.join(map(str, r['lucky_numbers'][:4]))}. If correcting, tune spellings toward those roots and keep the final name consistent across GST, domain, signage and invoices.")], bg=DEEP2),
         Spacer(1, 7),
         _premium_reading(r,
             f"Business name total {b['total']} -> {b['root']}; owner Driver {r['driver']} and Life Path {r['life_path']}",
@@ -641,7 +641,7 @@ def sec_best_dates_calendar(r):
     return _page("Practical Timing", "Best Dates Calendar", [
         lead("These dates are supportive windows for launches, calls, interviews, proposals, repairs and intentional starts."),
         Spacer(1, 8), _kv(rows),
-        Spacer(1, 8), Panel([body("Dates support effort; they do not replace preparation, ethics or practical judgement.")], bg=HexColor("#F6ECEC")),
+        Spacer(1, 8), Panel([body("Dates support effort; they do not replace preparation, ethics or practical judgement.")], bg=DEEP2),
         Spacer(1, 7), _premium_reading(r,
             f"Target dates reduce to Driver {r['driver']} or friendly roots {', '.join(map(str,r['lucky_numbers'][:4]))}",
             "These dates are supportive, not magical guarantees.",
@@ -667,7 +667,7 @@ def sec_lucky_colours_numbers_directions(r):
     return _page("Daily Supports", "Lucky Colors, Numbers, Directions", [
         lead("These supports are practical reminders for timing, clothing, workspace choices, branding accents and repeated decisions."),
         Spacer(1, 8), _kv(rows),
-        Spacer(1, 8), Panel([body("Use these as gentle supports, not rigid rules. Practical fit and personal comfort matter.")], bg=HexColor("#F6ECEC")),
+        Spacer(1, 8), Panel([body("Use these as gentle supports, not rigid rules. Practical fit and personal comfort matter.")], bg=DEEP2),
         Spacer(1, 7), _premium_reading(r,
             f"Birth Number {r['driver']} and Life Path {r['life_path']} planetary correspondences",
             "Use supports as reminders for discipline and alignment.",

@@ -7,7 +7,7 @@ from reportlab.platypus import (Paragraph, Spacer, PageBreak, Table, TableStyle,
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.lib.styles import ParagraphStyle
 from pdfbuild_base import (ReportDoc, ST, HR, GoldRule, LoShuGrid, Panel, bullets,
-    GOLD, GOLD_L, GOLD_D, CREAM, MUTE, LINE, DEEP, DEEP2, PW, MARGIN, _crest)
+    GOLD, GOLD_L, GOLD_D, CREAM, MUTE, LINE, DEEP, DEEP2, PW, MARGIN, _crest, apply_theme)
 import content as C
 import numerology as N
 import premium_sections as P
@@ -59,7 +59,7 @@ def impact_block(num, role_line=""):
     conseq = C.CONSEQUENCE.get(num) or C.CONSEQUENCE.get(root)
     if conseq:
         out += [Spacer(1, 6), Panel([h3("If This Energy Goes Unmanaged — The Real Cost"),
-                                     Spacer(1, 2), body(conseq)], bg=HexColor("#F6ECEC"))]
+                                     Spacer(1, 2), body(conseq)], bg=DEEP2)]
     pr = C.PRACTICAL_REMEDY.get(num) or C.PRACTICAL_REMEDY.get(root)
     if pr:
         out += [Spacer(1, 6), Panel([h3("Practical Corrections — Daily Habits That Rebalance It")] + bullets(pr), bg=DEEP2)]
@@ -111,7 +111,7 @@ def core_section(kick, title, num, intro, *, value_label=None, value_note=None, 
     # strengths + shadow panels side by side
     sp = Table([[
         Panel([h3('Your Strengths')]+bullets(cr['strengths']), bg=DEEP2),
-        Panel([h3('Growth Edges')]+bullets(cr['shadow'], glyph='◇'), bg=HexColor("#EAEDF3")),
+        Panel([h3('Growth Edges')]+bullets(cr['shadow'], glyph='◇'), bg=DEEP2),
     ]], colWidths=[(PW-2*MARGIN-12)/2-4]*2)
     sp.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('LEFTPADDING',(0,0),(-1,-1),0),
         ('RIGHTPADDING',(0,0),(0,0),8),('RIGHTPADDING',(1,0),(1,0),0),('TOPPADDING',(0,0),(-1,-1),0),('BOTTOMPADDING',(0,0),(-1,-1),0)]))
@@ -123,7 +123,7 @@ def core_section(kick, title, num, intro, *, value_label=None, value_note=None, 
         el.append(f)
     el.append(Spacer(1,6))
     el.append(Panel([Paragraph(f'<font color="#7C2E38"><b><font face="Cormorant-M">◆</font> Vedic Remedy &nbsp;·&nbsp; {cr["planet"]}</b></font>', ST['h3']),
-                     Spacer(1,3), body(cr['remedy'])], bg=HexColor("#F6ECEC"), border=GOLD_D))
+                     Spacer(1,3), body(cr['remedy'])], bg=DEEP2, border=GOLD_D))
     el += expect_panel(num)
     el.append(PageBreak())
     return el
@@ -141,31 +141,43 @@ def kv_table(rows):
 # Reports are composed from these by RECIPES, so the same engine produces
 # the full 25-page premium report AND shorter focused reports.
 
+def _nice_title(title):
+    small = ("And", "Of", "The", "For", "A")
+    return " ".join(
+        (t.lower() if t in small and i > 0 else t)
+        for i, t in enumerate(title.title().split()))
+
+# Which cover artwork each service uses. Services listed here get the bold
+# geometric header (pink band, dark-purple text); everything else defaults to
+# the agave header. Keys are canonical report types.
+SERVICE_COVER = {
+    "complete_numerology":  "geometric",
+    "personal_forecast":    "geometric",
+    "business_name_report": "geometric",
+}
+
+def cover_data(r, tier="Premium", title="COMPLETE NUMEROLOGY REPORT", style="agave"):
+    """Structured data the premium canvas cover (pdfbuild_base.draw_premium_cover)
+    renders as a centred serif block with a soft ghost numeral behind it."""
+    return {
+        "title": _nice_title(title),
+        "tier":  tier,
+        "style": style,
+        "name":  r['name'],
+        "born":  f"Born {fmt_date(r['dob'])}",
+        "ghost": r['life_path'],
+        "nums": [
+            ("Life Path", r['life_path']),
+            ("Destiny",   r['destiny']),
+            ("Soul Urge", r['soul_urge']),
+            ("Driver",    r['driver']),
+        ],
+    }
+
 def sec_cover(r, tier="Premium", title="COMPLETE NUMEROLOGY REPORT"):
-    S=[NextPageTemplate('content'), Spacer(1,18*mm), CrestF(46), Spacer(1,6)]
-    S+=[Paragraph("VESHANN ASTRO", ParagraphStyle('cv',fontName="Cinzel-B",fontSize=22,textColor=GOLD_L,alignment=TA_CENTER,leading=26,tracking=4))]
-    S+=[Paragraph("VEDIC NUMEROLOGY &nbsp;·&nbsp; ASTROLOGY", ParagraphStyle('cv2',fontName="Jost-L",fontSize=8.5,textColor=MUTE,alignment=TA_CENTER,tracking=3,spaceBefore=4))]
-    S+=[Spacer(1,16), GoldRule(), Spacer(1,14)]
-    S+=[Paragraph(tier, ParagraphStyle('t1',fontName="Cormorant-I",fontSize=30,textColor=CREAM,alignment=TA_CENTER,leading=30))]
-    S+=[Paragraph(title, ParagraphStyle('t2',fontName="Cinzel-B",fontSize=24,textColor=GOLD,alignment=TA_CENTER,leading=30,tracking=1,spaceBefore=2))]
-    S+=[Spacer(1,18)]
-    S+=[Paragraph("Prepared exclusively for", ST['mutec']), Spacer(1,4)]
-    S+=[Paragraph(r['name'].upper(), ParagraphStyle('nm',fontName="Cinzel-B",fontSize=18,textColor=GOLD_L,alignment=TA_CENTER,leading=24,tracking=1))]
-    S+=[Spacer(1,3), Paragraph(f"Born {fmt_date(r['dob'])}", ST['quote'])]
-    S+=[Spacer(1,26)]
-    strip=Table([[
-        Paragraph(f'<font color="#8C8472" size="7">LIFE PATH</font><br/><font color="#1E2C50" size="20" face="Cinzel-B">{r["life_path"]}</font>', ST['mutec']),
-        Paragraph(f'<font color="#8C8472" size="7">DESTINY</font><br/><font color="#1E2C50" size="20" face="Cinzel-B">{r["destiny"]}</font>', ST['mutec']),
-        Paragraph(f'<font color="#8C8472" size="7">SOUL URGE</font><br/><font color="#1E2C50" size="20" face="Cinzel-B">{r["soul_urge"]}</font>', ST['mutec']),
-        Paragraph(f'<font color="#8C8472" size="7">DRIVER</font><br/><font color="#1E2C50" size="20" face="Cinzel-B">{r["driver"]}</font>', ST['mutec']),
-    ]], colWidths=[(PW-2*MARGIN)/4]*4)
-    strip.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'MIDDLE'),('LINEAFTER',(0,0),(-2,-1),0.5,LINE)]))
-    S+=[strip, Spacer(1,30)]
-    S+=[GoldRule()]
-    S+=[Paragraph("veshannastro.co.in &nbsp;·&nbsp; @veshann.astro", ParagraphStyle('cf',fontName="Jost-L",fontSize=8,textColor=MUTE,alignment=TA_CENTER,tracking=2,spaceBefore=8))]
-    S+=[Paragraph("This report is generated using the authentic Chaldean numerology system integrated with Vedic Graha wisdom.", ST['mutec'])]
-    S+=[PageBreak()]
-    return S
+    """Cover text is now painted directly on the canvas (see draw_premium_cover);
+    the cover page itself is an empty frame, so we just switch templates & break."""
+    return [NextPageTemplate('content'), PageBreak()]
 
 def sec_how_to_read(r):
     S=[kicker("Begin Here"), h1("How To Read This Report"), GoldRule(), Spacer(1,6)]
@@ -249,7 +261,7 @@ def sec_personality(r):
     S+=[body(f"Your outer gateway runs on the {cr_p['planet']} vibration — the {cr_p['archetype']} energy. Before anyone meets your inner Soul Urge ({r['soul_urge']}) or understands your Destiny ({r['destiny']}), they meet this. " + cr_p['essence'])]
     S+=[Spacer(1,8)]
     S+=[Panel([h3("What People Notice First")]+bullets(cr_p['strengths'][:4]))]
-    S+=[Spacer(1,6), Panel([h3("The Mask vs The Truth")], bg=HexColor("#F6ECEC")), Spacer(1,2)]
+    S+=[Spacer(1,6), Panel([h3("The Mask vs The Truth")], bg=DEEP2), Spacer(1,2)]
     S+=[body(f"Remember: this is the wrapping, not the gift. People who only know your Personality number see the {cr_p['archetype']}; those who earn your trust discover the full depth of your Soul Urge {r['soul_urge']} and Life Path {r['life_path']}.")]
     S+=[Spacer(1,6)]
     S+=impact_block(r['personality'],
@@ -322,7 +334,7 @@ def sec_lo_shu(r):
         for n in r['missing']:
             mis.append(Paragraph(f'<font face="Cormorant-M" color="#7C2E38">◆</font>&nbsp; {C.MISSING.get(n,"")}', ST['bullet']))
             mis.append(Spacer(1,3))
-        S+=[Panel(mis, bg=HexColor("#F6ECEC"))]; S+=[Spacer(1,6)]
+        S+=[Panel(mis, bg=DEEP2)]; S+=[Spacer(1,6)]
     if r['complete_planes']:
         pl=[h3("Power Planes & Arrows You Possess")]
         for p in r['complete_planes']:
@@ -571,7 +583,7 @@ def sec_book_ad(r):
 def _two_panels(left_title, left_items, right_title, right_items, rg='◇'):
     sp = Table([[
         Panel([h3(left_title)] + bullets(left_items), bg=DEEP2),
-        Panel([h3(right_title)] + bullets(right_items, glyph=rg), bg=HexColor("#EAEDF3")),
+        Panel([h3(right_title)] + bullets(right_items, glyph=rg), bg=DEEP2),
     ]], colWidths=[(PW-2*MARGIN-12)/2-4]*2)
     sp.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('LEFTPADDING',(0,0),(-1,-1),0),
         ('RIGHTPADDING',(0,0),(0,0),8),('RIGHTPADDING',(1,0),(1,0),0),
@@ -686,7 +698,7 @@ def sec_compatibility(r):
         border=GOLD_D), Spacer(1,8)]
     S += [Panel([h3("Where You'll Need Effort"), body(
         f"Differences between your Drivers ({r['driver']} and {p['driver']}) shape daily friction \u2014 pace, decision-making and how each of you reacts under stress. "
-        "Name these openly; most conflict between numbers is mistranslation, not incompatibility.")], bg=HexColor("#EAEDF3")), Spacer(1,8)]
+        "Name these openly; most conflict between numbers is mistranslation, not incompatibility.")], bg=DEEP2), Spacer(1,8)]
     S += [Panel([h3("Growing Closer"), body(
         "Numbers describe tendency, not destiny. Conscious communication, shared rituals and the remedies in each of your charts can harmonise almost any pairing. "
         "For a full session reading both charts together \u2014 timing, children, shared ventures \u2014 a personal Veshann Astro consultation goes deeper.")])]
@@ -766,7 +778,7 @@ def sec_conclusion(r):
     g_head, g_body = _growth_edge(r)
     S += [Panel([h3(cc['growth_title']), Spacer(1, 2),
                  Paragraph(f'<font color="#1E2C50"><b>{g_head}.</b></font>&nbsp; {g_body}', ST['body']),
-                 Spacer(1, 3), body(cc['growth_tail'])], bg=HexColor("#F6ECEC"))]
+                 Spacer(1, 3), body(cc['growth_tail'])], bg=DEEP2)]
     S += [Spacer(1, 6)]
     # 4 — the single most important action
     step = (f"If you do nothing else from this report, do this: begin the core remedy for your Life Path "
@@ -851,16 +863,16 @@ RECIPES = {
 
 TIERS = {
     'complete_numerology': ("Premium", "COMPLETE NUMEROLOGY REPORT"),
-    'mobile_number_analysis': ("Mobile Number", "PREMIUM NUMEROLOGY ANALYSIS"),
-    'name_numerology': ("Name Numerology", "PREMIUM REPORT"),
+    'mobile_number_analysis': ("Mobile Number", "MOBILE NUMBER ANALYSIS"),
+    'name_numerology': ("Name Numerology", "NAME NUMEROLOGY REPORT"),
     'career_numerology': ("Career", "PREMIUM NUMEROLOGY REPORT"),
     'money_numerology': ("Money", "PREMIUM NUMEROLOGY REPORT"),
-    'relationship_compatibility': ("Relationship", "PREMIUM COMPATIBILITY REPORT"),
-    'business_name_report': ("Business Name", "PREMIUM REPORT"),
-    'baby_name_report': ("Baby Name", "PREMIUM REPORT"),
+    'relationship_compatibility': ("Relationship", "NUMEROLOGY COMPATIBILITY REPORT"),
+    'business_name_report': ("Business Name", "BUSINESS NAME REPORT"),
+    'baby_name_report': ("Baby Name", "BABY NAME REPORT"),
     'house_number_analysis': ("House Number", "PREMIUM ANALYSIS"),
     'vehicle_number_analysis': ("Vehicle Number", "PREMIUM ANALYSIS"),
-    'personal_forecast': ("The Year Ahead", "PREMIUM NUMEROLOGY FORECAST"),
+    'personal_forecast': ("The Year Ahead", "PERSONAL YEAR FORECAST"),
     'complete': ("Premium",             "COMPLETE NUMEROLOGY REPORT"),
     'snapshot': ("Personal",            "NUMEROLOGY SNAPSHOT"),
     'career':   ("Career & Wealth",     "NUMEROLOGY BLUEPRINT"),
@@ -949,6 +961,9 @@ class BookAd(Flowable):
 
 def build_report(r, out_path, book_cover=None, report_type='complete'):
     if book_cover: BOOK['cover']=book_cover
-    doc=ReportDoc(out_path)
+    tier, title = TIERS.get(report_type, TIERS['complete'])
+    style = SERVICE_COVER.get(report_type, "agave")
+    apply_theme(style)   # re-colour the whole interior to match the cover
+    doc=ReportDoc(out_path, cover_data=cover_data(r, tier=tier, title=title, style=style))
     doc.build(build_story(r, report_type=report_type))
     return out_path
