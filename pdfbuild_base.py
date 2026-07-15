@@ -121,14 +121,22 @@ def _apply_hex(colorobj, hexstr):
     colorobj.red, colorobj.green, colorobj.blue = nc.red, nc.green, nc.blue
 
 def apply_theme(style="agave"):
-    """Re-colour the interior palette in place for the given cover style."""
+    """Re-colour the interior palette in place for the given cover style.
+
+    Must NEVER raise: interior colour is cosmetic, and a themed report that is
+    delivered beats a perfectly-themed report that never sends. Any failure
+    leaves the previous palette in place and generation continues normally.
+    """
     global _ACTIVE_STYLE
     pal = _PALETTES.get(style, _PALETTES["agave"])
-    _ACTIVE_STYLE = style if style in _PALETTES else "agave"
     for name, obj in (("DEEP", DEEP), ("DEEP2", DEEP2), ("GOLD", GOLD), ("GOLD_L", GOLD_L),
                       ("GOLD_D", GOLD_D), ("CREAM", CREAM), ("MUTE", MUTE), ("LINE", LINE),
                       ("ROSE", ROSE), ("WATERMARK", WATERMARK)):
-        _apply_hex(obj, pal[name])
+        try:
+            _apply_hex(obj, pal[name])
+        except Exception as e:
+            print(f"[theme] could not recolour {name}: {e!r}")
+    _ACTIVE_STYLE = style if style in _PALETTES else "agave"
 
 PW, PH = A4
 MARGIN = 20*mm

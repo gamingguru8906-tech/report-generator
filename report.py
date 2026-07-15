@@ -959,11 +959,28 @@ class BookAd(Flowable):
         c.setFont("Jost-L",6); c.setFillColor(MUTE)
         c.drawCentredString(x+w/2, y+10, "VESHANN ASTRO")
 
+import threading as _threading
+# Interior theming recolours shared module-level palette objects in place, so
+# two reports building at once (fulfilment runs in background threads) must not
+# overlap. Serialise the whole build; each report renders in ~0.5s so this is
+# cheap and removes every theme race.
+_BUILD_LOCK = _threading.Lock()
+
 def build_report(r, out_path, book_cover=None, report_type='complete'):
     if book_cover: BOOK['cover']=book_cover
     tier, title = TIERS.get(report_type, TIERS['complete'])
     style = SERVICE_COVER.get(report_type, "agave")
-    apply_theme(style)   # re-colour the whole interior to match the cover
-    doc=ReportDoc(out_path, cover_data=cover_data(r, tier=tier, title=title, style=style))
-    doc.build(build_story(r, report_type=report_type))
+    with _BUILD_LOCK:
+        try:
+            apply_theme(style)   # re-colour the whole interior to match the cover
+        except Exception as e:
+            print(f"[build_report] theme skipped: {e!r}")
+        try:
+            doc=ReportDoc(out_path, cover_data=cover_data(r, tier=tier, title=title, style=style))
+            doc.build(build_story(r, report_type=report_type))
+        finally:
+            # restore the default palette so any later astrology/palmistry/
+            # divorce report (built outside this function) keeps its own colours
+            try: apply_theme("agave")
+            except Exception: pass
     return out_path

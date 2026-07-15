@@ -164,7 +164,19 @@ def _compute_chart_with_fallbacks(full_name, dob, birth_time, birth_place, gende
         print("chart fallbacks applied:", "; ".join(limitations))
     return chart, limitations
 
-def generate_report(full_name, dob, gender="", out_dir=".", book_cover=None, report_type="complete", extra="",
+import threading as _threading
+# One report builds at a time. Interior theming recolours shared module state,
+# so overlapping builds from concurrent webhook threads must be serialised.
+# Each report renders in well under a second, so this has no practical cost and
+# guarantees every order fulfils cleanly.
+_GENERATE_LOCK = _threading.Lock()
+
+def generate_report(*args, **kwargs):
+    """Thread-safe public entry point — serialises the actual build."""
+    with _GENERATE_LOCK:
+        return _generate_report_impl(*args, **kwargs)
+
+def _generate_report_impl(full_name, dob, gender="", out_dir=".", book_cover=None, report_type="complete", extra="",
                     birth_time="", birth_place="", focus_area="", email="", partner_name="", partner_dob="",
                     partner_birth_time="", partner_birth_place="", marriage_date="", current_issue="",
                     children="", main_question=""):
