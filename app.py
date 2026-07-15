@@ -92,6 +92,15 @@ app.add_middleware(CORSMiddleware, allow_origins=ALLOWED_ORIGINS,
 @app.get("/health")
 def health(): return {"ok": True, "service": "veshann-report-backend"}
 
+@app.on_event("startup")
+def _normalise_sheet_header():
+    """Fix the Orders header to the clean 24-column layout as soon as the
+    service boots, so it is corrected on deploy rather than on the next order."""
+    try:
+        ensure_header(_google_creds())
+    except Exception as e:
+        print(f"[startup] sheet header ensure skipped: {e!r}")
+
 @app.get("/products")
 def products():
     """Lets the order page render the catalogue + live prices."""
@@ -239,7 +248,12 @@ def _safe_fulfil(name, dob, email, gender="", order_id="", report_type="complete
         try:
             creds = _google_creds()
             ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            append_to_sheet([ts, order_id, name, dob, email, gender, report_type, extra, birth_time, birth_place, focus_area, "", "ERROR: " + repr(e)[:300]], creds)
+            append_to_sheet(
+                [ts, order_id, name, _fmt_dob(dob), email, gender, report_type, extra,
+                 birth_time, birth_place, focus_area, partner_name, _fmt_dob(partner_dob),
+                 partner_birth_time, partner_birth_place, marriage_date, current_issue,
+                 children, main_question, "", "ERROR", ts, "ERROR: " + repr(e)[:300],
+                 PIPELINE_VERSION], creds)
         except Exception as e2:
             print("could not log ERROR row:", repr(e2))
 
@@ -280,7 +294,7 @@ def upload_to_drive(pdf_path, creds):
 def append_to_sheet(row, creds):
     from googleapiclient.discovery import build
     build("sheets", "v4", credentials=creds).spreadsheets().values().append(
-        spreadsheetId=SHEET_ID, range=f"{SHEET_TAB}!A1", valueInputOption="USER_ENTERED",
+        spreadsheetId=SHEET_ID, range=f"{SHEET_TAB}!A1", valueInputOption="RAW",
         insertDataOption="INSERT_ROWS", body={"values": [row]}).execute()
 
 # ─────────── Status lifecycle + durable idempotency (Sheet-backed) ───────────
@@ -290,7 +304,7 @@ def append_to_sheet(row, creds):
 #          current_issue, children, main_question
 #   T = report URL (Drive link)   U = status   V = status timestamp
 #   W = error message             X = pipeline version
-PIPELINE_VERSION = "report-pipeline-v2-sheet-status-2026-07-12"
+PIPELINE_VERSION = "report-pipeline-v3-studio-fieldnotes-2026-07-15"
 TERMINAL_STATUSES = {"SENT", "DELIVERED"}
 
 class _LoggedFailure(Exception):
@@ -303,10 +317,49 @@ def _sheets(creds):
     from googleapiclient.discovery import build
     return build("sheets", "v4", credentials=creds).spreadsheets()
 
+# One clean header for all 24 columns the pipeline writes (A..X).
+SHEET_HEADERS = [
+    "Timestamp", "Order ID", "Name", "DOB", "Email", "Gender", "Report Type", "Extra",
+    "Birth Time", "Birth Place", "Focus Area", "Partner Name", "Partner DOB",
+    "Partner Birth Time", "Partner Birth Place", "Marriage Date", "Current Issue",
+    "Children", "Main Question", "Report URL", "Status", "Status Time", "Error", "Pipeline",
+]
+_HEADER_ENSURED = False
+def ensure_header(creds):
+    """Make row 1 a correct 24-column header (once per process). Self-healing:
+    if the header is missing or mislabelled it is rewritten in place."""
+    global _HEADER_ENSURED
+    if _HEADER_ENSURED or not creds:
+        return
+    try:
+        rng = f"{SHEET_TAB}!A1:X1"
+        cur = _sheets(creds).values().get(spreadsheetId=SHEET_ID, range=rng).execute().get("values", [])
+        cur0 = cur[0] if cur else []
+        if cur0[:len(SHEET_HEADERS)] != SHEET_HEADERS:
+            _sheets(creds).values().update(
+                spreadsheetId=SHEET_ID, range=rng, valueInputOption="RAW",
+                body={"values": [SHEET_HEADERS]}).execute()
+            print("[sheet] header row normalised to 24 columns")
+        _HEADER_ENSURED = True
+    except Exception as e:
+        print(f"[sheet] ensure_header failed (continuing): {e!r}")
+
+def _fmt_dob(dob):
+    """Render a DOB as clean, unambiguous text ('24 August 1991') for the sheet,
+    so USER_ENTERED-style date coercion can never turn it into a serial number."""
+    s = str(dob or "").strip()
+    for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%Y/%m/%d", "%m/%d/%Y"):
+        try:
+            return datetime.datetime.strptime(s, fmt).strftime("%d %B %Y")
+        except Exception:
+            pass
+    return s
+
 def append_status_row(row, creds):
     """Append a row and return its 1-based row index (from updatedRange)."""
+    ensure_header(creds)
     resp = _sheets(creds).values().append(
-        spreadsheetId=SHEET_ID, range=f"{SHEET_TAB}!A1", valueInputOption="USER_ENTERED",
+        spreadsheetId=SHEET_ID, range=f"{SHEET_TAB}!A1", valueInputOption="RAW",
         insertDataOption="INSERT_ROWS", body={"values": [row]}).execute()
     rng = resp.get("updates", {}).get("updatedRange", "")   # e.g. Orders!A17:X17
     try:
@@ -322,7 +375,7 @@ def update_status_cells(row_idx, creds, status, link=None, error=None):
                ("" if error is None else str(error)[:300])]]
     _sheets(creds).values().update(
         spreadsheetId=SHEET_ID, range=f"{SHEET_TAB}!T{row_idx}:W{row_idx}",
-        valueInputOption="USER_ENTERED", body={"values": values}).execute()
+        valueInputOption="RAW", body={"values": values}).execute()
     print(f"[fulfil] row={row_idx} status={status}" + (f" link={link}" if link else "")
           + (f" error={error}" if error else ""))
 
@@ -468,8 +521,8 @@ def fulfil_order(name, dob, email, gender="", order_id="", report_type="complete
     if creds:
         try:
             row_idx = append_status_row(
-                [_now_ts(), order_id, name, dob, email, gender, report_type, extra,
-                 birth_time, birth_place, focus_area, partner_name, partner_dob,
+                [_now_ts(), order_id, name, _fmt_dob(dob), email, gender, report_type, extra,
+                 birth_time, birth_place, focus_area, partner_name, _fmt_dob(partner_dob),
                  partner_birth_time, partner_birth_place, marriage_date, current_issue,
                  children, main_question, "", "RECEIVED", _now_ts(), "", PIPELINE_VERSION],
                 creds)
