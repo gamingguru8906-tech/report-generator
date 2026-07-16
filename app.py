@@ -503,6 +503,26 @@ def send_email(to_email, name, pdf_path, report_type="Numerology Report"):
     if resp.status_code >= 300:
         raise RuntimeError(f"Brevo error {resp.status_code}: {resp.text}")
 
+def _alert_owner(subject, body):
+    """Plain-text operations alert to the owner. Order logging must never fail
+    silently: a paid order that misses its Sheet row is invisible to the
+    dashboard and to accounting until someone notices by accident."""
+    try:
+        if not BREVO_API_KEY:
+            print(f"[alert] (no BREVO_API_KEY) {subject}: {body}")
+            return
+        requests.post(
+            "https://api.brevo.com/v3/smtp/email",
+            headers={"api-key": BREVO_API_KEY, "Content-Type": "application/json"},
+            json={
+                "sender": {"name": BREVO_FROM_NAME, "email": BREVO_FROM_EMAIL},
+                "to": [{"email": "veshannastro@gmail.com", "name": "Veshannastro Ops"}],
+                "subject": "[ORDER LOGGING ALERT] " + subject,
+                "htmlContent": "<pre>" + body.replace("<", "&lt;") + "</pre>",
+            }, timeout=15)
+    except Exception as e:
+        print(f"[alert] could not send owner alert: {e!r}")
+
 def fulfil_order(name, dob, email, gender="", order_id="", report_type="complete", extra="",
                  birth_time="", birth_place="", focus_area="", partner_name="", partner_dob="",
                  partner_birth_time="", partner_birth_place="", marriage_date="", current_issue="",
@@ -513,6 +533,13 @@ def fulfil_order(name, dob, email, gender="", order_id="", report_type="complete
         creds = _google_creds()
     except Exception as cred_err:
         print(f"[fulfil] WARNING: no Sheet credentials, running without status log: {cred_err!r}")
+        _alert_owner(
+            f"Order {order_id} was fulfilled WITHOUT a Sheet row (credentials)",
+            f"order_id: {order_id}\nname: {name}\nemail: {email}\n"
+            f"report_type: {report_type}\ndob: {dob}\n\n"
+            f"Google credentials failed: {cred_err!r}\n"
+            "Fix GOOGLE_SA_JSON on the report backend, then add this order "
+            f"manually to the '{SHEET_TAB}' tab.")
     if creds and _already_fulfilled_in_sheet(order_id, creds):
         print(f"[fulfil] order={order_id} already has a terminal Sheet row — skipping duplicate")
         return "duplicate-skipped"
@@ -528,6 +555,14 @@ def fulfil_order(name, dob, email, gender="", order_id="", report_type="complete
                 creds)
         except Exception as e:
             print(f"[fulfil] could not append RECEIVED row: {e!r}")
+            _alert_owner(
+                f"Order {order_id} could not be logged to the Sheet (append failed)",
+                f"order_id: {order_id}\nname: {name}\nemail: {email}\n"
+                f"report_type: {report_type}\ndob: {dob}\n\n"
+                f"Append to tab '{SHEET_TAB}' failed: {e!r}\n"
+                "Check that the service account has Editor access to the "
+                "workbook and that the tab exists; then add this order "
+                "manually.")
 
     def _fail(stage, exc):
         print(f"[fulfil] order={order_id} FAILED at {stage}: {exc!r}")
@@ -701,11 +736,26 @@ def admin_selftest(token: str = ""):
         "GOOGLE_SA_JSON": bool(GOOGLE_SA_JSON), "DRIVE_FOLDER_ID": bool(DRIVE_FOLDER_ID),
         "SHEET_ID": bool(SHEET_ID), "BREVO_API_KEY": bool(BREVO_API_KEY),
         "BREVO_FROM_EMAIL": BREVO_FROM_EMAIL,
+        "SHEET_TAB": SHEET_TAB,
     }}
     try:
         creds = _google_creds(); out["google_creds"] = "ok"
     except Exception as e:
         out["google_creds"] = f"FAIL: {e}"; return out
+    try:
+        rows = _sheets(creds).values().get(
+            spreadsheetId=SHEET_ID, range=f"{SHEET_TAB}!A:B").execute().get("values", [])
+        data_rows = max(0, len(rows) - 1)
+        last = rows[-1] if data_rows else []
+        out["sheet_read"] = (
+            f"ok — tab '{SHEET_TAB}' has {data_rows} data row(s); "
+            f"last row: {(last[0] if last else '-')!s} / {(last[1] if len(last) > 1 else '-')!s}"
+        )
+    except Exception as e:
+        out["sheet_read"] = (
+            f"FAIL reading tab '{SHEET_TAB}' (does the tab exist and is the "
+            f"sheet shared with the service account?): {e}"
+        )
     try:
         from googleapiclient.discovery import build
         build("drive", "v3", credentials=creds).files().list(

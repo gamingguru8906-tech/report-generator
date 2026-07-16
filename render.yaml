@@ -41,7 +41,10 @@ services:
       - key: SHEET_ID
         sync: false
       - key: SHEET_TAB
-        value: "Orders"
+        # Must match the tab the admin dashboard reads for numerology orders
+        # (Apps Script SHEET_SOURCES_JSON: numerology_reports -> "Reports").
+        # Rows written to any other tab are invisible to the dashboard.
+        value: "Reports"
       - key: BREVO_API_KEY
         sync: false
       - key: BREVO_FROM_EMAIL
