@@ -31,6 +31,16 @@ def verify_pdf(path):
 
 def _slug(s): return re.sub(r'[^a-zA-Z0-9]+', '_', s).strip('_')[:40]
 
+def _proper_name(s):
+    """Customers often type 'purvanjali agrawal' or 'PURVANJALI AGRAWAL' into the
+    payment form, and the report would print it exactly like that. Title-case a
+    name only when it is all one case; a deliberately mixed-case name
+    ('McDonald', 'D'Souza') is left exactly as the customer wrote it."""
+    s = re.sub(r"\s+", " ", s or "").strip()
+    if s and (s.islower() or s.isupper()):
+        s = " ".join(w[:1].upper() + w[1:].lower() for w in s.split(" "))
+    return s
+
 REPORT_ALIASES = {
     "complete_numerology": "complete_numerology",
     "complete": "complete_numerology",
@@ -198,11 +208,11 @@ def _generate_report_impl(full_name, dob, gender="", out_dir=".", book_cover=Non
     mobile_number_analysis, name_numerology, career_numerology and legacy aliases.
     extra: the report's second input (mobile number, business name, or partner's name & DOB)."""
     # sanitize every incoming field (frontend can leak "undefined"/"null"/junk)
-    full_name = XP.sanitize(full_name) or "Customer"
+    full_name = _proper_name(XP.sanitize(full_name)) or "Customer"
     gender = XP.sanitize(gender); extra = XP.sanitize(extra)
     birth_time = XP.sanitize(birth_time); birth_place = XP.sanitize(birth_place)
     focus_area = XP.sanitize(focus_area)
-    partner_name = XP.sanitize(partner_name); partner_dob = XP.sanitize(partner_dob)
+    partner_name = _proper_name(XP.sanitize(partner_name)); partner_dob = XP.sanitize(partner_dob)
     partner_birth_time = XP.sanitize(partner_birth_time); partner_birth_place = XP.sanitize(partner_birth_place)
     marriage_date = XP.sanitize(marriage_date); current_issue = XP.sanitize(current_issue)
     children = XP.sanitize(children); main_question = XP.sanitize(main_question)

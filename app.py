@@ -23,21 +23,43 @@ The customer gets their report within seconds; the 1-hour promise has huge headr
 
 Run:  uvicorn app:app --host 0.0.0.0 --port $PORT
 """
-import os, json, hmac, hashlib, base64, datetime, threading
+import os, sys, json, hmac, hashlib, base64, datetime, threading, subprocess, gc, ctypes, re
+
+# Render keeps stdout block-buffered, so when the instance was killed mid-order
+# every "[fulfil] ..." line died with it and the logs showed nothing. Flush per line.
+try:
+    sys.stdout.reconfigure(line_buffering=True)
+    sys.stderr.reconfigure(line_buffering=True)
+except Exception:
+    pass
+
+# Cap glibc malloc arenas: each worker thread otherwise gets its own 64 MB arena,
+# which bloats resident memory on the 512 MB free instance.
+try:
+    _LIBC = ctypes.CDLL("libc.so.6")
+    _LIBC.mallopt(-8, 2)          # M_ARENA_MAX = 2
+except Exception:
+    _LIBC = None
 
 import requests
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-# Ensure brand fonts exist before the report engine imports & registers them.
-# On Render the build step already ran build_fonts.py (this then no-ops); this is a safety net.
+# Ensure brand fonts exist before the report engine uses them. The fonts are
+# committed to the repo, so this normally no-ops; it is only a safety net.
 try:
     import build_fonts; build_fonts.main()
 except Exception as _e:
     print("font build warning:", _e)
 
-from generate import generate_report
+# The PDF engine is NOT imported here: reports are built in a child process
+# (report_job.py) so a build can never take the web server down with it.
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+REPORT_JOB = os.path.join(APP_DIR, "report_job.py")
+ISOLATE_BUILD = os.environ.get("REPORT_ISOLATE", "1").strip().lower() not in ("0", "off", "false", "no")
+BUILD_TIMEOUT_S = int(os.environ.get("REPORT_BUILD_TIMEOUT", "600"))
+RECOVER_WINDOW_HOURS = int(os.environ.get("RECOVER_WINDOW_HOURS", "48"))
 
 # ───────────────────────── CONFIG (set as Render env vars) ─────────────────────────
 RAZORPAY_KEY_ID         = os.environ.get("RAZORPAY_KEY_ID", "")
@@ -100,6 +122,9 @@ def _normalise_sheet_header():
         ensure_header(_google_creds())
     except Exception as e:
         print(f"[startup] sheet header ensure skipped: {e!r}")
+    # A crash or restart mid-order used to leave a paid order stuck forever.
+    # On every boot, pick up recent orders that never reached DELIVERED.
+    threading.Thread(target=_recover_stuck_orders, daemon=True).start()
 
 @app.get("/products")
 def products():
@@ -231,12 +256,12 @@ async def webhook(request: Request):
 def _safe_fulfil(name, dob, email, gender="", order_id="", report_type="complete", extra="",
                  birth_time="", birth_place="", focus_area="", partner_name="", partner_dob="",
                  partner_birth_time="", partner_birth_place="", marriage_date="", current_issue="",
-                 children="", main_question=""):
+                 children="", main_question="", resume_row=None):
     try:
         fulfil_order(name, dob, email, gender, order_id, report_type, extra,
                      birth_time, birth_place, focus_area, partner_name, partner_dob,
                      partner_birth_time, partner_birth_place, marriage_date, current_issue,
-                     children, main_question)
+                     children, main_question, resume_row=resume_row)
     except _LoggedFailure as e:
         # Failure is already visible on the order's own Sheet row (status=FAILED).
         print("FULFILMENT ERROR (logged on order row):", repr(e))
@@ -304,7 +329,7 @@ def append_to_sheet(row, creds):
 #          current_issue, children, main_question
 #   T = report URL (Drive link)   U = status   V = status timestamp
 #   W = error message             X = pipeline version
-PIPELINE_VERSION = "report-pipeline-v3-studio-fieldnotes-2026-07-15"
+PIPELINE_VERSION = "report-pipeline-v4-isolated-build-2026-10-17"
 TERMINAL_STATUSES = {"SENT", "DELIVERED"}
 
 class _LoggedFailure(Exception):
@@ -379,23 +404,124 @@ def update_status_cells(row_idx, creds, status, link=None, error=None):
     print(f"[fulfil] row={row_idx} status={status}" + (f" link={link}" if link else "")
           + (f" error={error}" if error else ""))
 
-def _already_fulfilled_in_sheet(order_id, creds):
-    """Durable dedup: True if this order_id already has a terminal-status row.
-    Survives redeploys (unlike the in-memory _DONE/_fulfilled sets)."""
-    if not order_id:
-        return False
+CLOSED_STATUSES = TERMINAL_STATUSES | {"SUPERSEDED"}
+# Statuses a crash can leave behind. An order sitting in one of these never got its email.
+STUCK_STATUSES = {"RECEIVED", "GENERATING", "GENERATED", "SENDING", "RETRYING"}
+RETRY_MARK = "auto-retry"
+
+def _dedupable(order_id):
+    return bool(order_id) and order_id != "manual"
+
+def _cell(r, i):
+    return (r[i] if len(r) > i else "").strip()
+
+def _read_rows(creds):
+    """All data rows as (row_index, row_values). Row 1 is the header."""
+    got = _sheets(creds).values().get(
+        spreadsheetId=SHEET_ID, range=f"{SHEET_TAB}!A2:X").execute().get("values", [])
+    return [(i + 2, r) for i, r in enumerate(got)]
+
+def _order_rows(order_id, creds):
+    """Durable lookup that survives restarts (unlike the in-memory _DONE set):
+    every Sheet row for this order as (row_index, STATUS, row_values)."""
+    out = []
+    for idx, r in _read_rows(creds):
+        if _cell(r, 1) == order_id:
+            out.append((idx, _cell(r, 20).upper(), r))
+    return out
+
+def _mark_superseded(rows, keep_idx, creds):
+    """A crash + Razorpay retry used to append a second row for the same order.
+    Keep one row per order: close the extra attempts and point at the live one."""
+    for idx, status, _ in rows:
+        if idx != keep_idx and status not in CLOSED_STATUSES:
+            try:
+                update_status_cells(idx, creds, "SUPERSEDED",
+                                    error=f"Duplicate attempt after a server restart; see row {keep_idx}")
+            except Exception as e:
+                print(f"[fulfil] could not mark row {idx} SUPERSEDED: {e!r}")
+
+def _set_pipeline_cell(row_idx, creds, value):
+    _sheets(creds).values().update(
+        spreadsheetId=SHEET_ID, range=f"{SHEET_TAB}!X{row_idx}",
+        valueInputOption="RAW", body={"values": [[value]]}).execute()
+
+def _set_link_cell(row_idx, creds, link):
+    _sheets(creds).values().update(
+        spreadsheetId=SHEET_ID, range=f"{SHEET_TAB}!T{row_idx}",
+        valueInputOption="RAW", body={"values": [[link]]}).execute()
+
+# ─────────── Memory visibility (the free instance has 512 MB) ───────────
+def _mem():
+    """'rss=…MB box=…MB': this process, and the whole instance as Render counts it."""
+    parts = []
     try:
-        got = _sheets(creds).values().get(
-            spreadsheetId=SHEET_ID, range=f"{SHEET_TAB}!B:U").execute().get("values", [])
-        for r in got:
-            if r and r[0] == order_id:
-                status = (r[19] if len(r) > 19 else "").strip().upper()
-                if status in TERMINAL_STATUSES:
-                    return True
-        return False
-    except Exception as e:
-        print(f"[fulfil] dedup check failed (continuing): {e!r}")
-        return False
+        with open("/proc/self/status") as fh:
+            for line in fh:
+                if line.startswith("VmRSS"):
+                    parts.append(f"rss={int(line.split()[1]) // 1024}MB")
+    except Exception:
+        pass
+    for p in ("/sys/fs/cgroup/memory.current", "/sys/fs/cgroup/memory/memory.usage_in_bytes"):
+        try:
+            with open(p) as fh:
+                parts.append(f"box={int(fh.read().strip()) // (1024 * 1024)}MB")
+            break
+        except Exception:
+            continue
+    return " ".join(parts) or "mem=?"
+
+def _release_memory():
+    gc.collect()
+    try:
+        if _LIBC is not None:
+            _LIBC.malloc_trim(0)
+    except Exception:
+        pass
+
+def _proper_name(s):
+    """'purvanjali agrawal' -> 'Purvanjali Agrawal' for the email greeting.
+    Mixed-case names are left exactly as the customer typed them."""
+    s = re.sub(r"\s+", " ", str(s or "")).strip()
+    if s and (s.islower() or s.isupper()):
+        s = " ".join(w[:1].upper() + w[1:].lower() for w in s.split(" "))
+    return s
+
+# ─────────── PDF build in a child process ───────────
+class BuildKilled(RuntimeError):
+    """The report builder was killed (normally: ran out of memory)."""
+
+def build_report_pdf(**kwargs):
+    """Build the PDF in report_job.py and return its path.
+
+    If the build needs more memory than the instance has, the kernel kills the
+    child (it marks itself as first in line) and this web server survives to
+    record FAILED and alert the owner, instead of dying mid-order."""
+    if not ISOLATE_BUILD:
+        from generate import generate_report
+        return generate_report(**kwargs)
+    env = dict(os.environ, PYTHONUNBUFFERED="1", MALLOC_ARENA_MAX="2")
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-u", REPORT_JOB], input=json.dumps(kwargs),
+            capture_output=True, text=True, cwd=APP_DIR, env=env, timeout=BUILD_TIMEOUT_S)
+    except subprocess.TimeoutExpired:
+        raise RuntimeError(f"report build timed out after {BUILD_TIMEOUT_S}s")
+    path = None
+    for line in (proc.stdout or "").splitlines():
+        if line.startswith("__REPORT_PDF__"):
+            try:
+                path = json.loads(line[len("__REPORT_PDF__"):])["path"]
+            except Exception:
+                pass
+        elif line.strip():
+            print(f"[build] {line}")
+    if proc.returncode in (-9, 137):
+        raise BuildKilled("report builder was killed by the system (out of memory)")
+    if proc.returncode != 0 or not path or not os.path.exists(path):
+        tail = (proc.stderr or "").strip().splitlines()[-6:]
+        raise RuntimeError(f"report build failed (exit {proc.returncode}): " + " | ".join(tail)[:600])
+    return path
 
 def send_email(to_email, name, pdf_path, report_type="Numerology Report"):
     with open(pdf_path, "rb") as fh:
@@ -523,11 +649,28 @@ def _alert_owner(subject, body):
     except Exception as e:
         print(f"[alert] could not send owner alert: {e!r}")
 
+_FULFIL_LOCK = threading.Lock()   # one report at a time: the instance has 512 MB
+
 def fulfil_order(name, dob, email, gender="", order_id="", report_type="complete", extra="",
                  birth_time="", birth_place="", focus_area="", partner_name="", partner_dob="",
                  partner_birth_time="", partner_birth_place="", marriage_date="", current_issue="",
-                 children="", main_question=""):
-    # 0. Sheet credentials + durable idempotency check (survives redeploys).
+                 children="", main_question="", resume_row=None):
+    with _FULFIL_LOCK:
+        try:
+            return _fulfil_order(name, dob, email, gender, order_id, report_type, extra,
+                                 birth_time, birth_place, focus_area, partner_name, partner_dob,
+                                 partner_birth_time, partner_birth_place, marriage_date,
+                                 current_issue, children, main_question, resume_row)
+        finally:
+            _release_memory()
+
+def _fulfil_order(name, dob, email, gender, order_id, report_type, extra,
+                  birth_time, birth_place, focus_area, partner_name, partner_dob,
+                  partner_birth_time, partner_birth_place, marriage_date, current_issue,
+                  children, main_question, resume_row):
+    name = _proper_name(name) or "Customer"
+    print(f"[fulfil] start order={order_id} type={report_type} email={email} {_mem()}")
+    # 0. Sheet credentials + durable idempotency check (survives restarts).
     creds, row_idx = None, None
     try:
         creds = _google_creds()
@@ -540,12 +683,28 @@ def fulfil_order(name, dob, email, gender="", order_id="", report_type="complete
             f"Google credentials failed: {cred_err!r}\n"
             "Fix GOOGLE_SA_JSON on the report backend, then add this order "
             f"manually to the '{SHEET_TAB}' tab.")
-    if creds and _already_fulfilled_in_sheet(order_id, creds):
-        print(f"[fulfil] order={order_id} already has a terminal Sheet row — skipping duplicate")
-        return "duplicate-skipped"
 
-    # 1. RECEIVED — the order gets its own row immediately, before any work.
-    if creds:
+    if creds and _dedupable(order_id):
+        try:
+            rows = _order_rows(order_id, creds)
+        except Exception as e:
+            print(f"[fulfil] order lookup failed (continuing): {e!r}")
+            rows = []
+        if any(st in TERMINAL_STATUSES for _, st, _ in rows):
+            print(f"[fulfil] order={order_id} already DELIVERED — skipping duplicate")
+            return "duplicate-skipped"
+        # A crash used to leave the first attempt open and the retry appended a
+        # second row. Continue on the order's own row and close the extras.
+        open_rows = [idx for idx, st, _ in rows if st not in CLOSED_STATUSES]
+        if resume_row:
+            row_idx = resume_row
+        elif open_rows:
+            row_idx = open_rows[-1]
+        if row_idx:
+            _mark_superseded(rows, row_idx, creds)
+
+    # 1. RECEIVED — a new order gets its own row immediately, before any work.
+    if creds and not row_idx:
         try:
             row_idx = append_status_row(
                 [_now_ts(), order_id, name, _fmt_dob(dob), email, gender, report_type, extra,
@@ -564,8 +723,22 @@ def fulfil_order(name, dob, email, gender="", order_id="", report_type="complete
                 "workbook and that the tab exists; then add this order "
                 "manually.")
 
+    def _status(status, **kw):
+        if creds and row_idx:
+            try:
+                update_status_cells(row_idx, creds, status, **kw)
+            except Exception as e:
+                print(f"[fulfil] could not write status {status}: {e!r}")
+
     def _fail(stage, exc):
-        print(f"[fulfil] order={order_id} FAILED at {stage}: {exc!r}")
+        print(f"[fulfil] order={order_id} FAILED at {stage}: {exc!r} {_mem()}")
+        _alert_owner(
+            f"Paid report NOT delivered: {order_id} ({report_type}) for {name}",
+            f"order_id: {order_id}\nname: {name}\nemail: {email}\ndob: {dob}\n"
+            f"report_type: {report_type}\nextra: {extra}\n\n"
+            f"Failed at: {stage}\nError: {exc!r}\n\n"
+            f"Sheet row: {row_idx or 'none'} (tab '{SHEET_TAB}')\n"
+            "Send this report manually, or fix the cause and use /admin/fulfil.")
         if creds and row_idx:
             try:
                 update_status_cells(row_idx, creds, "FAILED", error=f"{stage}: {exc}")
@@ -576,44 +749,129 @@ def fulfil_order(name, dob, email, gender="", order_id="", report_type="complete
                 print(f"[fulfil] could not mark FAILED: {e2!r}")
         raise exc
 
-    # 2. GENERATING → GENERATED
-    if creds and row_idx:
-        update_status_cells(row_idx, creds, "GENERATING")
+    # 2. GENERATING → GENERATED (built in a child process; see build_report_pdf)
+    _status("GENERATING")
     try:
-        pdf = generate_report(name, dob, gender=gender, out_dir=OUT_DIR,
-                              book_cover=BOOK_COVER, report_type=report_type, extra=extra,
-                              birth_time=birth_time, birth_place=birth_place,
-                              focus_area=focus_area, email=email,
-                              partner_name=partner_name, partner_dob=partner_dob,
-                              partner_birth_time=partner_birth_time, partner_birth_place=partner_birth_place,
-                              marriage_date=marriage_date, current_issue=current_issue,
-                              children=children, main_question=main_question)
+        pdf = build_report_pdf(full_name=name, dob=dob, gender=gender, out_dir=OUT_DIR,
+                               book_cover=BOOK_COVER, report_type=report_type, extra=extra,
+                               birth_time=birth_time, birth_place=birth_place,
+                               focus_area=focus_area, email=email,
+                               partner_name=partner_name, partner_dob=partner_dob,
+                               partner_birth_time=partner_birth_time, partner_birth_place=partner_birth_place,
+                               marriage_date=marriage_date, current_issue=current_issue,
+                               children=children, main_question=main_question)
     except Exception as e:
         _fail("generate", e)
-    if creds and row_idx:
-        update_status_cells(row_idx, creds, "GENERATED")
+    _release_memory()
+    _status("GENERATED")
+    print(f"[fulfil] order={order_id} pdf={os.path.basename(pdf)} "
+          f"size={os.path.getsize(pdf) // 1024}KB {_mem()}")
 
-    # 3. Drive upload — optional, skipped gracefully if service account has no quota
+    # 3. Email the customer FIRST. Delivery is what they paid for; the Drive
+    #    copy is a nice-to-have and must never stand in front of the email.
+    _status("SENDING")
+    try:
+        send_email(email, name, pdf, report_type=report_type)
+    except Exception as e:
+        _fail("email", e)
+    _status("DELIVERED", link="")
+    print(f"[fulfil] order={order_id} emailed to {email} {_mem()}")
+
+    # 4. Owner backup copy + Drive archive — best effort, after delivery.
+    try:
+        send_email("veshannastro@gmail.com", name, pdf, report_type=report_type)
+    except Exception as e:
+        print(f"[fulfil] backup-copy email failed (customer copy already sent): {e!r}")
     link = "N/A"
     if creds:
         try:
             link = upload_to_drive(pdf, creds)
         except Exception as drive_err:
-            print(f"Drive upload skipped: {drive_err}")
-
-    # 4. Email delivery → DELIVERED
-    try:
-        send_email(email, name, pdf, report_type=report_type)
-    except Exception as e:
-        _fail("email", e)
-    try:
-        send_email("veshannastro@gmail.com", name, pdf, report_type=report_type)  # backup copy
-    except Exception as e:
-        print(f"[fulfil] backup-copy email failed (customer copy already sent): {e!r}")
-    if creds and row_idx:
-        update_status_cells(row_idx, creds, "DELIVERED", link=link)
-    print(f"Fulfilled {order_id} ({report_type}) for {email}: {link} [{PIPELINE_VERSION}]")
+            print(f"[fulfil] Drive upload skipped: {drive_err}")
+        if row_idx:
+            try:
+                _set_link_cell(row_idx, creds, link)
+            except Exception as e:
+                print(f"[fulfil] could not write report link: {e!r}")
+    print(f"Fulfilled {order_id} ({report_type}) for {email}: {link} [{PIPELINE_VERSION}] {_mem()}")
     return link
+
+# ───────────────────────── Recovery of orders stuck by a crash ─────────────────────────
+def _iso_date(s):
+    """Sheet dates are written as '26 October 1982'; the engine wants YYYY-MM-DD."""
+    s = str(s or "").strip()
+    for fmt in ("%Y-%m-%d", "%d %B %Y", "%d %b %Y", "%d-%m-%Y", "%d/%m/%Y"):
+        try:
+            return datetime.datetime.strptime(s, fmt).strftime("%Y-%m-%d")
+        except Exception:
+            pass
+    return ""
+
+def _recover_stuck_orders(delay_s=20):
+    """On boot, finish recent paid orders a crash left in RECEIVED/GENERATING/
+    GENERATED/SENDING. Each order is retried automatically once (marked in its
+    Pipeline cell); if that retry is also cut short, it is marked FAILED and the
+    owner is emailed instead of the server retrying forever."""
+    import time
+    time.sleep(delay_s)
+    try:
+        creds = _google_creds()
+        rows = _read_rows(creds)
+    except Exception as e:
+        print(f"[recover] could not read the Sheet: {e!r}")
+        return
+    cutoff = datetime.datetime.now() - datetime.timedelta(hours=RECOVER_WINDOW_HOURS)
+    by_order = {}
+    for idx, r in rows:
+        oid = _cell(r, 1)
+        if _dedupable(oid) and oid.startswith(("order_", "pay_")):
+            by_order.setdefault(oid, []).append((idx, _cell(r, 20).upper(), r))
+    picked = 0
+    for oid, entries in by_order.items():
+        if any(st in TERMINAL_STATUSES for _, st, _ in entries):
+            continue
+        stuck = [(idx, st, r) for idx, st, r in entries if st in STUCK_STATUSES]
+        if not stuck:
+            continue
+        idx, st, r = stuck[-1]
+        try:
+            when = datetime.datetime.strptime(_cell(r, 0), "%Y-%m-%d %H:%M:%S")
+        except Exception:
+            continue
+        if when < cutoff:
+            continue
+        if oid in _DONE or oid in _fulfilled:
+            continue          # a webhook in this same boot is already on it
+        name, email, report_type = _cell(r, 2), _cell(r, 4), _cell(r, 6)
+        dob = _iso_date(_cell(r, 3))
+        if RETRY_MARK in _cell(r, 23):
+            msg = "Retried once after a server restart and was cut short again"
+            print(f"[recover] {oid} row {idx}: {msg} — marking FAILED")
+            try:
+                update_status_cells(idx, creds, "FAILED", error=msg)
+            except Exception as e:
+                print(f"[recover] could not mark FAILED: {e!r}")
+            _alert_owner(f"Paid report NOT delivered: {oid} ({report_type}) for {name}",
+                         f"order_id: {oid}\nname: {name}\nemail: {email}\ndob: {dob}\n"
+                         f"report_type: {report_type}\nSheet row: {idx}\n\n{msg}.\n"
+                         "Please send this report manually.")
+            continue
+        if not (name and email and dob):
+            print(f"[recover] {oid} row {idx}: missing name/email/dob — leaving for manual handling")
+            continue
+        _DONE.add(oid)
+        picked += 1
+        print(f"[recover] {oid} row {idx} was left at {st}; delivering it now")
+        try:
+            _set_pipeline_cell(idx, creds, f"{PIPELINE_VERSION} | {RETRY_MARK} after restart")
+            update_status_cells(idx, creds, "RETRYING", error="Server restarted mid-order; retrying automatically")
+        except Exception as e:
+            print(f"[recover] could not mark RETRYING: {e!r}")
+        _safe_fulfil(name, dob, email, _cell(r, 5), oid, report_type, _cell(r, 7),
+                     _cell(r, 8), _cell(r, 9), _cell(r, 10), _cell(r, 11), _iso_date(_cell(r, 12)),
+                     _cell(r, 13), _cell(r, 14), _cell(r, 15), _cell(r, 16),
+                     _cell(r, 17), _cell(r, 18), resume_row=idx)
+    print(f"[recover] checked {len(by_order)} orders; retried {picked}")
 
 # ───────────────────────── Palm photo upload (before payment) ─────────────────────────
 PALM_UPLOAD_DIR = os.environ.get("PALM_UPLOAD_DIR", "/tmp/palm_uploads")
@@ -792,7 +1050,8 @@ async def admin_fulfil(request: Request):
         raise HTTPException(400, "name, dob (YYYY-MM-DD) and email are required")
     try:
         link = fulfil_order(data["name"], data["dob"], data["email"],
-                            data.get("gender", ""), data.get("order_id", "manual"),
+                            data.get("gender", ""),
+                            data.get("order_id") or f"manual-{datetime.datetime.now():%Y%m%d%H%M%S}",
                             data.get("report_type", "complete"), data.get("extra", ""),
                             data.get("birth_time", ""), data.get("birth_place", ""),
                             data.get("focus_area", ""), data.get("partner_name", ""),

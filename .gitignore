@@ -1,5 +1,5 @@
-# Fonts are generated at build time by build_fonts.py — no need to commit them
-fonts/*.ttf
+# Report fonts (all OFL) are committed so a cold start never downloads and
+# rebuilds them inside the web server. build_fonts.py can regenerate them.
 fonts/_src/
 __pycache__/
 *.pyc
