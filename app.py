@@ -283,42 +283,91 @@ def _safe_fulfil(name, dob, email, gender="", order_id="", report_type="complete
             print("could not log ERROR row:", repr(e2))
 
 # ───────────────────────── Pipeline pieces ─────────────────────────
+# Google is called over plain HTTPS (google-auth + requests), NOT through
+# googleapiclient. That library builds huge help-text strings for every Sheets
+# method the first time spreadsheets() is touched (40+ MB per call). The old
+# code rebuilt it on every status update, which kept the web process around
+# 350 MB on Render and, together with a PDF build, over the 512 MB limit.
+_CREDS = None
+_CREDS_LOCK = threading.Lock()
+
 def _google_creds():
-    from google.oauth2 import service_account
-    info = json.loads(GOOGLE_SA_JSON)
-    return service_account.Credentials.from_service_account_info(info, scopes=[
-        "https://www.googleapis.com/auth/drive",
-        "https://www.googleapis.com/auth/spreadsheets"])
+    """One cached service-account credential; google-auth refreshes the token itself."""
+    global _CREDS
+    with _CREDS_LOCK:
+        if _CREDS is None:
+            from google.oauth2 import service_account
+            info = json.loads(GOOGLE_SA_JSON)
+            _CREDS = service_account.Credentials.from_service_account_info(info, scopes=[
+                "https://www.googleapis.com/auth/drive",
+                "https://www.googleapis.com/auth/spreadsheets"])
+        return _CREDS
+
+def _gsession(creds):
+    from google.auth.transport.requests import AuthorizedSession
+    return AuthorizedSession(creds)
+
+def _gcall(session, method, url, **kw):
+    kw.setdefault("timeout", 30)
+    r = session.request(method, url, **kw)
+    if r.status_code >= 300:
+        raise RuntimeError(f"Google API {r.status_code} on {method} {url.split('?')[0]}: {r.text[:300]}")
+    return r.json() if r.content else {}
+
+class _Call:
+    """Keeps the googleapiclient-style `.execute()` call shape used across this file."""
+    def __init__(self, fn): self._fn = fn
+    def execute(self): return self._fn()
+
+class _SheetValues:
+    BASE = "https://sheets.googleapis.com/v4/spreadsheets"
+    def __init__(self, creds): self._creds = creds
+    def _url(self, sid, rng, suffix=""):
+        from urllib.parse import quote
+        return f"{self.BASE}/{sid}/values/{quote(rng, safe='!:')}{suffix}"
+    def get(self, spreadsheetId, range):
+        return _Call(lambda: _gcall(_gsession(self._creds), "GET", self._url(spreadsheetId, range)))
+    def update(self, spreadsheetId, range, valueInputOption="RAW", body=None):
+        return _Call(lambda: _gcall(_gsession(self._creds), "PUT", self._url(spreadsheetId, range),
+                                    params={"valueInputOption": valueInputOption}, json=body))
+    def append(self, spreadsheetId, range, valueInputOption="RAW", insertDataOption="INSERT_ROWS", body=None):
+        return _Call(lambda: _gcall(_gsession(self._creds), "POST", self._url(spreadsheetId, range, ":append"),
+                                    params={"valueInputOption": valueInputOption,
+                                            "insertDataOption": insertDataOption}, json=body))
+
+class _Spreadsheets:
+    def __init__(self, creds): self._v = _SheetValues(creds)
+    def values(self): return self._v
+
+def _drive_upload(path, name, mime, creds, public=False):
+    """Multipart upload into DRIVE_FOLDER_ID (works for shared folders and Shared Drives)."""
+    import secrets
+    meta = {"name": name}
+    if DRIVE_FOLDER_ID:
+        meta["parents"] = [DRIVE_FOLDER_ID]
+    boundary = "veshann" + secrets.token_hex(12)
+    with open(path, "rb") as fh:
+        data = fh.read()
+    body = (f"--{boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n{json.dumps(meta)}\r\n"
+            f"--{boundary}\r\nContent-Type: {mime}\r\n\r\n").encode() + data + f"\r\n--{boundary}--\r\n".encode()
+    s = _gsession(creds)
+    f = _gcall(s, "POST", "https://www.googleapis.com/upload/drive/v3/files",
+               params={"uploadType": "multipart", "supportsAllDrives": "true", "fields": "id"},
+               data=body, headers={"Content-Type": f"multipart/related; boundary={boundary}"}, timeout=60)
+    fid = f["id"]
+    if public:
+        _gcall(s, "POST", f"https://www.googleapis.com/drive/v3/files/{fid}/permissions",
+               params={"supportsAllDrives": "true"}, json={"role": "reader", "type": "anyone"})
+    return fid
 
 def upload_to_drive(pdf_path, creds):
-    """Upload PDF to Google Drive folder.
-    The target folder must be a Shared Drive OR the service account must be
-    granted 'Content manager' / 'Contributor' role on a Shared Drive.
-    For a regular My Drive folder: share it with the service account as Editor
-    AND enable 'supportsAllDrives' so the API accepts the parent correctly.
-    We use the multipart upload with supportsAllDrives=True which works for
-    both regular shared folders and Shared Drives."""
-    from googleapiclient.discovery import build
-    from googleapiclient.http import MediaFileUpload
-    drive = build("drive", "v3", credentials=creds)
-    meta = {"name": os.path.basename(pdf_path)}
-    if DRIVE_FOLDER_ID: meta["parents"] = [DRIVE_FOLDER_ID]
-    f = drive.files().create(
-        body=meta, fields="id",
-        media_body=MediaFileUpload(pdf_path, mimetype="application/pdf"),
-        supportsAllDrives=True
-    ).execute()
-    fid = f["id"]
-    drive.permissions().create(
-        fileId=fid,
-        body={"role": "reader", "type": "anyone"},
-        supportsAllDrives=True
-    ).execute()
+    """Archive the PDF in the Drive folder and return a view link.
+    The folder must be shared with the service account as Editor (or be a Shared Drive)."""
+    fid = _drive_upload(pdf_path, os.path.basename(pdf_path), "application/pdf", creds, public=True)
     return f"https://drive.google.com/file/d/{fid}/view"
 
 def append_to_sheet(row, creds):
-    from googleapiclient.discovery import build
-    build("sheets", "v4", credentials=creds).spreadsheets().values().append(
+    _sheets(creds).values().append(
         spreadsheetId=SHEET_ID, range=f"{SHEET_TAB}!A1", valueInputOption="RAW",
         insertDataOption="INSERT_ROWS", body={"values": [row]}).execute()
 
@@ -329,7 +378,7 @@ def append_to_sheet(row, creds):
 #          current_issue, children, main_question
 #   T = report URL (Drive link)   U = status   V = status timestamp
 #   W = error message             X = pipeline version
-PIPELINE_VERSION = "report-pipeline-v4-isolated-build-2026-10-17"
+PIPELINE_VERSION = "report-pipeline-v5-lean-google-2026-10-17"
 TERMINAL_STATUSES = {"SENT", "DELIVERED"}
 
 class _LoggedFailure(Exception):
@@ -339,8 +388,7 @@ def _now_ts():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 def _sheets(creds):
-    from googleapiclient.discovery import build
-    return build("sheets", "v4", credentials=creds).spreadsheets()
+    return _Spreadsheets(creds)
 
 # One clean header for all 24 columns the pipeline writes (A..X).
 SHEET_HEADERS = [
@@ -807,6 +855,14 @@ def _iso_date(s):
             pass
     return ""
 
+RESTART_FAILURE = "Retried once after a server restart and was cut short again"
+
+def _restart_failure_from_older_version(status, r):
+    """An order that FAILED only because the server kept restarting, under an
+    older version of this code, gets one fresh attempt once a fix is deployed."""
+    return (status == "FAILED" and _cell(r, 22).startswith(RESTART_FAILURE)
+            and PIPELINE_VERSION not in _cell(r, 23))
+
 def _recover_stuck_orders(delay_s=20):
     """On boot, finish recent paid orders a crash left in RECEIVED/GENERATING/
     GENERATED/SENDING. Each order is retried automatically once (marked in its
@@ -830,7 +886,8 @@ def _recover_stuck_orders(delay_s=20):
     for oid, entries in by_order.items():
         if any(st in TERMINAL_STATUSES for _, st, _ in entries):
             continue
-        stuck = [(idx, st, r) for idx, st, r in entries if st in STUCK_STATUSES]
+        stuck = [(idx, st, r) for idx, st, r in entries
+                 if st in STUCK_STATUSES or _restart_failure_from_older_version(st, r)]
         if not stuck:
             continue
         idx, st, r = stuck[-1]
@@ -844,8 +901,8 @@ def _recover_stuck_orders(delay_s=20):
             continue          # a webhook in this same boot is already on it
         name, email, report_type = _cell(r, 2), _cell(r, 4), _cell(r, 6)
         dob = _iso_date(_cell(r, 3))
-        if RETRY_MARK in _cell(r, 23):
-            msg = "Retried once after a server restart and was cut short again"
+        if RETRY_MARK in _cell(r, 23) and PIPELINE_VERSION in _cell(r, 23):
+            msg = RESTART_FAILURE
             print(f"[recover] {oid} row {idx}: {msg} — marking FAILED")
             try:
                 update_status_cells(idx, creds, "FAILED", error=msg)
@@ -925,15 +982,7 @@ async def upload_palm(request: Request):
     return {"upload_id": upload_id, "saved": sorted(saved)}
 
 def _upload_palm_to_drive(path, name, creds):
-    from googleapiclient.discovery import build
-    from googleapiclient.http import MediaFileUpload
-    drive = build("drive", "v3", credentials=creds)
-    meta = {"name": name}
-    if DRIVE_FOLDER_ID:
-        meta["parents"] = [DRIVE_FOLDER_ID]
-    drive.files().create(body=meta, fields="id",
-                         media_body=MediaFileUpload(path, mimetype="image/jpeg"),
-                         supportsAllDrives=True).execute()
+    _drive_upload(path, name, "image/jpeg", creds, public=False)
 
 # ───────────────────────── Direct report trigger (belt-and-suspenders) ─────────────────────────
 @app.post("/trigger-report")
@@ -1015,9 +1064,9 @@ def admin_selftest(token: str = ""):
             f"sheet shared with the service account?): {e}"
         )
     try:
-        from googleapiclient.discovery import build
-        build("drive", "v3", credentials=creds).files().list(
-            q=f"'{DRIVE_FOLDER_ID}' in parents", pageSize=1, fields="files(id)").execute()
+        _gcall(_gsession(creds), "GET", "https://www.googleapis.com/drive/v3/files",
+               params={"q": f"'{DRIVE_FOLDER_ID}' in parents", "pageSize": 1, "fields": "files(id)",
+                       "supportsAllDrives": "true", "includeItemsFromAllDrives": "true"})
         out["drive_folder"] = "ok"
     except Exception as e:
         out["drive_folder"] = f"FAIL (share the folder with the service-account email as Editor): {e}"
