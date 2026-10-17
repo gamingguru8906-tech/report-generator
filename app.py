@@ -378,7 +378,7 @@ def append_to_sheet(row, creds):
 #          current_issue, children, main_question
 #   T = report URL (Drive link)   U = status   V = status timestamp
 #   W = error message             X = pipeline version
-PIPELINE_VERSION = "report-pipeline-v5-lean-google-2026-10-17"
+PIPELINE_VERSION = "report-pipeline-v6-email-recovery-2026-10-17"
 TERMINAL_STATUSES = {"SENT", "DELIVERED"}
 
 class _LoggedFailure(Exception):
@@ -863,11 +863,28 @@ def _restart_failure_from_older_version(status, r):
     return (status == "FAILED" and _cell(r, 22).startswith(RESTART_FAILURE)
             and PIPELINE_VERSION not in _cell(r, 23))
 
+def _brevo_status():
+    """(ok, detail) for the configured Brevo key, checked against Brevo's account endpoint."""
+    if not BREVO_API_KEY:
+        return False, "BREVO_API_KEY is not set"
+    try:
+        r = requests.get("https://api.brevo.com/v3/account",
+                         headers={"api-key": BREVO_API_KEY}, timeout=10)
+        return r.status_code == 200, f"HTTP {r.status_code}: {r.text[:160]}"
+    except Exception as e:
+        return False, repr(e)
+
+def _email_failure(status, r):
+    """Brevo refused or errored, so nothing was sent: safe to try again once email works."""
+    return status == "FAILED" and _cell(r, 22).startswith("email:")
+
 def _recover_stuck_orders(delay_s=20):
-    """On boot, finish recent paid orders a crash left in RECEIVED/GENERATING/
-    GENERATED/SENDING. Each order is retried automatically once (marked in its
-    Pipeline cell); if that retry is also cut short, it is marked FAILED and the
-    owner is emailed instead of the server retrying forever."""
+    """On boot, finish recent paid orders that never reached DELIVERED:
+    - a crash left them in RECEIVED/GENERATING/GENERATED/SENDING: retried once
+      (marked in the Pipeline cell); if that retry is also cut short, it is
+      marked FAILED and the owner is alerted instead of retrying forever;
+    - they FAILED at the email step (e.g. the Brevo key was disabled): retried
+      on each boot while Brevo accepts the key, since nothing was sent."""
     import time
     time.sleep(delay_s)
     try:
@@ -876,6 +893,10 @@ def _recover_stuck_orders(delay_s=20):
     except Exception as e:
         print(f"[recover] could not read the Sheet: {e!r}")
         return
+    brevo_ok, brevo_detail = _brevo_status()
+    if not brevo_ok:
+        print(f"[startup] BREVO KEY REJECTED — no report emails can be sent until BREVO_API_KEY "
+              f"is replaced on Render: {brevo_detail}")
     cutoff = datetime.datetime.now() - datetime.timedelta(hours=RECOVER_WINDOW_HOURS)
     by_order = {}
     for idx, r in rows:
@@ -887,7 +908,8 @@ def _recover_stuck_orders(delay_s=20):
         if any(st in TERMINAL_STATUSES for _, st, _ in entries):
             continue
         stuck = [(idx, st, r) for idx, st, r in entries
-                 if st in STUCK_STATUSES or _restart_failure_from_older_version(st, r)]
+                 if st in STUCK_STATUSES or _restart_failure_from_older_version(st, r)
+                 or (brevo_ok and _email_failure(st, r))]
         if not stuck:
             continue
         idx, st, r = stuck[-1]
@@ -901,7 +923,8 @@ def _recover_stuck_orders(delay_s=20):
             continue          # a webhook in this same boot is already on it
         name, email, report_type = _cell(r, 2), _cell(r, 4), _cell(r, 6)
         dob = _iso_date(_cell(r, 3))
-        if RETRY_MARK in _cell(r, 23) and PIPELINE_VERSION in _cell(r, 23):
+        email_retry = _email_failure(st, r)
+        if not email_retry and RETRY_MARK in _cell(r, 23) and PIPELINE_VERSION in _cell(r, 23):
             msg = RESTART_FAILURE
             print(f"[recover] {oid} row {idx}: {msg} — marking FAILED")
             try:
@@ -920,8 +943,12 @@ def _recover_stuck_orders(delay_s=20):
         picked += 1
         print(f"[recover] {oid} row {idx} was left at {st}; delivering it now")
         try:
-            _set_pipeline_cell(idx, creds, f"{PIPELINE_VERSION} | {RETRY_MARK} after restart")
-            update_status_cells(idx, creds, "RETRYING", error="Server restarted mid-order; retrying automatically")
+            if email_retry:
+                _set_pipeline_cell(idx, creds, f"{PIPELINE_VERSION} | email retry")
+                update_status_cells(idx, creds, "RETRYING", error="Email now works; retrying delivery automatically")
+            else:
+                _set_pipeline_cell(idx, creds, f"{PIPELINE_VERSION} | {RETRY_MARK} after restart")
+                update_status_cells(idx, creds, "RETRYING", error="Server restarted mid-order; retrying automatically")
         except Exception as e:
             print(f"[recover] could not mark RETRYING: {e!r}")
         _safe_fulfil(name, dob, email, _cell(r, 5), oid, report_type, _cell(r, 7),
