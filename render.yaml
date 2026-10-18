@@ -3,7 +3,9 @@ services:
     name: veshann-report-backend
     runtime: python
     plan: free
-    buildCommand: pip install -r requirements.txt && python build_fonts.py
+    # forecast/: Node (preinstalled on Render) runs the numerology brain and prints the forecast deck in a
+    # self-contained headless Chromium (@sparticuz/chromium, no system libraries needed).
+    buildCommand: pip install -r requirements.txt && python build_fonts.py && npm ci --omit=dev --no-audit --no-fund --prefix forecast
     startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: RAZORPAY_KEY_ID
@@ -12,6 +14,8 @@ services:
         sync: false
       - key: RAZORPAY_WEBHOOK_SECRET
         sync: false
+      - key: FORECAST_DECK
+        value: "on"      # "off" sends the classic Personal Year Forecast instead of the 9:16 deck
       - key: REPORT_AMOUNT_PAISE
         value: "49900"
       # Per-product prices (paise). These pin the live prices in the repo so checkout

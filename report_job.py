@@ -27,6 +27,42 @@ def _rss_mb():
     return -1
 
 
+FORECAST_TYPES = {"personal_forecast", "forecast", "personal_year_forecast"}
+
+
+def _is_forecast(report_type):
+    import os
+    if os.environ.get("FORECAST_DECK", "on").strip().lower() in ("off", "0", "false", "no"):
+        return False
+    return (report_type or "").strip() in FORECAST_TYPES
+
+
+def _phone_from(kwargs):
+    import re
+    for v in (kwargs.get("phone"), kwargs.get("extra")):
+        d = re.sub(r"\D+", "", str(v or ""))
+        if len(d) >= 10:
+            return d[-10:]
+    return None
+
+
+def _forecast_deck(kwargs):
+    import time
+    t0 = time.time()
+    try:
+        from forecast.build import build_forecast
+        path, meta = build_forecast(kwargs.get("full_name") or "Customer", kwargs.get("dob"),
+                                    phone=_phone_from(kwargs), gender=(kwargs.get("gender") or "").lower() or None,
+                                    out_dir=kwargs.get("out_dir") or ".")
+        print(f"[report_job] forecast deck: {meta.get('pages')} pages, Mulank {meta.get('mulank')}, "
+              f"theme {meta.get('theme')}, mobile={meta.get('mobile')}, overflow={len(meta.get('overflow') or [])}, "
+              f"{time.time() - t0:.1f}s (peak {_rss_mb()} MB)", flush=True)
+        return path
+    except Exception as e:
+        print(f"[report_job] forecast deck FAILED, sending the classic forecast instead: {e!r}", flush=True)
+        return None
+
+
 def main():
     try:
         # Volunteer to be the process the OOM killer picks, so it never
@@ -36,8 +72,14 @@ def main():
     except Exception:
         pass
     kwargs = json.loads(sys.stdin.read())
-    from generate import generate_report
-    path = generate_report(**kwargs)
+    path = None
+    if _is_forecast(kwargs.get("report_type")):
+        # The Personal Year Forecast deck. Built before anything heavy is imported, because headless
+        # Chromium needs most of the 512 MB. Any failure falls back to the classic report below.
+        path = _forecast_deck(kwargs)
+    if not path:
+        from generate import generate_report
+        path = generate_report(**kwargs)
     print(f"[report_job] built {path} (peak {_rss_mb()} MB)", flush=True)
     print(MARKER + json.dumps({"path": path}), flush=True)
 

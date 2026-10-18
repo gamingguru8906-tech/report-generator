@@ -1,0 +1,11 @@
+{
+  "name": "veshannastro-forecast",
+  "private": true,
+  "type": "module",
+  "description": "Personal Year Forecast: brain data (data.mjs) and PDF printing (render.mjs) for the report backend.",
+  "engines": { "node": ">=20.10" },
+  "dependencies": {
+    "@sparticuz/chromium": "131.0.1",
+    "puppeteer-core": "23.11.1"
+  }
+}

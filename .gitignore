@@ -4,3 +4,5 @@ fonts/_src/
 __pycache__/
 *.pyc
 /tmp/
+# installed by the build command (npm ci --prefix forecast)
+forecast/node_modules/

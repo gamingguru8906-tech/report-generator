@@ -1,0 +1,2120 @@
+{
+ "set": "repeats",
+ "rules": [
+  {
+   "id": "CHALDEAN-REPEATS-001",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 1,
+     "times": [
+      1
+     ]
+    }
+   },
+   "period": null,
+   "text": "Good at communication but bad at expressing self; likes being alone",
+   "polarity": "mixed",
+   "areas": [
+    "communication"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     67
+    ],
+    "quote": "Good at communication but bad at expressing themselves",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 1 once",
+   "status": "approved",
+   "say": "You are good at communicating but find it hard to express yourself, and you like being alone."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-002",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 1,
+     "times": [
+      2
+     ]
+    }
+   },
+   "period": null,
+   "text": "Good communication and self-expression; makes friends; good orator",
+   "polarity": "good",
+   "areas": [
+    "communication"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     67
+    ],
+    "quote": "They also are good orators.",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 1 twice",
+   "status": "approved",
+   "say": "You communicate and express yourself well, make friends easily and are a good speaker."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-003",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 1,
+     "times": [
+      3
+     ]
+    }
+   },
+   "period": null,
+   "text": "80% talkative, 20% introvert",
+   "polarity": "neutral",
+   "areas": [
+    "communication"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     67
+    ],
+    "quote": "Talkative 80% and introvert 20%.",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 1 three times",
+   "status": "approved",
+   "say": "You are mostly talkative, about 80%, with a 20% introvert side."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-004",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 1,
+     "times": [
+      4
+     ]
+    }
+   },
+   "period": null,
+   "text": "Bad communication, self-obsessed, seen as proud",
+   "polarity": "care",
+   "areas": [
+    "communication"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     67
+    ],
+    "quote": "people often think they are proud before knowing them",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 1 four times",
+   "status": "approved",
+   "say": "You may struggle to communicate and become self-absorbed, and people may think you proud before they know you."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-005",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 2,
+     "times": [
+      1
+     ]
+    }
+   },
+   "period": null,
+   "text": "Easily offended; sensitive, emotional, intuitive but ignore intuition",
+   "polarity": "mixed",
+   "areas": [
+    "emotions"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     67
+    ],
+    "quote": "They get offended by little things.",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 2 once",
+   "status": "approved",
+   "say": "You are sensitive, emotional and intuitive but tend to ignore your intuition. Little things can offend you."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-006",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 2,
+     "times": [
+      2
+     ]
+    }
+   },
+   "period": null,
+   "text": "Highly intuitive and sensitive; hard to understand",
+   "polarity": "mixed",
+   "areas": [
+    "emotions"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     67
+    ],
+    "quote": "They are often very difficult to understand",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 2 twice",
+   "status": "approved",
+   "say": "You are highly intuitive and sensitive, and others often find you hard to understand."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-007",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 2,
+     "times": [
+      3
+     ]
+    }
+   },
+   "period": null,
+   "text": "Introverted and over-sensitive",
+   "polarity": "care",
+   "areas": [
+    "emotions"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     67
+    ],
+    "quote": "They are introverted & overly sensitive by nature.",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 2 three times",
+   "status": "approved",
+   "say": "You are introverted and overly sensitive by nature."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-008",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 2,
+     "times": [
+      4
+     ]
+    }
+   },
+   "period": null,
+   "text": "Offended by tiny things -> depression, poor mental health",
+   "polarity": "care",
+   "areas": [
+    "mind"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     67
+    ],
+    "quote": "results in depression & bad mental health",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 2 four times",
+   "status": "approved",
+   "say": "Tiny things can hurt you deeply, which can lead to depression and poor mental health, so take care of your mind."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-009",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 3,
+     "times": [
+      1
+     ]
+    }
+   },
+   "period": null,
+   "text": "Sharp, creative mind, wide knowledge",
+   "polarity": "good",
+   "areas": [
+    "intellect"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     67
+    ],
+    "quote": "They have a sharp mind, are creative",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 3 once",
+   "status": "approved",
+   "say": "You have a sharp, creative mind and wide knowledge."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-010",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 3,
+     "times": [
+      2
+     ]
+    }
+   },
+   "period": null,
+   "text": "Arrogance from knowledge; good leaders and orators; art or writing careers",
+   "polarity": "mixed",
+   "areas": [
+    "career"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     67
+    ],
+    "quote": "They can choose art or writing field for their career.",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 3 twice",
+   "status": "approved",
+   "say": "You are a good leader and speaker, and art or writing can be your career. Take care that knowledge does not make you arrogant."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-011",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 3,
+     "times": [
+      3
+     ]
+    }
+   },
+   "period": null,
+   "text": "Very creative, ahead of time; often argue",
+   "polarity": "mixed",
+   "areas": [
+    "intellect"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     68
+    ],
+    "quote": "think ahead of their time",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 3 three times",
+   "status": "approved",
+   "say": "You are very creative and think ahead of your time, but you may often get into arguments."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-012",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 3,
+     "times": [
+      4,
+      5
+     ]
+    }
+   },
+   "period": null,
+   "text": "Poor coordination with society; impractical",
+   "polarity": "care",
+   "areas": [
+    "social"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     68
+    ],
+    "quote": "They lack coordination with society and are impractical also.",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 3 four or five times",
+   "status": "approved",
+   "say": "You may struggle to fit in with society and can be impractical."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-013",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 4,
+     "times": [
+      1
+     ]
+    }
+   },
+   "period": null,
+   "text": "Invests smartly in organisations and profits; artistic; good debater",
+   "polarity": "good",
+   "areas": [
+    "money"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     68
+    ],
+    "quote": "They smartly invest in an organization & get profit out of it.",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 4 once",
+   "status": "approved",
+   "say": "You invest smartly in organisations and can profit from it; you are also artistic and a good debater."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-014",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 4,
+     "times": [
+      2
+     ]
+    }
+   },
+   "period": null,
+   "text": "\"Magic in their hands\", organised, transparent",
+   "polarity": "good",
+   "areas": [
+    "career"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     68
+    ],
+    "quote": "They have Magic in their hands",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 4 twice",
+   "status": "approved",
+   "say": "You have 'magic in your hands', and you are organised and transparent."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-015",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 4,
+     "times": [
+      3
+     ]
+    }
+   },
+   "period": null,
+   "text": "Struggle a lot, don't reach potential",
+   "polarity": "care",
+   "areas": [
+    "career"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     68
+    ],
+    "quote": "They struggle a lot in life",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 4 three times",
+   "status": "approved",
+   "say": "You may struggle a lot in life and not reach your full potential."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-016",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 4,
+     "times": [
+      4
+     ]
+    }
+   },
+   "period": null,
+   "text": "Detach from worldly things",
+   "polarity": "neutral",
+   "areas": [
+    "spiritual"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     68
+    ],
+    "quote": "They detach themselves from worldly things.",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 4 four times",
+   "status": "approved",
+   "say": "You tend to detach yourself from worldly things."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-017",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 5,
+     "times": [
+      1
+     ]
+    }
+   },
+   "period": null,
+   "text": "Excitable; perfectionist, open-minded, good at business; caring but quick anger",
+   "polarity": "mixed",
+   "areas": [
+    "business"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     68
+    ],
+    "quote": "good at running businesses",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 5 once",
+   "status": "approved",
+   "say": "You are excitable, open-minded, a perfectionist and good at business. You are caring, but quick to anger."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-018",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 5,
+     "times": [
+      2
+     ]
+    }
+   },
+   "period": null,
+   "text": "Willpower in difficulty; lazy, over-explain; risk-takers, which brings success",
+   "polarity": "mixed",
+   "areas": [
+    "career"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     68
+    ],
+    "quote": "They are risk-takers which gives them success in life.",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 5 twice",
+   "status": "approved",
+   "say": "You show willpower in difficult times and take risks, which can bring you success. Take care of laziness and over-explaining."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-019",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 5,
+     "times": [
+      3
+     ]
+    }
+   },
+   "period": null,
+   "text": "Don't interfere, flexible; over-adventurous, extreme risks, negative results",
+   "polarity": "care",
+   "areas": [
+    "money"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     68
+    ],
+    "quote": "take extreme risks which often gives them negative results",
+    "quoteFound": false,
+    "rank": 4
+   },
+   "condition": "DOB has 5 three times",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 5 three times in your birth date, you are flexible and dislike interference, but can be over-adventurous and take extreme risks that often bring negative results."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-020",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 6,
+     "times": [
+      1
+     ]
+    }
+   },
+   "period": null,
+   "text": "Body-image focus; centre of family; insecure; often love marriage",
+   "polarity": "mixed",
+   "areas": [
+    "family",
+    "love"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     69
+    ],
+    "quote": "They easily get insecure, and often do love marriage.",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 6 once",
+   "status": "approved",
+   "say": "You are the centre of your family and often have a love marriage, but you can feel insecure easily."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-021",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 6,
+     "times": [
+      2
+     ]
+    }
+   },
+   "period": null,
+   "text": "Obsessed with family; materialistic",
+   "polarity": "care",
+   "areas": [
+    "family"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     69
+    ],
+    "quote": "They are obsessed with their family",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 6 twice",
+   "status": "approved",
+   "say": "You are deeply attached to your family and can be materialistic."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-022",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 6,
+     "times": [
+      3
+     ]
+    }
+   },
+   "period": null,
+   "text": "Extreme family attachment -> insecurity, negativity, blocks growth",
+   "polarity": "care",
+   "areas": [
+    "family"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     69
+    ],
+    "quote": "acts as a hurdle in their growth",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 6 three times",
+   "status": "approved",
+   "say": "Extreme attachment to family can bring insecurity and negativity and become a hurdle in your growth."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-023",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 7,
+     "times": [
+      1
+     ]
+    }
+   },
+   "period": null,
+   "text": "Confused emotions, dissatisfaction; heart broken at least once; strong intuition but negative self-view",
+   "polarity": "care",
+   "areas": [
+    "love",
+    "mind"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     69
+    ],
+    "quote": "People break their hearts at least once in life.",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 7 once",
+   "status": "approved",
+   "say": "You may feel confused emotions and dissatisfaction, and someone may break your heart at least once. Your intuition is strong, but you may see yourself negatively."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-024",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 7,
+     "times": [
+      2
+     ]
+    }
+   },
+   "period": null,
+   "text": "First love for personality, second for mind; healing gift; career in occult science",
+   "polarity": "good",
+   "areas": [
+    "love",
+    "career"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     69
+    ],
+    "quote": "They can build a successful career in occult science.",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 7 twice",
+   "status": "approved",
+   "say": "Your first love may be drawn to personality and the second to the mind. You have a gift for healing and can build a successful career in occult science."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-025",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 7,
+     "times": [
+      3
+     ]
+    }
+   },
+   "period": null,
+   "text": "Extreme loss of money and health; confusion; married life unpeaceful over time",
+   "polarity": "care",
+   "areas": [
+    "money",
+    "health",
+    "marriage"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     69
+    ],
+    "quote": "They have extreme losses of money & health",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 7 three times",
+   "status": "approved",
+   "say": "Linked with heavy losses of money and health, confusion, and married life losing peace over time, so take extra care in these areas."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-026",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 8,
+     "times": [
+      1
+     ]
+    }
+   },
+   "period": null,
+   "text": "Multitasker, good financial decisions",
+   "polarity": "good",
+   "areas": [
+    "money"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     69
+    ],
+    "quote": "They are multi-taskers & make good financial decisions.",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 8 once",
+   "status": "approved",
+   "say": "You are a multitasker and make good financial decisions."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-027",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 8,
+     "times": [
+      2
+     ]
+    }
+   },
+   "period": null,
+   "text": "Quick decisions that may backfire; always in a hurry; difficulty managing money",
+   "polarity": "care",
+   "areas": [
+    "money"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     69
+    ],
+    "quote": "They face difficulty in managing their money.",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 8 twice",
+   "status": "approved",
+   "say": "You make quick decisions that may backfire and are always in a hurry. Managing money can be difficult, so take care."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-028",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 8,
+     "times": [
+      3
+     ]
+    }
+   },
+   "period": null,
+   "text": "Stubborn, narrow-minded, struggle; greed for money",
+   "polarity": "care",
+   "areas": [
+    "money"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     70
+    ],
+    "quote": "They are very stubborn, narrow-minded & face a lot of struggles",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 8 three times",
+   "status": "approved",
+   "say": "You can be stubborn and narrow-minded, face a lot of struggle, and feel greed for money."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-029",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 8,
+     "times": [
+      4
+     ]
+    }
+   },
+   "period": null,
+   "text": "Constant change and distraction, purposeless",
+   "polarity": "care",
+   "areas": [
+    "general"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     70
+    ],
+    "quote": "constant change & distraction in their life which makes them purposeless",
+    "quoteFound": false,
+    "rank": 4
+   },
+   "condition": "DOB has 8 four times",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 8 four times in your birth date, constant change and distraction can leave you feeling without purpose, so take care to stay focused."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-030",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 9,
+     "times": [
+      1
+     ]
+    }
+   },
+   "period": null,
+   "text": "Strong will, charitable, intelligent; values people",
+   "polarity": "good",
+   "areas": [
+    "personality"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     70
+    ],
+    "quote": "They have strong willpower, do charitable things",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 9 once",
+   "status": "approved",
+   "say": "You have strong willpower and intelligence, do charitable things and value people."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-031",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 9,
+     "times": [
+      2
+     ]
+    }
+   },
+   "period": null,
+   "text": "Values relationships; intelligent; anger issues; says right thing at right time",
+   "polarity": "mixed",
+   "areas": [
+    "relationships"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     70
+    ],
+    "quote": "They are intelligent have anger issues",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 9 twice",
+   "status": "approved",
+   "say": "You value relationships, are intelligent and say the right thing at the right time, but anger can be an issue."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-032",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 9,
+     "times": [
+      3
+     ]
+    }
+   },
+   "period": null,
+   "text": "Love praise; charitable; anger ruins relationships",
+   "polarity": "care",
+   "areas": [
+    "relationships"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     70
+    ],
+    "quote": "Their anger ruins their relationship",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 9 three times",
+   "status": "approved",
+   "say": "You love praise and are charitable, but your anger can ruin relationships, so keep it in check."
+  },
+  {
+   "id": "CHALDEAN-REPEATS-033",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 9,
+     "times": [
+      4
+     ]
+    }
+   },
+   "period": null,
+   "text": "Unpredictable; think they can change the world",
+   "polarity": "care",
+   "areas": [
+    "personality"
+   ],
+   "source": {
+    "book": "B-CHALDEAN",
+    "pages": [
+     70
+    ],
+    "quote": "start to think that they have the power to change the world",
+    "quoteFound": true,
+    "rank": 4
+   },
+   "condition": "DOB has 9 four times",
+   "status": "approved",
+   "say": "You can be unpredictable and may start to believe you can change the world."
+  },
+  {
+   "id": "LOSHU-LS-F1-1",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 1,
+     "times": [
+      1
+     ]
+    }
+   },
+   "period": null,
+   "text": "Introvert",
+   "polarity": "neutral",
+   "areas": [
+    "social"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Introvert",
+    "quoteFound": false,
+    "rank": 7
+   },
+   "condition": "1 appears once",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 1 appearing once in your birth date, you tend to be an introvert."
+  },
+  {
+   "id": "LOSHU-LS-F1-2",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 1,
+     "times": [
+      2
+     ]
+    }
+   },
+   "period": null,
+   "text": "Communicative",
+   "polarity": "good",
+   "areas": [
+    "communication"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Communicative",
+    "quoteFound": false,
+    "rank": 7
+   },
+   "condition": "1 twice",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 1 appearing twice in your birth date, you tend to be communicative."
+  },
+  {
+   "id": "LOSHU-LS-F1-3",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 1,
+     "times": [
+      3
+     ]
+    }
+   },
+   "period": null,
+   "text": "Talkative",
+   "polarity": "mixed",
+   "areas": [
+    "communication"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Talkative",
+    "quoteFound": true,
+    "rank": 7
+   },
+   "condition": "1 thrice",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 1 appearing three times in your birth date, you tend to be talkative."
+  },
+  {
+   "id": "LOSHU-LS-F1-4",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 1,
+     "times": [
+      4
+     ]
+    }
+   },
+   "period": null,
+   "text": "Compassionate",
+   "polarity": "good",
+   "areas": [
+    "values"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Compassionate",
+    "quoteFound": false,
+    "rank": 7
+   },
+   "condition": "1 four times",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 1 appearing four times in your birth date, you tend to be compassionate."
+  },
+  {
+   "id": "LOSHU-LS-F2-1",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 2,
+     "times": [
+      1
+     ]
+    }
+   },
+   "period": null,
+   "text": "Sensitive",
+   "polarity": "neutral",
+   "areas": [
+    "emotions"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Sensitive",
+    "quoteFound": true,
+    "rank": 7
+   },
+   "condition": "2 once",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 2 appearing once in your birth date, you tend to be sensitive."
+  },
+  {
+   "id": "LOSHU-LS-F2-2",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 2,
+     "times": [
+      2
+     ]
+    }
+   },
+   "period": null,
+   "text": "Bright",
+   "polarity": "good",
+   "areas": [
+    "intellect"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Bright",
+    "quoteFound": true,
+    "rank": 7
+   },
+   "condition": "2 twice",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 2 appearing twice in your birth date, you tend to be bright."
+  },
+  {
+   "id": "LOSHU-LS-F2-3",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 2,
+     "times": [
+      3
+     ]
+    }
+   },
+   "period": null,
+   "text": "Very sensitive",
+   "polarity": "care",
+   "areas": [
+    "emotions"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Very sensitive",
+    "quoteFound": false,
+    "rank": 7
+   },
+   "condition": "2 thrice",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 2 appearing three times in your birth date, you tend to be very sensitive."
+  },
+  {
+   "id": "LOSHU-LS-F2-4",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 2,
+     "times": [
+      4
+     ]
+    }
+   },
+   "period": null,
+   "text": "Loners",
+   "polarity": "care",
+   "areas": [
+    "social"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Loners",
+    "quoteFound": true,
+    "rank": 7
+   },
+   "condition": "2 four times",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 2 appearing four times in your birth date, you tend to be a loner."
+  },
+  {
+   "id": "LOSHU-LS-F3-1",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 3,
+     "times": [
+      1
+     ]
+    }
+   },
+   "period": null,
+   "text": "Excellent",
+   "polarity": "good",
+   "areas": [
+    "intellect"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Excellent",
+    "quoteFound": false,
+    "rank": 7
+   },
+   "condition": "3 once",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 3 appearing once in your birth date, your memory and imagination are in excellent balance."
+  },
+  {
+   "id": "LOSHU-LS-F3-2",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 3,
+     "times": [
+      2
+     ]
+    }
+   },
+   "period": null,
+   "text": "Creative",
+   "polarity": "good",
+   "areas": [
+    "creativity"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Creative",
+    "quoteFound": true,
+    "rank": 7
+   },
+   "condition": "3 twice",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 3 appearing twice in your birth date, you tend to be creative."
+  },
+  {
+   "id": "LOSHU-LS-F3-3",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 3,
+     "times": [
+      3
+     ]
+    }
+   },
+   "period": null,
+   "text": "Over-imaginative",
+   "polarity": "care",
+   "areas": [
+    "mind"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Over imaginative",
+    "quoteFound": false,
+    "rank": 7
+   },
+   "condition": "3 thrice",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 3 appearing three times in your birth date, you tend to be over-imaginative."
+  },
+  {
+   "id": "LOSHU-LS-F3-4",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 3,
+     "times": [
+      4
+     ]
+    }
+   },
+   "period": null,
+   "text": "Over-imaginative (same as thrice)",
+   "polarity": "care",
+   "areas": [
+    "mind"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Over imaginative",
+    "quoteFound": false,
+    "rank": 7
+   },
+   "condition": "3 four times",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 3 appearing four times in your birth date, you tend to be over-imaginative."
+  },
+  {
+   "id": "LOSHU-LS-F4-1",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 4,
+     "times": [
+      1
+     ]
+    }
+   },
+   "period": null,
+   "text": "Orderly and stable",
+   "polarity": "good",
+   "areas": [
+    "work"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Orderly and stable",
+    "quoteFound": false,
+    "rank": 7
+   },
+   "condition": "4 once",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 4 appearing once in your birth date, you tend to be orderly and stable."
+  },
+  {
+   "id": "LOSHU-LS-F4-2",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 4,
+     "times": [
+      2
+     ]
+    }
+   },
+   "period": null,
+   "text": "Pragmatic",
+   "polarity": "good",
+   "areas": [
+    "work"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Pragmatic",
+    "quoteFound": true,
+    "rank": 7
+   },
+   "condition": "4 twice",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 4 appearing twice in your birth date, you tend to be pragmatic."
+  },
+  {
+   "id": "LOSHU-LS-F4-3",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 4,
+     "times": [
+      3
+     ]
+    }
+   },
+   "period": null,
+   "text": "Hard-working",
+   "polarity": "good",
+   "areas": [
+    "work"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Hard working",
+    "quoteFound": false,
+    "rank": 7
+   },
+   "condition": "4 thrice",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 4 appearing three times in your birth date, you tend to be hard-working."
+  },
+  {
+   "id": "LOSHU-LS-F4-4",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 4,
+     "times": [
+      4
+     ]
+    }
+   },
+   "period": null,
+   "text": "More physical activity",
+   "polarity": "neutral",
+   "areas": [
+    "body"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "More physical activity",
+    "quoteFound": false,
+    "rank": 7
+   },
+   "condition": "4 four times",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 4 appearing four times in your birth date, you tend to be more physically active."
+  },
+  {
+   "id": "LOSHU-LS-F5-1",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 5,
+     "times": [
+      1
+     ]
+    }
+   },
+   "period": null,
+   "text": "Caring",
+   "polarity": "good",
+   "areas": [
+    "relationships"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Caring",
+    "quoteFound": true,
+    "rank": 7
+   },
+   "condition": "5 once",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 5 appearing once in your birth date, you tend to be caring."
+  },
+  {
+   "id": "LOSHU-LS-F5-2",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 5,
+     "times": [
+      2
+     ]
+    }
+   },
+   "period": null,
+   "text": "Persistent",
+   "polarity": "good",
+   "areas": [
+    "determination"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Persistent",
+    "quoteFound": true,
+    "rank": 7
+   },
+   "condition": "5 twice",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 5 appearing twice in your birth date, you tend to be persistent."
+  },
+  {
+   "id": "LOSHU-LS-F5-3",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 5,
+     "times": [
+      3
+     ]
+    }
+   },
+   "period": null,
+   "text": "Determined",
+   "polarity": "good",
+   "areas": [
+    "determination"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Dertermined\" (sic)",
+    "quoteFound": false,
+    "rank": 7
+   },
+   "condition": "5 thrice",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 5 appearing three times in your birth date, you tend to be determined."
+  },
+  {
+   "id": "LOSHU-LS-F5-4",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 5,
+     "times": [
+      4
+     ]
+    }
+   },
+   "period": null,
+   "text": "Instantaneous action",
+   "polarity": "mixed",
+   "areas": [
+    "action"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Instantaneous action",
+    "quoteFound": false,
+    "rank": 7
+   },
+   "condition": "5 four times",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 5 appearing four times in your birth date, you tend to act instantly."
+  },
+  {
+   "id": "LOSHU-LS-F6-1",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 6,
+     "times": [
+      1
+     ]
+    }
+   },
+   "period": null,
+   "text": "Good advisor",
+   "polarity": "good",
+   "areas": [
+    "social"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Good advisora\" (sic)",
+    "quoteFound": false,
+    "rank": 7
+   },
+   "condition": "6 once",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 6 appearing once in your birth date, you tend to be a good adviser."
+  },
+  {
+   "id": "LOSHU-LS-F6-2",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 6,
+     "times": [
+      2
+     ]
+    }
+   },
+   "period": null,
+   "text": "Originative (original)",
+   "polarity": "good",
+   "areas": [
+    "creativity"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Originative",
+    "quoteFound": true,
+    "rank": 7
+   },
+   "condition": "6 twice",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 6 appearing twice in your birth date, you tend to be original."
+  },
+  {
+   "id": "LOSHU-LS-F6-3",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 6,
+     "times": [
+      3
+     ]
+    }
+   },
+   "period": null,
+   "text": "High-tempered",
+   "polarity": "care",
+   "areas": [
+    "temper"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "High Tempered",
+    "quoteFound": false,
+    "rank": 7
+   },
+   "condition": "6 thrice",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 6 appearing three times in your birth date, you tend to be high-tempered, so take care with your temper."
+  },
+  {
+   "id": "LOSHU-LS-F6-4",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 6,
+     "times": [
+      4
+     ]
+    }
+   },
+   "period": null,
+   "text": "Emotional",
+   "polarity": "neutral",
+   "areas": [
+    "emotions"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Emotional",
+    "quoteFound": true,
+    "rank": 7
+   },
+   "condition": "6 four times",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 6 appearing four times in your birth date, you tend to be emotional."
+  },
+  {
+   "id": "LOSHU-LS-F7-1",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 7,
+     "times": [
+      1
+     ]
+    }
+   },
+   "period": null,
+   "text": "Learns through experience",
+   "polarity": "neutral",
+   "areas": [
+    "growth"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Learn through experience",
+    "quoteFound": false,
+    "rank": 7
+   },
+   "condition": "7 once",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 7 appearing once in your birth date, you tend to learn through experience."
+  },
+  {
+   "id": "LOSHU-LS-F7-2",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 7,
+     "times": [
+      2
+     ]
+    }
+   },
+   "period": null,
+   "text": "Spiritual",
+   "polarity": "good",
+   "areas": [
+    "spirituality"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Spiritual",
+    "quoteFound": true,
+    "rank": 7
+   },
+   "condition": "7 twice",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 7 appearing twice in your birth date, you tend to be spiritual."
+  },
+  {
+   "id": "LOSHU-LS-F7-3",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 7,
+     "times": [
+      3
+     ]
+    }
+   },
+   "period": null,
+   "text": "Learns through loss",
+   "polarity": "care",
+   "areas": [
+    "growth"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Learn through loss",
+    "quoteFound": false,
+    "rank": 7
+   },
+   "condition": "7 thrice",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 7 appearing three times in your birth date, you tend to learn through loss."
+  },
+  {
+   "id": "LOSHU-LS-F7-4",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 7,
+     "times": [
+      4
+     ]
+    }
+   },
+   "period": null,
+   "text": "Difficulties on many fronts of life",
+   "polarity": "care",
+   "areas": [
+    "general"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     11
+    ],
+    "quote": "Difficulties in many fronts of life",
+    "quoteFound": false,
+    "rank": 7
+   },
+   "condition": "7 four times",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 7 appearing four times in your birth date, you may face difficulties on many fronts of life."
+  },
+  {
+   "id": "LOSHU-LS-F8-1",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 8,
+     "times": [
+      1
+     ]
+    }
+   },
+   "period": null,
+   "text": "Scrupulous",
+   "polarity": "good",
+   "areas": [
+    "values"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     12
+    ],
+    "quote": "Scrupulous",
+    "quoteFound": false,
+    "rank": 7
+   },
+   "condition": "8 once",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 8 appearing once in your birth date, you tend to be scrupulous."
+  },
+  {
+   "id": "LOSHU-LS-F8-2",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 8,
+     "times": [
+      2
+     ]
+    }
+   },
+   "period": null,
+   "text": "Adamant",
+   "polarity": "care",
+   "areas": [
+    "temperament"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     12
+    ],
+    "quote": "Adamant",
+    "quoteFound": true,
+    "rank": 7
+   },
+   "condition": "8 twice",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 8 appearing twice in your birth date, you tend to be adamant."
+  },
+  {
+   "id": "LOSHU-LS-F8-3",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 8,
+     "times": [
+      3
+     ]
+    }
+   },
+   "period": null,
+   "text": "Materialistic",
+   "polarity": "care",
+   "areas": [
+    "values"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     12
+    ],
+    "quote": "Materialistic",
+    "quoteFound": false,
+    "rank": 7
+   },
+   "condition": "8 thrice",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 8 appearing three times in your birth date, you tend to be materialistic."
+  },
+  {
+   "id": "LOSHU-LS-F8-4",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 8,
+     "times": [
+      4
+     ]
+    }
+   },
+   "period": null,
+   "text": "Ceaselessly in motion",
+   "polarity": "neutral",
+   "areas": [
+    "energy"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     12
+    ],
+    "quote": "Ceaselessly in motion",
+    "quoteFound": false,
+    "rank": 7
+   },
+   "condition": "8 four times",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 8 appearing four times in your birth date, you tend to be always on the move."
+  },
+  {
+   "id": "LOSHU-LS-F9-1",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 9,
+     "times": [
+      1
+     ]
+    }
+   },
+   "period": null,
+   "text": "Intelligent",
+   "polarity": "good",
+   "areas": [
+    "intellect"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     12
+    ],
+    "quote": "Intelligent",
+    "quoteFound": false,
+    "rank": 7
+   },
+   "condition": "9 once",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 9 appearing once in your birth date, you tend to be intelligent."
+  },
+  {
+   "id": "LOSHU-LS-F9-2",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 9,
+     "times": [
+      2
+     ]
+    }
+   },
+   "period": null,
+   "text": "Critical",
+   "polarity": "care",
+   "areas": [
+    "temperament"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     12
+    ],
+    "quote": "Critical",
+    "quoteFound": true,
+    "rank": 7
+   },
+   "condition": "9 twice",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 9 appearing twice in your birth date, you tend to be critical."
+  },
+  {
+   "id": "LOSHU-LS-F9-3",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 9,
+     "times": [
+      3
+     ]
+    }
+   },
+   "period": null,
+   "text": "Givers",
+   "polarity": "good",
+   "areas": [
+    "values"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     12
+    ],
+    "quote": "Givers",
+    "quoteFound": true,
+    "rank": 7
+   },
+   "condition": "9 thrice",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 9 appearing three times in your birth date, you tend to be a giver."
+  },
+  {
+   "id": "LOSHU-LS-F9-4",
+   "set": "repeats",
+   "when": {
+    "repeat": {
+     "digit": 9,
+     "times": [
+      4
+     ]
+    }
+   },
+   "period": null,
+   "text": "Brilliant but loners",
+   "polarity": "mixed",
+   "areas": [
+    "intellect",
+    "social"
+   ],
+   "source": {
+    "book": "B-LOSHU",
+    "pages": [
+     12
+    ],
+    "quote": "Brilliant but, loners",
+    "quoteFound": false,
+    "rank": 7
+   },
+   "condition": "9 four times",
+   "status": "approved",
+   "reason": "approved by the owner (10 Oct 2026)",
+   "say": "With 9 appearing four times in your birth date, you tend to be brilliant, but a loner."
+  }
+ ]
+}

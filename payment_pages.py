@@ -192,10 +192,10 @@ def match_payment_page(notes: dict, entity: dict, products: dict):
         extra = _find(n, r"business", r"brand", r"company", exclude=(r"dob", r"birth", r"date"))
     elif product == "baby":
         extra = _find(n, r"baby", r"prefer", r"letter")
-    elif product == "complete" and phone:
+    elif product in ("complete", "forecast") and phone:
         digits = re.sub(r"\D+", "", phone)[-10:]
         if len(digits) == 10:
-            extra = f"mobile: {digits}"     # bonus mobile-energy section
+            extra = f"mobile: {digits}"     # bonus mobile-energy section / free mobile reading in the forecast
     elif product == "palmistry":
         extra = _find(n, r"^extra", r"palm") or ""
         if not extra.lower().startswith("palm"):

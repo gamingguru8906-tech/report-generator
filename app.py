@@ -23,7 +23,7 @@ The customer gets their report within seconds; the 1-hour promise has huge headr
 
 Run:  uvicorn app:app --host 0.0.0.0 --port $PORT
 """
-import os, sys, json, hmac, hashlib, base64, datetime, threading, subprocess, gc, ctypes, re
+import os, sys, json, hmac, hashlib, base64, datetime, threading, subprocess, gc, ctypes, re, shutil
 
 # Render keeps stdout block-buffered, so when the instance was killed mid-order
 # every "[fulfil] ..." line died with it and the logs showed nothing. Flush per line.
@@ -58,7 +58,7 @@ except Exception as _e:
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 REPORT_JOB = os.path.join(APP_DIR, "report_job.py")
 ISOLATE_BUILD = os.environ.get("REPORT_ISOLATE", "1").strip().lower() not in ("0", "off", "false", "no")
-BUILD_TIMEOUT_S = int(os.environ.get("REPORT_BUILD_TIMEOUT", "600"))
+BUILD_TIMEOUT_S = int(os.environ.get("REPORT_BUILD_TIMEOUT", "900"))   # the forecast deck prints in headless Chromium
 RECOVER_WINDOW_HOURS = int(os.environ.get("RECOVER_WINDOW_HOURS", "48"))
 
 # ───────────────────────── CONFIG (set as Render env vars) ─────────────────────────
@@ -125,6 +125,46 @@ def _normalise_sheet_header():
     # A crash or restart mid-order used to leave a paid order stuck forever.
     # On every boot, pick up recent orders that never reached DELIVERED.
     threading.Thread(target=_recover_stuck_orders, daemon=True).start()
+    threading.Thread(target=_ensure_forecast_runtime, daemon=True).start()
+
+
+def _ensure_forecast_runtime():
+    """The forecast deck needs Node (preinstalled on Render) and the packages in forecast/package.json.
+    The build command installs them; if a deploy skipped that step, install them here once, holding the
+    fulfilment lock so no report builds while npm runs. Then unpack Chromium so the first order is quick."""
+    fdir = os.path.join(APP_DIR, "forecast")
+    node = shutil.which("node")
+    if not node:
+        print("[forecast] node not found: forecast orders will get the classic report")
+        return
+    try:
+        ver = subprocess.run([node, "--version"], capture_output=True, text=True, timeout=20).stdout.strip()
+    except Exception as e:
+        ver = f"? ({e!r})"
+    have = os.path.exists(os.path.join(fdir, "node_modules", "@sparticuz", "chromium")) and \
+        os.path.exists(os.path.join(fdir, "node_modules", "puppeteer-core"))
+    if not have:
+        npm = shutil.which("npm")
+        if not npm:
+            print(f"[forecast] node {ver} but no npm: forecast orders will get the classic report")
+            return
+        with _FULFIL_LOCK:
+            print(f"[forecast] installing renderer packages (node {ver}) {_mem()}")
+            try:
+                p = subprocess.run([npm, "ci", "--omit=dev", "--no-audit", "--no-fund"], cwd=fdir,
+                                   capture_output=True, text=True, timeout=900)
+                print(f"[forecast] npm ci exit {p.returncode}: {(p.stdout or p.stderr)[-300:]}")
+            except Exception as e:
+                print(f"[forecast] npm ci failed: {e!r}")
+                return
+            finally:
+                _release_memory()
+    try:
+        p = subprocess.run([node, "-e", "import('@sparticuz/chromium').then(async c => console.log(await c.default.executablePath()))"],
+                           cwd=fdir, capture_output=True, text=True, timeout=300)
+        print(f"[forecast] runtime ready: node {ver}, chromium {(p.stdout or p.stderr).strip()[-120:]}")
+    except Exception as e:
+        print(f"[forecast] chromium unpack failed: {e!r}")
 
 @app.get("/products")
 def products():
@@ -243,9 +283,15 @@ async def webhook(request: Request):
         if dedup_key:
             _DONE.add(dedup_key)
         report_type = notes.get("report_type") or PRODUCTS[notes["product"]][0]
+        extra = notes.get("extra", "")
+        if report_type == "personal_forecast" and not extra:
+            # the forecast includes a free reading of the number the customer paid from
+            contact = re.sub(r"\D+", "", str(((payload.get("payment") or {}).get("entity") or {}).get("contact") or ""))[-10:]
+            if len(contact) == 10:
+                extra = f"mobile: {contact}"
         threading.Thread(target=_safe_fulfil, daemon=True, args=(
             notes.get("name", "Customer"), notes["dob"], notes["email"],
-            notes.get("gender", ""), order_id, report_type, notes.get("extra", ""),
+            notes.get("gender", ""), order_id, report_type, extra,
             notes.get("birth_time", ""), notes.get("birth_place", ""), notes.get("focus_area", ""),
             notes.get("partner_name", ""), notes.get("partner_dob", ""),
             notes.get("partner_birth_time", ""), notes.get("partner_birth_place", ""),
@@ -564,6 +610,14 @@ def build_report_pdf(**kwargs):
                 pass
         elif line.strip():
             print(f"[build] {line}")
+            if "forecast deck FAILED" in line:
+                # the customer still gets the classic forecast; tell the owner the new one did not build
+                try:
+                    _alert_owner("Forecast deck fell back to the classic report",
+                                 f"name: {kwargs.get('full_name')}\ndob: {kwargs.get('dob')}\n\n{line}\n\n"
+                                 "The customer was sent the classic Personal Year Forecast. Check the Render logs.")
+                except Exception as e:
+                    print(f"[build] could not alert owner: {e!r}")
     if proc.returncode in (-9, 137):
         raise BuildKilled("report builder was killed by the system (out of memory)")
     if proc.returncode != 0 or not path or not os.path.exists(path):
