@@ -527,7 +527,7 @@ class Deck:
             title = {"love": "For relationships", "career": "For career, business or settling abroad", "health": "For health", "money": "For money"}.get(areas[0] if areas else "", "For this pair")
             import re as _re
             t = clean(it["say"])
-            t = _re.sub(r"^If this (?:number )?combination brings .*?(?:relationships|abroad|struggles|money|career), ", "", t)
+            t = _re.sub(r"^If this (?:number )?combination brings (?:health )?struggles(?: in (?:career, business or settling abroad|[a-z ]+))?, ", "", t)
             t = _re.sub(r"^suggested remedies are ", "", t)
             t = _re.sub(r" (?:is|are) suggested, ", ", ", t)
             t = t[0].upper() + t[1:]

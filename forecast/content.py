@@ -429,11 +429,13 @@ def soft(text, areas=()):
 
 
 def first_sentence(t, limit=150):
+    """The first sentence; if it is long, cut at a clause break (never mid-phrase)."""
     t = clean(t)
     s = re.split(r"(?<=[.!?])\s+", t)[0]
     if len(s) > limit:
-        cut = s[:limit].rsplit(" ", 1)[0].rstrip(",;:")
-        s = cut + "."
+        breaks = [m.start() for m in re.finditer(r"[,;:] ", s) if limit * 0.45 <= m.start() <= limit]
+        if breaks:
+            s = s[:breaks[-1]].rstrip() + "."
     return s
 
 
