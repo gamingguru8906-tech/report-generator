@@ -26,62 +26,70 @@ def theme_ns(theme):
     return SimpleNamespace(**{k: v for k, v in theme.items()})
 
 
-def css(T):
-    faces = []
-    for role in ("display", "body"):
-        f = getattr(T, role)
-        for fname, weight, style in f["files"]:
-            faces.append(f'@font-face{{font-family:{f["family"]};src:url({asset("fonts", fname)});font-weight:{weight};font-style:{style}}}')
-    # glyphs the reading face lacks (arrows, thin space) come from the display face, at every reading weight
-    for fname, weight, style in T.body["files"]:
-        disp = T.display["files"][0][0] if weight < 700 else T.display["files"][-2][0]
-        faces.append(f'@font-face{{font-family:{T.body["family"]};src:url({asset("fonts", disp)});font-weight:{weight};font-style:{style};'
-                     f'unicode-range:U+2009,U+2190-2199,U+2713}}')
+def _faces(fam):
+    return [f'@font-face{{font-family:{fam["family"]};src:url({asset("fonts", f)});font-weight:{w};font-style:{s}}}'
+            for f, w, s in fam["files"]]
+
+
+def css(T, extra=""):
+    Y = T.type
+    faces = _faces(T.display) + _faces(T.body)
+    for fam in T.extra_fonts:
+        faces += _faces(fam)
+    # arrows, thin spaces and ticks that a theme's faces lack come from Savate, which has them
+    faces.append(f'@font-face{{font-family:VAFallback;src:url({asset("fonts", "Savate-450.ttf")});unicode-range:U+2009,U+2190-2199,U+2713}}')
     D, B = T.display["family"], T.body["family"]
+    IT = Y["it_family"] or D
+    CAPS = Y["caps_family"] or B
+    s = Y["scale"]
+    sizes = "".join(f".t{i}{{font-size:{round(px * s)}px}}" for i, px in enumerate([84, 60, 46, 34, 25, 19], 1))
     return "\n".join(faces) + f"""
 @page{{size:720px 1280px;margin:0}}
 *{{box-sizing:border-box}}
 html,body{{margin:0;padding:0}}
-body{{font-family:{B},sans-serif;color:{T.INK};-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+body{{font-family:{B},VAFallback,sans-serif;color:{T.INK};-webkit-print-color-adjust:exact;print-color-adjust:exact;font-synthesis:none}}
 a{{color:inherit;text-decoration:none}}
 p{{margin:0 0 12px}}
-.slide{{width:720px;height:1280px;position:relative;overflow:hidden;break-after:page;page-break-after:always;padding:58px 50px 78px}}
+.slide{{width:720px;height:1280px;position:relative;overflow:hidden;break-after:page;page-break-after:always;padding:58px 50px 78px;isolation:isolate}}
 .dark{{color:#fff}}
 .slide:after{{content:"";position:absolute;inset:0;background:url({asset(T.grain)}) repeat;background-size:{T.grain_size}px {T.grain_size}px;pointer-events:none;z-index:50}}
-.disp{{font-family:{D};font-weight:450;line-height:.98;letter-spacing:-.005em;margin:0}}
-.disp.b{{font-weight:640}}
-.t1{{font-size:84px}}.t2{{font-size:60px}}.t3{{font-size:46px}}.t4{{font-size:34px}}.t5{{font-size:25px}}.t6{{font-size:19px}}
-.kick{{display:inline-block;font:600 11.5px {B};letter-spacing:.14em;text-transform:uppercase;background:{T.LBLUE};color:{T.NAVY};padding:5px 10px 4px;border-radius:5px}}
+.disp{{font-family:{D},VAFallback;font-weight:{Y["disp_w"]};line-height:{Y["lh"]};letter-spacing:{Y["track"]};text-transform:{Y["case"]};margin:0}}
+.disp.b{{font-weight:{Y["disp_bw"]}}}
+{sizes}
+.kick{{display:inline-block;font:600 11.5px {CAPS},VAFallback;letter-spacing:.14em;text-transform:uppercase;background:{T.LBLUE};color:{T.NAVY};padding:5px 10px 4px;border-radius:5px}}
 .kick.pk{{background:{T.PINK};color:{T.BERRY_D}}}.kick.wh{{background:#fff;color:{T.NAVY}}}
-.caps{{font:600 13px {B};letter-spacing:.16em;text-transform:uppercase}}
+.caps{{font-family:{CAPS},VAFallback;font-weight:{Y["caps_w"]};font-size:13px;letter-spacing:.16em;text-transform:uppercase}}
 .lead{{font-size:17.5px;line-height:1.55}}
 .body{{font-size:15.2px;line-height:1.56}}
 .small{{font-size:13.8px;line-height:1.52}}
 .tiny{{font-size:11.2px;line-height:1.45}}
-.it{{font-family:{D};font-style:italic;font-weight:380}}
-.plate{{display:inline-block;background:#fff;color:{T.NAVY};font-family:{D};font-weight:700;line-height:1;padding:14px 30px 20px;box-shadow:0 1px 0 rgba(0,0,0,.04)}}
-.rule{{height:1.5px;background:{T.PINK};border:0;margin:0}}
+.it{{font-family:{IT},VAFallback;font-style:{Y["it_style"]};font-weight:{Y["it_w"]}}}
+.plate{{display:inline-block;position:relative;z-index:2;background:#fff;color:{T.NAVY};font-family:{D},VAFallback;font-weight:{Y["plate_w"]};line-height:1;padding:14px 30px 20px;box-shadow:0 1px 0 rgba(0,0,0,.04)}}
+.rule{{height:1.5px;background:{T.RULE};border:0;margin:0}}
 .rule.wh{{background:rgba(255,255,255,.55)}}
 .accent{{width:76px;height:6px;border-radius:3px;background:{T.LBLUE}}}
 .abs{{position:absolute}}
 .tile{{border-radius:14px;padding:22px 24px}}
-.foot{{position:absolute;left:50px;right:50px;bottom:28px;display:flex;justify-content:space-between;font:600 10.5px {B};letter-spacing:.16em;text-transform:uppercase;opacity:.55;z-index:40}}
+.pnl{{border-radius:14px}}
+.foot{{position:absolute;left:50px;right:50px;bottom:28px;display:flex;justify-content:space-between;font-family:{CAPS},VAFallback;font-weight:600;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;opacity:.55;z-index:40}}
 ul.dots{{list-style:none;margin:0;padding:0}}
 ul.dots li{{position:relative;padding-left:20px;margin:0 0 7px}}
 ul.dots li:before{{content:"";position:absolute;left:2px;top:.55em;width:9px;height:9px;border-radius:50%;background:var(--dot,{T.PINK})}}
 ul.dots li.good{{--dot:{T.GREEN}}}ul.dots li.care{{--dot:{T.ORANGE}}}ul.dots li.mixed{{--dot:{T.BERRY}}}ul.dots li.neutral{{--dot:{T.LBLUE}}}ul.dots li.trait{{--dot:{T.COBALT}}}
-.ruled>div{{padding:12px 0;border-bottom:1.5px solid {T.PINK}}}
-.ruled>div:first-child{{border-top:1.5px solid {T.PINK}}}
+.ruled>div{{padding:12px 0;border-bottom:1.5px solid {T.RULE}}}
+.ruled>div:first-child{{border-top:1.5px solid {T.RULE}}}
 .bar{{display:flex;align-items:center;justify-content:space-between;gap:14px;background:#fff;border-radius:12px;padding:14px 18px;color:{T.INK}}}
-.bar .go{{font:700 12.5px {B};letter-spacing:.06em;text-transform:uppercase;color:{T.CTA};white-space:nowrap}}
+.bar .go{{font-family:{CAPS},VAFallback;font-weight:700;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:{T.CTA};white-space:nowrap}}
 .bar .what{{font-size:13.2px;line-height:1.35}}
 .bar .alt{{font-size:12px;color:{T.NAVY};text-decoration:underline;text-underline-offset:3px;white-space:nowrap}}
 table.t{{width:100%;border-collapse:collapse;font-size:13.6px;line-height:1.42}}
-table.t th{{background:{T.LBLUE};color:{T.DEEP};text-align:left;font:700 12px {B};padding:8px 11px;letter-spacing:.02em}}
-table.t td{{padding:8px 11px;border-bottom:1.5px solid {T.PINK};vertical-align:top}}
+table.t th{{background:{T.TH_BG};color:{T.TH_FG};text-align:left;font-family:{CAPS},VAFallback;font-weight:700;font-size:12px;padding:8px 11px;letter-spacing:.02em}}
+table.t td{{padding:8px 11px;border-bottom:1.5px solid {T.RULE};vertical-align:top}}
 table.t td:first-child{{font-weight:700;color:{T.DEEP}}}
-.num{{font-family:{D};font-weight:450;line-height:.9}}
-"""
+.num{{font-family:{D},VAFallback;font-weight:{Y["num_w"]};line-height:.9}}
+.frame{{position:absolute;inset:0;z-index:-1;pointer-events:none}}
+{".slide *:not(.round){border-radius:0 !important}" if T.square else ""}
+""" + extra
 
 
 # ── shapes ──
@@ -223,20 +231,32 @@ def icon(name, color, size=34, sw=1.6, x=None, y=None):
 
 
 class Pages:
-    """Collects slides and numbers their footers."""
+    """Collects slides; the look draws each page's frame and footer."""
 
-    def __init__(self, T, foot_name):
+    def __init__(self, T, foot_name, look=None):
         self.T = T
         self.foot_name = foot_name
+        self.look = look
         self.slides = []
         self.dark = {T.NAVY, T.COBALT, T.BERRY, T.GREEN}
 
     def add(self, ground, inner, foot=True):
         n = len(self.slides) + 1
         dark = ground in self.dark
-        f = (f'<div class="foot"><span>Veshannastro</span><span>{esc(self.foot_name)} &#183; {n:02d}</span></div>' if foot else "")
-        self.slides.append(f'<section class="slide{" dark" if dark else ""}" style="background:{ground}">{inner}{f}</section>')
+        L = self.look
+        frame = L.frame(ground, dark, n) if L else ""
+        if foot:
+            f = (L.footer(self.foot_name, n, dark) if L else
+                 f'<div class="foot"><span>Veshannastro</span><span>{esc(self.foot_name)} &#183; {n:02d}</span></div>')
+        else:
+            f = ""
+        bg = L.ground_css(ground, dark, n) if L else f"background:{ground}"
+        self.slides.append(f'<section class="slide{" dark" if dark else ""}" style="{bg}">{frame}{inner}{f}</section>')
 
     def html(self, title):
-        return (f'<!doctype html><html><head><meta charset="utf-8"><title>{esc(title)}</title><style>{css(self.T)}</style></head>'
-                f'<body>{"".join(self.slides)}</body></html>')
+        extra = self.look.extra_css() if self.look else ""
+        body = "".join(self.slides).replace("{{TOTAL}}", f"{len(self.slides):02d}")
+        for a, b in getattr(self, "subs", {}).items():
+            body = body.replace(a, b)
+        return (f'<!doctype html><html><head><meta charset="utf-8"><title>{esc(title)}</title><style>{css(self.T, extra)}</style></head>'
+                f'<body>{body}</body></html>')

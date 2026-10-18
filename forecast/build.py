@@ -72,6 +72,7 @@ def build_html(data):
         pass
 
     k = ForecastDeck(data)
+    k.pg.subs = {"{{FILE}}": f"{k.r.P:02d}-{k.Y}"}
     k.cover(); k.letter(); k.contents(); k.glance(); k.statement(); k.method(); k.planets_page(); k.worked()
     k.pair_opener(); k.psychic(); k.destiny(); k.pair(); k.pair_remedies()
     k.loshu(); k.planes_page(); k.missing_page(); k.repeated()

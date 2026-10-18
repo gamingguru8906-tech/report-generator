@@ -1,6 +1,6 @@
 """Pages 22 onward: the year, life areas, timing, practices, watch, mobile number, next steps and close."""
 from .content import care_part, pl, Pl, MONTHS, PLANET, PM, REL_WORD, clean, first_sentence, join_and, ordinal, reduce, soft
-from .deck import (AREA_TITLES, LINKS, MAIL, PM_SHORT, SITE, WA_NUM, dots, plain, plate_size)
+from .deck import (AREA_TITLES, LINKS, MAIL, PM_SHORT, SITE, WA_NUM, dots, plain)
 from .kit import action_bar, asset, asterisk, blob, esc, heart, icon, petal_flower, photo, plate, ring, sparkle
 
 VGRID = [[3, 1, 9], [6, 7, 5], [2, 8, 4]]
@@ -20,9 +20,10 @@ class YearPages:
             y = start + i
             on = y == Y
             n = i + 1
-            discs += (f'<div style="text-align:center;width:66px"><div style="width:58px;height:58px;margin:0 auto;border-radius:50%;'
+            dk = not on and cols[i] in (T.NAVY, T.COBALT, T.BERRY, T.GREEN)
+            discs += (f'<div style="text-align:center;width:66px"><div class="round" style="width:58px;height:58px;margin:0 auto;border-radius:50%;'
                       f'background:{T.WHITE if on else cols[i]};display:flex;align-items:center;justify-content:center;'
-                      f'{"box-shadow:0 0 0 5px " + T.PINK + ";" if on else ""}"><span class="num" style="font-size:30px;color:{T.NAVY}">{n}</span></div>'
+                      f'{"box-shadow:0 0 0 5px " + T.PINK + ";" if on else ""}{"border:1.5px solid rgba(255,255,255,.4);" if dk else ""}"><span class="num" style="font-size:30px;color:{T.WHITE if dk else T.NAVY}">{n}</span></div>'
                       f'<div class="caps" style="font-size:10px;margin-top:10px;color:{T.WHITE if on else "#C9D3EA"}">{y}</div>'
                       f'<div class="tiny" style="color:{T.WHITE if on else "#C9D3EA"}">{PY_FRAME[n]["cycle"]}</div></div>')
         prev_py = reduce(r.PY - 1) if r.PY > 1 else 9
@@ -40,7 +41,7 @@ class YearPages:
 <div style="position:absolute;left:30px;right:30px;top:29px;height:2px;background:{T.PINK}"></div>
 <div style="display:flex;justify-content:space-between;position:relative">{discs}</div></div>
 {self.panel("rgba(255,255,255,.1)", self.ptitle(f"Looking back: {Y - 1}, your {PY_FRAME[prev_py]['cycle'].lower()} year", T.PINK, 18) + f'<div class="small" style="color:#E7ECF7">Your rulebook describes a Personal Year {prev_py} this way: {prev[0].lower() + prev[1:]} What you started or learned then is what {Y} asks you to carry forward.</div>', T.WHITE, extra="margin-top:34px")}
-{asterisk(T.PINK, 70, 600, 60, 14)}
+{self.L.asterisk(T.PINK, 70, 600, 60, 14)}
 """
         self.pg.add(T.NAVY, inner)
 
@@ -117,8 +118,8 @@ class YearPages:
 {col(f"What {Y} rewards in you", rewards or [f"The {PLANET[r.P]} habits you were born with, used at the right time"], T.LBLUE, T.NAVY)}
 {col(f"What {Y} tests in you", tests or ["Patience in the careful windows"], T.PINK, T.BERRY_D)}
 </div>
-{blob(T.ORANGE, 240, 140, 205, 1150, "bumps")}
-{sparkle(T.BERRY, 46, 616, 64)}
+{self.L.blob(T.ORANGE, 240, 140, 205, 1150, "bumps")}
+{self.L.sparkle(T.BERRY, 46, 616, 64)}
 """
         self.pg.add(T.CREAM, inner)
 
@@ -236,13 +237,13 @@ class YearPages:
                       f'<div class="tiny" style="font-weight:700;line-height:1.2">{m["tag"]}</div></div>')
         wl = [(w["pol"], f'<b>{w["label"]}</b>: {w["say"]}') for w in r.windows]
         inner = f"""
-<div style="margin-top:6px">{plate("Your", 54, -5, T.BERRY)}</div>
-<div style="margin:-8px 0 0 40px">{plate("timing map", 54, 3, T.BERRY)}</div>
+<div style="margin-top:6px">{self.L.plate("Your", 54, -5, T.BERRY)}</div>
+<div style="margin:-8px 0 0 40px">{self.L.plate("timing map", 54, 3, T.BERRY)}</div>
 <div class="lead" style="margin-top:28px;width:620px">Two kinds of timing run through your year. Your personal month number changes the theme each month. Your birth-number windows come from your rulebook for people born on a {r.P} day: the stretches for starting and investing, and the stretches for moving carefully.</div>
 <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:26px">{strip}</div>
 <div class="tiny" style="margin-top:8px;color:{T.DEEP}">The big number is your personal month. Green: favourable. Orange: move carefully. Pink: both overlap. White: steady.</div>
 {self.panel(T.WHITE, self.ptitle("Your windows, as your rulebook gives them", T.NAVY, 17) + dots(wl, "small"), extra="margin-top:18px")}
-{asterisk(T.NAVY, 70, 600, 64, 20)}
+{self.L.asterisk(T.NAVY, 70, 600, 64, 20)}
 """
         self.pg.add(T.PINK, inner)
 
@@ -347,7 +348,7 @@ class YearPages:
             else:
                 s = f"{'Four' if len(ms) == 4 else 'Steady'} steady months. Build the routine and finish what is pending."
             stretch.append(s)
-        marks = [lambda: petal_flower(T.PINK, 56, 610, 62, hole=T.CREAM), lambda: sparkle(T.PINK, 46, 616, 64), lambda: asterisk(T.BERRY, 56, 612, 62, 10)]
+        marks = [lambda: self.L.petal_flower(T.PINK, 56, 610, 62, hole=T.CREAM), lambda: self.L.sparkle(T.PINK, 46, 616, 64), lambda: self.L.asterisk(T.BERRY, 56, 612, 62, 10)]
         for i, (a, z) in enumerate([(1, 4), (5, 8), (9, 12)]):
             tiles = ""
             for m in r.months[a - 1:z]:
@@ -411,9 +412,8 @@ class YearPages:
             return False
         import os
         from .themes import ASSETS
-        img = os.path.join(ASSETS, "bracelets", b["sku"] + ".webp")
-        if os.path.exists(img):
-            pic = photo("file://" + img, 580, 580, 70, 300)
+        pic = self.L.product(b["sku"], 580, 580, 70, 300)
+        if pic:
             link = f"https://www.veshannastro.co.in/shop-product.html?sku={b['sku']}"
         else:
             pic = self._bead_ring(b)
@@ -423,8 +423,8 @@ class YearPages:
                7: "balance across body and mind", 8: "calm thinking, sleep balance and focus", 9: "strength, courage and grounded energy"}[r.P]
         inner = f"""
 {pic}
-{asterisk(T.PINK, 64, 600, 290, 12)}
-{sparkle(T.WHITE, 44, 70, 860)}
+{self.L.asterisk(T.PINK, 64, 600, 290, 12)}
+{self.L.sparkle(T.WHITE, 44, 70, 860)}
 <div class="caps" style="color:{T.PINK}">For birth number {r.P}</div>
 <h2 class="disp t2" style="margin-top:14px">{b["gemstones"]}</h2>
 <div class="lead" style="margin-top:12px;width:600px;color:#EAF3EC">The bracelet for birth number {r.P}, chosen for {why}: the {b["name"]} from the Veshannastro range.</div>
@@ -486,9 +486,9 @@ class YearPages:
         g = [x["say"] for x in w.get("goals", []) if "3 to 6 months" in x["say"]]
         inner = f"""
 {svg}
-{blob(T.PINK, 290, 160, 175, 1130, "bumps")}
-<div style="margin-top:20px">{plate("Your watch", 50, -5, T.COBALT)}</div>
-<div style="margin:-8px 0 0 30px">{plate(f"in {Y}", 50, 3, T.COBALT)}</div>
+{self.L.blob(T.PINK, 290, 160, 175, 1130, "bumps")}
+<div style="margin-top:20px">{self.L.plate("Your watch", 50, -5, T.COBALT, width=370)}</div>
+<div style="margin:-8px 0 0 30px">{self.L.plate(f"in {Y}", 50, 3, T.COBALT, width=370)}</div>
 <div class="lead" style="margin-top:250px;width:620px;color:#E7ECF7">A watch is a reminder of timing and decisions: choosing the right time to act is what makes an action lucky. Its dial, metal, numerals, date window, strap and even the wrist you wear it on carry a meaning, and the right watch changes with your personal year.</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px">
 {self.panel(T.WHITE, self.ptitle(f"The watch for your {Y}", T.NAVY, 17) + f'<div class="small"><b>{pick}</b> Your rulebook names this watch for every Personal Year {r.PY}.</div>')}
@@ -503,9 +503,9 @@ class YearPages:
         acc = (r.d.get("watch") or {}).get("accessories") or []
         pick = first_sentence(clean(acc[0]), 120).rstrip(".").lower() if acc else "the right watch"
         inner = f"""
-{blob(T.LBLUE, 520, 420, 100, 60, "cloud")}
-<div class="abs" style="left:150px;top:220px">{plate("Your watch,", 54, -5, T.NAVY)}</div>
-<div class="abs" style="left:200px;top:314px">{plate("read", 54, 3, T.NAVY)}</div>
+{self.L.blob(T.LBLUE, 520, 420, 100, 60, "cloud")}
+<div class="abs onblob" style="left:150px;top:220px">{self.L.plate("Your watch,", 54, -5, T.NAVY)}</div>
+<div class="abs onblob" style="left:200px;top:314px">{self.L.plate("read", 54, 3, T.NAVY)}</div>
 <div style="margin-top:520px">
 <div class="disp t4" style="color:{T.NAVY}">Wristwatch Consultation</div>
 <div class="body" style="margin-top:14px;width:610px">The watch you wear every day either supports {Y} or quietly works against it. Your rulebook's pick for the year is {pick}, but your current watch has its own story: its shape, numerals, date window and strap all count, and so does who gave it to you.</div>
@@ -514,7 +514,7 @@ class YearPages:
         "Keep it, adjust it (strap or wrist) or change it, with the exact watch to choose", "When to switch, and what to expect"], "small")}
 <div style="margin-top:20px">{action_bar("Send your watch photo", "on WhatsApp, and book the Wristwatch Consultation", self.WA["watch"])}</div>
 </div>
-{heart(T.BERRY, 46, 616, 1040)}
+{self.L.heart(T.BERRY, 46, 616, 1040)}
 """
         self.pg.add(T.PINK, inner)
 
@@ -556,7 +556,7 @@ class YearPages:
         why = clean(cl.get("why") or "").replace("what you shared", m["concern"])
         why = f"Read against what your {Y} is about. " + why
         page1 = f"""
-{petal_flower(T.PINK, 64, 606, 60, hole=T.CREAM)}
+{self.L.petal_flower(T.PINK, 64, 606, 60, hole=T.CREAM)}
 <span class="kick pk">Included free with your forecast</span>
 <h2 class="disp t3" style="color:{T.NAVY};margin-top:14px">Your mobile<br>number, read</h2>
 <div class="accent" style="margin-top:16px"></div>
@@ -579,7 +579,7 @@ class YearPages:
         def mrow(title, good, care, count=None):
             c = f' <span class="tiny" style="opacity:.75">&#215;{count}</span>' if count and count > 1 else ""
             g = f'<div class="small"><b style="color:{T.GREEN}">Helps:</b> {good}</div>' if good else ""
-            k = f'<div class="small"><b style="color:#B4471E">Care:</b> {care}</div>' if care else ""
+            k = f'<div class="small"><b style="color:{T.CARE}">Care:</b> {care}</div>' if care else ""
             return (f'<div style="display:flex;gap:14px;padding:9px 0;border-bottom:1.5px solid {T.PINK}">'
                     f'<span class="disp b" style="font-size:17px;color:{T.NAVY};width:150px;flex:0 0 150px">{title}{c}</span><div style="flex:1">{g}{k}</div></div>')
         rank = {"negative": 0, "mixed": 1, "positive": 2, "neutral": 3}
@@ -640,10 +640,10 @@ class YearPages:
         urgent = (f"Every loan, bank and property paper you sign in {Y} will carry the number you give it. Switch before the paperwork of the year begins, so the new number is the one on every document."
                   if change else f"If you are opening accounts or signing papers in {Y}, a quick check now saves changing numbers later.")
         page3 = f"""
-{blob(T.PINK, 300, 300, 400, 70, "flower")}
-{icon("phone", T.WHITE, 120, 1.4, 490, 160)}
-<div style="margin-top:20px">{plate("From your number", 46, -5, T.COBALT)}</div>
-<div style="margin:-8px 0 0 30px">{plate("to the right one" if change else "to the best use", 46, 3, T.COBALT)}</div>
+{self.L.blob(T.PINK, 300, 300, 400, 70, "flower")}
+{self.L.icon("phone", T.WHITE, 120, 1.4, 490, 160)}
+<div style="margin-top:20px">{self.L.plate("From your number", 46, -5, T.COBALT, width=360)}</div>
+<div style="margin:-8px 0 0 30px">{self.L.plate("to the right one" if change else "to the best use", 46, 3, T.COBALT, width=360)}</div>
 <div class="lead" style="margin-top:190px;width:610px;color:#E7ECF7">{lead}</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px">{ch_html}</div>
 <div class="caps" style="color:{T.PINK};margin-top:26px">Online, one to one</div>
@@ -721,8 +721,8 @@ class YearPages:
 {self.head("Keep this where you will see it", f"Your {Y}<br>on one page")}
 <div class="ruled">{oneh}</div>
 <div class="it" style="font-size:28px;color:{T.BERRY};margin-top:40px;text-align:center;padding:0 30px">Choosing the right time to act is what makes an action lucky.</div>
-{petal_flower(T.PINK, 60, 610, 62, hole=T.CREAM)}
-{blob(T.LBLUE, 260, 150, 195, 1135, "bumps")}
+{self.L.petal_flower(T.PINK, 60, 610, 62, hole=T.CREAM)}
+{self.L.blob(T.LBLUE, 260, 150, 195, 1135, "bumps")}
 """
         self.pg.add(T.CREAM, inner)
 
@@ -733,13 +733,13 @@ class YearPages:
                      f'<div class="disp" style="font-size:30px;margin-top:6px">{b}</div></a>' for a, b, h in contacts)
         first = esc(r.first)
         inner = f"""
-{blob(T.PINK, 290, 170, 175, 1110, "bumps")}
-<div style="margin-top:90px">{plate("Thank you,", 64, -5, T.COBALT)}</div>
-<div style="margin:-6px 0 0 50px">{plate(first + "!", plate_size(first + "!", 64, 560), 3, T.COBALT)}</div>
+{self.L.blob(T.PINK, 290, 170, 175, 1110, "bumps")}
+<div style="margin-top:90px">{self.L.plate("Thank you,", 64, -5, T.COBALT)}</div>
+<div style="margin:-6px 0 0 50px">{self.L.plate(first + "!", self.L.fit(first + "!", 64, 560), 3, T.COBALT)}</div>
 <div class="lead" style="margin-top:56px;width:600px;color:#E7ECF7;font-size:19px">Thank you for trusting us with your numbers. Keep the timing map close, keep a few practices going, and come back to these pages when the year asks a question.</div>
 <div style="margin-top:36px;border-top:1.5px solid rgba(255,255,255,.5)">{ch}</div>
 <div class="small" style="margin-top:44px;color:#C9D3EA;width:600px">About this reading: it follows Veshannastro's Vedic numerology method and the rulebook built from the sources our practice uses. It reads tendencies and timing and does not guarantee outcomes. For medical, legal or financial decisions, consult a qualified professional.<br><br>Prepared for {esc(r.name_full)}, born {r.dob_text}.</div>
-{sparkle(T.PINK, 56, 600, 70)}
+{self.L.sparkle(T.PINK, 56, 600, 70)}
 """
         self.pg.add(T.COBALT, inner)
 

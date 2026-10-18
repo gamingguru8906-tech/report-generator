@@ -8,6 +8,7 @@ import re
 from .content import (MONTHS, PLANET, PM, PLANE_MEAN, BRING, REL_WORD, TIMES, Reading, clean, join_and, ordinal,
                       reduce, soft, first_sentence)
 from .content import pl, Pl
+from .looks import look_for
 from .kit import (Pages, action_bar, asset, asterisk, blob, esc, heart, icon, petal_flower, photo, plate, ring,
                   scallop, sparkle, theme_ns, wa)
 from .themes import theme_for
@@ -70,7 +71,8 @@ class Deck:
     def __init__(self, data):
         self.r = r = Reading(data)
         self.T = T = theme_ns(theme_for(r.P))
-        self.pg = Pages(T, r.name_full)
+        self.L = look_for(T)
+        self.pg = Pages(T, r.name_full, self.L)
         self.Y = r.Y
         self.mob = r.mobile
         Y = self.Y
@@ -92,7 +94,7 @@ class Deck:
                 f'<div class="accent" style="margin-top:16px"></div>{s}</div>')
 
     def panel(self, color, inner, text_color=None, pad="18px 20px", extra=""):
-        return f'<div style="background:{color};color:{text_color or self.T.INK};padding:{pad};border-radius:14px;{extra}">{inner}</div>'
+        return f'<div class="pnl" style="background:{color};color:{text_color or self.T.INK};padding:{pad};{extra}">{inner}</div>'
 
     def ptitle(self, t, color=None, size=19):
         return f'<div class="disp b" style="font-size:{size}px;color:{color or self.T.NAVY};margin:0 0 8px">{t}</div>'
@@ -109,6 +111,11 @@ class Deck:
     # ═══════════════ pages ═══════════════
     def cover(self):
         r, T = self.r, self.T
+        custom = self.L.cover(self)
+        if custom:
+            ground, inner = custom
+            self.pg.add(ground, inner, foot=False)
+            return
         cells = ""
         for row in [[4, 9, 2], [3, 5, 7], [8, 1, 6]]:
             for d in row:
@@ -118,11 +125,11 @@ class Deck:
                           f'{str(d) if on else ""}</div>')
         extra = f" &#183; Master {r.M}" if r.M else (f" &#183; Karmic {r.K}" if r.K else "")
         inner = f"""
-{blob(T.LBLUE, 470, 470, 300, 640, "flower")}
+{self.L.blob(T.LBLUE, 470, 470, 300, 640, "flower")}
 <div class="abs" style="left:415px;top:755px;display:grid;grid-template-columns:repeat(3,56px);gap:10px">{cells}</div>
-{asterisk(T.BERRY, 64, 600, 70, 12)}
-{sparkle(T.WHITE, 46, 600, 520)}
-{petal_flower(T.GREEN, 70, 70, 1110, hole=T.PINK)}
+{self.L.asterisk(T.BERRY, 64, 600, 70, 12)}
+{self.L.sparkle(T.WHITE, 46, 600, 520)}
+{self.L.petal_flower(T.GREEN, 70, 70, 1110, hole=T.PINK)}
 <div class="caps" style="color:{T.NAVY};opacity:.85">Veshannastro &#183; Vedic numerology</div>
 <h1 class="disp" style="font-size:66px;color:{T.NAVY};margin-top:120px;line-height:.95">Personal<br>Year<br>Forecast</h1>
 <div class="disp" style="font-size:150px;color:{T.WHITE};margin-top:6px;line-height:.9">{self.Y}</div>
@@ -150,8 +157,8 @@ class Deck:
             pair = "The two keep a polite distance, so you switch between them as life asks."
         prev = r.d["cycle"][0]
         inner = f"""
-{scallop(T.ORANGE)}
-{petal_flower(T.GREEN, 74, 50, 58, hole=T.CREAM)}
+{self.L.scallop(T.ORANGE)}
+{self.L.petal_flower(T.GREEN, 74, 50, 58, hole=T.CREAM)}
 <h2 class="disp t2" style="color:{T.BERRY};margin-top:110px">Dear<br>{esc(r.first)},</h2>
 <div style="width:560px;margin-top:30px" class="lead">
 <p>This reading is built for one person and one year. Every number in it comes from your date of birth, {r.dob_text}, and the name you gave us. Change the birth date and every strength, caution and date in here changes with it.</p>
@@ -160,7 +167,7 @@ class Deck:
 <p>Even the look of these pages is chosen for you: this edition is designed for Mulank {r.P}, people born under {pl(r.P)}. Read it once from start to finish, then keep the timing map and the monthly pages close.</p>
 </div>
 <div style="margin-top:22px;display:flex;align-items:center;gap:16px">
-{sparkle(T.PINK, 40)}
+{self.L.sparkle(T.PINK, 40)}
 <div><img src="{asset("signature.png")}" style="height:52px;display:block"><div class="body" style="color:{T.NAVY};font-weight:700;margin-top:4px">Shashank Agrawal</div>
 <div class="small">Founder, Veshannastro &#183; Author of <i>Numbers and Navgraha: Untold Secret of Numerology</i></div></div></div>
 """
@@ -183,8 +190,8 @@ class Deck:
                        f'<span style="flex:1"><span class="disp b" style="font-size:20px;color:{T.NAVY}">{t}</span><br><span class="small">{d}</span></span></div>'
                        for i, (t, d) in enumerate(items))
         inner = f"""
-{blob(T.COBALT, 300, 180, 170, 1110, "bumps")}
-{asterisk(T.BERRY, 120, 520, 110, 8)}
+{self.L.blob(T.COBALT, 300, 180, 170, 1110, "bumps")}
+{self.L.asterisk(T.BERRY, 120, 520, 110, 8)}
 <h2 class="disp t1" style="color:{T.BERRY};margin-top:40px">Inside</h2>
 <div class="lead" style="margin:14px 0 30px;color:{T.DEEP};width:420px">Eleven parts. The first five read who you are; the last six read {Y}.</div>
 <div class="ruled" style="width:600px">{rows}</div>
@@ -231,7 +238,7 @@ class Deck:
 {self.head("Chapter 1", "Your chart,<br>by the numbers")}
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">{th}</div>
 <div class="ruled" style="margin-top:26px">{fh}</div>
-{blob(T.PINK, 240, 130, 205, 1160, "bumps")}
+{self.L.blob(T.PINK, 240, 130, 205, 1160, "bumps")}
 """
         self.pg.add(T.CREAM, inner)
 
@@ -263,9 +270,9 @@ class Deck:
                    f"Your support numbers, {sw}, already sit in your birth date. Choosing them again in names, numbers and dates keeps the year on your side.")
         title = f"{Y} ASKS<br>YOU {r.frame['verb']}"
         inner = f"""
-{blob(T.PINK, 430, 430, 360, 760, "cloud")}
-<div class="abs" style="left:440px;top:930px">{plate(r.frame["plate"], plate_size(r.frame["plate"], 64, 240), -6, T.BERRY)}</div>
-{sparkle(T.LBLUE, 50, 600, 80)}
+{self.L.blob(T.PINK, 430, 430, 360, 760, "cloud")}
+<div class="abs onblob" style="left:440px;top:930px">{self.L.plate(r.frame["plate"], self.L.fit(r.frame["plate"], 64, 240), -6, T.BERRY)}</div>
+{self.L.sparkle(T.LBLUE, 50, 600, 80)}
 <div class="caps" style="color:{T.LBLUE}">{Y} in one paragraph</div>
 <h2 class="disp t2" style="margin-top:22px;line-height:1">{title}</h2>
 <div class="lead" style="margin-top:30px;width:600px;color:#FBEFF6">
@@ -291,13 +298,13 @@ class Deck:
                   ("Time", "Moving. Every year and month carries a number for you. This forecast is mostly about this layer.", T.WHITE)]
         lay = "".join(f'<div class="tile" style="background:{bg};color:{T.INK}">{self.ptitle(t, T.NAVY, 20)}<div class="small">{d}</div></div>' for t, d, bg in layers)
         inner = f"""
-<div style="margin-top:40px">{plate("How numerology", 46, -4, T.NAVY)}</div>
-<div style="margin:-6px 0 0 60px">{plate("reads you", 46, 3, T.NAVY)}</div>
+<div style="margin-top:40px">{self.L.plate("How numerology", 46, -4, T.NAVY)}</div>
+<div style="margin:-6px 0 0 60px">{self.L.plate("reads you", 46, 3, T.NAVY)}</div>
 <div class="lead" style="margin-top:34px;width:600px">Vedic numerology treats each number from 1 to 9 as the signature of a planet. A number that is strong in your chart shows its planet's qualities in how you think, earn, love and decide. A missing number is not a curse: it is a quality you build on purpose.</div>
 <div class="caps" style="margin:30px 0 14px;color:{T.LBLUE}">The four layers we read</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">{lay}</div>
 <div class="lead" style="margin-top:24px;width:600px">You cannot change the day you were born. You can change the name you sign, the number you give your bank and the watch on your wrist. {last}</div>
-{asterisk(T.PINK, 70, 590, 60, 20)}
+{self.L.asterisk(T.PINK, 70, 590, 60, 20)}
 """
         self.pg.add(T.COBALT, inner)
 
@@ -317,7 +324,7 @@ class Deck:
 {self.head("Nine numbers, nine planets", "What each number<br>brings", T.BERRY)}
 <table class="t"><tr><th style="width:44px">No.</th><th style="width:80px">Planet</th><th>What it brings</th></tr>{rows}</table>
 <div class="small" style="margin-top:18px">{own}{sup}</div>
-{petal_flower(T.PINK, 60, 600, 62, hole=T.CREAM)}
+{self.L.petal_flower(T.PINK, 60, 600, 62, hole=T.CREAM)}
 """
         self.pg.add(T.CREAM, inner)
 
@@ -397,9 +404,9 @@ class Deck:
             tag = "One planet, read twice."
         mid = f", with master {r.M} between them" if r.M else (f", with a karmic {r.K} behind the day" if r.K else "")
         inner = f"""
-{blob(T.PINK, 300, 300, 420, 120, "flower")}
+{self.L.blob(T.PINK, 300, 300, 420, 120, "flower")}
 <div class="abs num" style="left:{570 - 30 * len(str(r.P))}px;top:205px;font-size:120px;color:{T.NAVY}">{r.P}</div>
-{blob(T.LBLUE, 240, 240, 60, 860, "disc")}
+{self.L.blob(T.LBLUE, 240, 240, 60, 860, "disc")}
 <div class="abs num" style="left:{180 - 28 * len(str(r.D))}px;top:930px;font-size:110px;color:{T.NAVY}">{r.D}</div>
 <div style="margin-top:430px"><h2 class="disp t2">{title}</h2></div>
 <div class="it" style="font-size:26px;color:{T.LBLUE};margin-top:18px">{tag}</div>
@@ -436,7 +443,7 @@ class Deck:
 {self.panel(T.LBLUE, self.ptitle(f"Where {r.P} helps in {Y}", T.NAVY, 17) + f'<div class="small">{helps}</div>')}
 {self.panel(T.PINK, self.ptitle(f"Where {r.P} pushes back", T.BERRY_D, 17) + f'<div class="small">{pushes}</div>')}
 </div>
-{ring(T.COBALT, 56, 610, 60)}
+{self.L.ring(T.COBALT, 56, 610, 60)}
 """
         self.pg.add(T.CREAM, inner)
 
@@ -464,7 +471,7 @@ class Deck:
 {self.head(kicker, title, T.BERRY)}
 {body}
 {self.panel(T.NAVY, self.ptitle(f"{Y} and your destiny", T.LBLUE, 17) + f'<div class="small">{ytxt}</div>', T.WHITE, extra="margin-top:14px")}
-{heart(T.PINK, 54, 612, 62)}
+{self.L.heart(T.PINK, 54, 612, 62)}
 """
         self.pg.add(T.CREAM, inner)
 
@@ -520,7 +527,7 @@ class Deck:
         items = [i for i in r.b["numbers"]["pair"]["items"] if "remedy" in (i.get("areas") or [])]
         if not items:
             return False
-        marks = [heart(T.PINK, 46), petal_flower(T.BERRY, 46, hole=T.LBLUE), ring(T.COBALT, 46), sparkle(T.ORANGE, 46)]
+        marks = [self.L.heart(T.PINK, 46), self.L.petal_flower(T.BERRY, 46, hole=T.LBLUE), self.L.ring(T.COBALT, 46), self.L.sparkle(T.ORANGE, 46)]
         rows = ""
         for k, it in enumerate(items[:4]):
             areas = [a for a in it.get("areas", []) if a != "remedy"]
@@ -534,7 +541,7 @@ class Deck:
             rows += (f'<div style="display:flex;gap:20px;align-items:flex-start"><div style="flex:0 0 46px">{marks[k % 4]}</div>'
                      f'<div>{self.ptitle(title, T.BERRY, 21)}<div class="body">{t}</div></div></div>')
         inner = f"""
-{blob(T.LBLUE, 310, 260, 165, 1040, "cloud")}
+{self.L.blob(T.LBLUE, 310, 260, 165, 1040, "cloud")}
 {self.head(f"For the {r.P} and {r.D} pair", "What your rulebook<br>prescribes", sub="If this pair shows up as struggle in one part of your life, these are the remedies your rulebook gives for it.")}
 <div class="ruled" style="width:620px">{rows}</div>
 <div class="small" style="margin-top:22px;width:420px">Choose the one that matches where the struggle shows. Regular practice matters more than doing everything at once.</div>
@@ -581,14 +588,14 @@ class Deck:
         else:
             say += ". No line of your grid is completely empty, and none is complete: each part of life is partly given and partly built."
         inner = f"""
-<div style="margin-top:6px">{plate("Your", 54, -5, T.NAVY)}</div>
-<div style="margin:-8px 0 0 40px">{plate("Lo Shu grid", 54, 3, T.NAVY)}</div>
+<div style="margin-top:6px">{self.L.plate("Your", 54, -5, T.NAVY)}</div>
+<div style="margin:-8px 0 0 40px">{self.L.plate("Lo Shu grid", 54, 3, T.NAVY)}</div>
 <div class="lead" style="margin-top:28px;width:620px">A 3 by 3 square in which every row, column and diagonal adds up to 15. Each digit of your date of birth (zeros are skipped) sits in its own cell. Filled cells are qualities you were born with; empty cells are qualities you build.</div>
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:26px;width:500px">{cells}</div>
 <div class="abs" style="left:575px;top:600px;width:110px"><div class="caps" style="font-size:10.5px;color:{T.NAVY}">Your digits</div><div class="small" style="color:{T.DEEP}">{dig}</div>
 <div class="caps" style="font-size:10.5px;color:{T.NAVY};margin-top:14px">Missing</div><div class="small" style="color:{T.DEEP}">{join_and(r.missing) or "none"}</div></div>
 <div class="lead" style="margin-top:22px;width:620px">{say}</div>
-{asterisk(T.BERRY, 80, 590, 70, 10)}
+{self.L.asterisk(T.BERRY, 80, 590, 70, 10)}
 """
         self.pg.add(T.PINK, inner)
 
@@ -612,7 +619,7 @@ class Deck:
 {self.head("Rows, columns and diagonals", "The eight planes", sub="Each line of the grid governs one part of life. A line is complete when all three digits are present, and empty when none are.")}
 <table class="t"><tr><th>Plane</th><th>Digits</th><th>Governs</th><th>You have</th><th>State</th></tr>{rows}</table>
 {grid}
-{petal_flower(T.PINK, 56, 610, 62, hole=T.CREAM)}
+{self.L.petal_flower(T.PINK, 56, 610, 62, hole=T.CREAM)}
 """
         self.pg.add(T.CREAM, inner)
 
@@ -709,14 +716,14 @@ class Deck:
         wb, wd = r.rel(r.P, r.NR), r.rel(r.D, r.NR)
         wword = {"friend": "friendly", "enemy": "unfriendly", "neutral": "neutral", "mixed": "mixed"}
         inner = f"""
-<div style="margin-top:6px">{plate("Your", 56, -5, T.GREEN)}</div>
-<div style="margin:-8px 0 0 40px">{plate("name", 56, 3, T.GREEN)}</div>
+<div style="margin-top:6px">{self.L.plate("Your", 56, -5, T.GREEN)}</div>
+<div style="margin:-8px 0 0 40px">{self.L.plate("name", 56, 3, T.GREEN)}</div>
 <div class="lead" style="margin-top:28px;width:620px;color:#EAF3EC">Your name is the one part of your chart you can change. In the Chaldean system each letter carries a value from 1 to 8; 9 is never given to a letter. A name is read word by word, then as a full total, then reduced to one digit.</div>
 {rows}
 <div style="display:flex;align-items:center;gap:20px;margin-top:30px">
 <div class="num" style="font-size:120px;color:#fff">{r.NT}</div>
 <div class="lead" style="color:#EAF3EC">Your full name number.<br>{r.NT} reduces to <b>{r.NR}</b>, {PLANET[r.NR]}: {wword.get(wb, "neutral")} with your birth number {r.P}, {wword.get(wd, "neutral")} with your destiny number {r.D}.</div></div>
-{petal_flower(T.PINK, 84, 590, 66, hole=T.GREEN)}
+{self.L.petal_flower(T.PINK, 84, 590, 66, hole=T.GREEN)}
 """
         self.pg.add(T.GREEN, inner)
         return True
@@ -751,9 +758,9 @@ class Deck:
                 "mixed": "If the catch on the last page sounds familiar, this is the gentle fix. In an online consultation we sit with your name and your birth numbers and adjust the spelling with you. Most of the time your name sounds the same; the numbers simply line up behind you.",
                 "weak": "If the last page sounds familiar, this is the gentle fix. In an online consultation we sit with your name and your birth numbers and correct the spelling with you. Most of the time your name sounds the same; the numbers simply line up behind you instead of against you."}[v]
         inner = f"""
-{blob(T.LBLUE, 560, 470, 80, 40, "cloud")}
-<div class="abs" style="left:150px;top:230px">{plate("A name that", 52, -5, T.NAVY)}</div>
-<div class="abs" style="left:190px;top:322px">{plate("works for you", 52, 3, T.NAVY)}</div>
+{self.L.blob(T.LBLUE, 560, 470, 80, 40, "cloud")}
+<div class="abs onblob" style="left:150px;top:230px">{self.L.plate("A name that", 52, -5, T.NAVY)}</div>
+<div class="abs onblob" style="left:190px;top:322px">{self.L.plate("works for you", 52, 3, T.NAVY)}</div>
 <div style="margin-top:520px">
 <div class="caps" style="color:{T.PINK}">Online, one to one</div>
 <div class="disp t4" style="margin-top:8px">Name Correction Consultation</div>
@@ -765,7 +772,7 @@ class Deck:
         "How to start using it from the first day; your rulebook values use over paperwork"], "small")}
 <div style="margin-top:22px">{action_bar("Book on WhatsApp", "Name Correction Consultation, online", self.WA["name"], "or book an online numerology consultation", LINKS["numcons"])}</div>
 </div>
-{sparkle(T.PINK, 50, 610, 1040)}
+{self.L.sparkle(T.PINK, 50, 610, 1040)}
 """
         self.pg.add(T.COBALT, inner)
 
