@@ -127,7 +127,17 @@ def _email_status():
             st = "not set"
         else:
             ok, detail = _brevo_status()
-            st = "ok" if ok else ("key rejected" if detail.startswith("HTTP 401") or detail.startswith("HTTP 403") else "check failed")
+            if ok:
+                st = "ok"
+            elif detail.startswith(("HTTP 401", "HTTP 403")):
+                # Brevo's own reason ("Key not found", "unrecognised IP address ..."): it never contains the key
+                try:
+                    msg = json.loads(detail.split(": ", 1)[1]).get("message", "")
+                except Exception:
+                    msg = detail.split(": ", 1)[-1]
+                st = "key rejected: " + re.sub(r"\s+", " ", str(msg))[:140]
+            else:
+                st = "check failed"
         _EMAIL_CHECK.update(at=_t.time(), status=st)
     return _EMAIL_CHECK["status"]
 
@@ -967,7 +977,7 @@ def _brevo_status():
     try:
         r = requests.get("https://api.brevo.com/v3/account",
                          headers={"api-key": BREVO_API_KEY}, timeout=10)
-        return r.status_code == 200, f"HTTP {r.status_code}: {r.text[:160]}"
+        return r.status_code == 200, f"HTTP {r.status_code}: {r.text[:400]}"
     except Exception as e:
         return False, repr(e)
 
