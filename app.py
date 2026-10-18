@@ -112,7 +112,10 @@ app.add_middleware(CORSMiddleware, allow_origins=ALLOWED_ORIGINS,
 
 # ───────────────────────── Razorpay order creation ─────────────────────────
 @app.get("/health")
-def health(): return {"ok": True, "service": "veshann-report-backend"}
+def health():
+    return {"ok": True, "service": "veshann-report-backend", "pipeline": PIPELINE_VERSION, "forecast_deck": _FORECAST_STATUS}
+
+_FORECAST_STATUS = "starting"
 
 @app.on_event("startup")
 def _normalise_sheet_header():
@@ -132,10 +135,12 @@ def _ensure_forecast_runtime():
     """The forecast deck needs Node (preinstalled on Render) and the packages in forecast/package.json.
     The build command installs them; if a deploy skipped that step, install them here once, holding the
     fulfilment lock so no report builds while npm runs. Then unpack Chromium so the first order is quick."""
+    global _FORECAST_STATUS
     fdir = os.path.join(APP_DIR, "forecast")
     node = shutil.which("node")
     if not node:
         print("[forecast] node not found: forecast orders will get the classic report")
+        _FORECAST_STATUS = "unavailable: no node"
         return
     try:
         ver = subprocess.run([node, "--version"], capture_output=True, text=True, timeout=20).stdout.strip()
@@ -147,7 +152,9 @@ def _ensure_forecast_runtime():
         npm = shutil.which("npm")
         if not npm:
             print(f"[forecast] node {ver} but no npm: forecast orders will get the classic report")
+            _FORECAST_STATUS = "unavailable: no npm"
             return
+        _FORECAST_STATUS = "installing"
         with _FULFIL_LOCK:
             print(f"[forecast] installing renderer packages (node {ver}) {_mem()}")
             try:
@@ -156,15 +163,35 @@ def _ensure_forecast_runtime():
                 print(f"[forecast] npm ci exit {p.returncode}: {(p.stdout or p.stderr)[-300:]}")
             except Exception as e:
                 print(f"[forecast] npm ci failed: {e!r}")
+                _FORECAST_STATUS = "unavailable: npm ci failed"
                 return
             finally:
                 _release_memory()
     try:
         p = subprocess.run([node, "-e", "import('@sparticuz/chromium').then(async c => console.log(await c.default.executablePath()))"],
                            cwd=fdir, capture_output=True, text=True, timeout=300)
-        print(f"[forecast] runtime ready: node {ver}, chromium {(p.stdout or p.stderr).strip()[-120:]}")
+        out = (p.stdout or p.stderr).strip()[-120:]
+        if p.returncode != 0:
+            _FORECAST_STATUS = f"chromium unpack failed: {out[-80:]}"
+            print(f"[forecast] {_FORECAST_STATUS}")
+            return
+        # prove Chromium launches on this machine: print a one-page test
+        import tempfile
+        tdir = tempfile.mkdtemp(prefix="fc_selftest_")
+        th, tp = os.path.join(tdir, "t.html"), os.path.join(tdir, "t.pdf")
+        with open(th, "w") as fh:
+            fh.write('<!doctype html><html><body><section class="slide" style="width:720px;height:1280px">ok</section></body></html>')
+        with _FULFIL_LOCK:
+            q = subprocess.run([node, os.path.join(fdir, "render.mjs"), th, tp], cwd=fdir, capture_output=True, text=True, timeout=300)
+        ok = q.returncode == 0 and os.path.exists(tp)
+        shutil.rmtree(tdir, ignore_errors=True)
+        last = ((q.stdout or "").strip().splitlines() or [""])[-1][-200:]
+        _FORECAST_STATUS = (f"ready (node {ver}, packages from {'build' if have else 'boot'})" if ok
+                            else f"chromium did not start: {(last or q.stderr[-200:])}")
+        print(f"[forecast] {_FORECAST_STATUS} {_mem()}")
     except Exception as e:
         print(f"[forecast] chromium unpack failed: {e!r}")
+        _FORECAST_STATUS = "chromium unpack failed"
 
 @app.get("/products")
 def products():
@@ -424,7 +451,7 @@ def append_to_sheet(row, creds):
 #          current_issue, children, main_question
 #   T = report URL (Drive link)   U = status   V = status timestamp
 #   W = error message             X = pipeline version
-PIPELINE_VERSION = "report-pipeline-v6-email-recovery-2026-10-17"
+PIPELINE_VERSION = "report-pipeline-v7-forecast-deck-2026-10-18"
 TERMINAL_STATUSES = {"SENT", "DELIVERED"}
 
 class _LoggedFailure(Exception):
