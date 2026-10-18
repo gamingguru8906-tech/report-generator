@@ -451,7 +451,7 @@ def append_to_sheet(row, creds):
 #          current_issue, children, main_question
 #   T = report URL (Drive link)   U = status   V = status timestamp
 #   W = error message             X = pipeline version
-PIPELINE_VERSION = "report-pipeline-v7-forecast-deck-2026-10-18"
+PIPELINE_VERSION = "report-pipeline-v8-mulank-designs-2026-10-18"
 TERMINAL_STATUSES = {"SENT", "DELIVERED"}
 
 class _LoggedFailure(Exception):
