@@ -113,7 +113,23 @@ app.add_middleware(CORSMiddleware, allow_origins=ALLOWED_ORIGINS,
 # ───────────────────────── Razorpay order creation ─────────────────────────
 @app.get("/health")
 def health():
-    return {"ok": True, "service": "veshann-report-backend", "pipeline": PIPELINE_VERSION, "forecast_deck": _FORECAST_STATUS}
+    return {"ok": True, "service": "veshann-report-backend", "pipeline": PIPELINE_VERSION, "forecast_deck": _FORECAST_STATUS,
+            "email": _email_status()}
+
+_EMAIL_CHECK = {"at": 0.0, "status": "unchecked"}
+
+def _email_status():
+    """Whether Brevo accepts the configured key ("ok", "key rejected", "not set"), re-checked at most every 10 minutes.
+    Never includes the key or Brevo's account details."""
+    import time as _t
+    if _t.time() - _EMAIL_CHECK["at"] > 600:
+        if not BREVO_API_KEY:
+            st = "not set"
+        else:
+            ok, detail = _brevo_status()
+            st = "ok" if ok else ("key rejected" if detail.startswith("HTTP 401") or detail.startswith("HTTP 403") else "check failed")
+        _EMAIL_CHECK.update(at=_t.time(), status=st)
+    return _EMAIL_CHECK["status"]
 
 _FORECAST_STATUS = "starting"
 
@@ -451,7 +467,7 @@ def append_to_sheet(row, creds):
 #          current_issue, children, main_question
 #   T = report URL (Drive link)   U = status   V = status timestamp
 #   W = error message             X = pipeline version
-PIPELINE_VERSION = "report-pipeline-v8-mulank-designs-2026-10-18"
+PIPELINE_VERSION = "report-pipeline-v8-mulank-designs-email-check-2026-10-18"
 TERMINAL_STATUSES = {"SENT", "DELIVERED"}
 
 class _LoggedFailure(Exception):
