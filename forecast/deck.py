@@ -137,7 +137,7 @@ class Deck:
 <div class="caps" style="color:{T.NAVY};margin-top:24px;font-size:14px;line-height:1.7;width:330px">A private reading for<br>{esc(r.name_full)}<br>Born {r.dob_text}</div>
 <div class="abs caps" style="left:50px;bottom:300px;color:{T.NAVY};font-size:12px;width:250px;line-height:1.8">Psychic {r.P} &#183; Destiny {r.D}<br>{"Name " + str(r.NT) + extra if r.NT else extra.strip(" &#183;")}<br>Personal Year {r.PY}</div>
 <div class="abs caps" style="left:50px;bottom:210px;color:{T.BERRY_D};font-size:10.5px;width:240px;line-height:1.7">This edition is designed<br>for Mulank {r.P} &#183; {PLANET[r.P]}</div>
-<div class="abs caps" style="left:415px;top:965px;width:190px;text-align:center;color:{T.NAVY};font-size:10.5px">Your birth-date grid</div>
+<div class="abs caps" style="left:415px;top:965px;width:190px;text-align:center;color:{T.NAVY};font-size:10.5px">Your Lo Shu grid</div>
 """
         self.pg.add(T.PINK, inner, foot=False)
 
@@ -225,10 +225,10 @@ class Deck:
                     "mixed": f"A mixed pair: {pl(r.P)} and {pl(r.D)} are friends and rivals."}.get(relw, "One planet, read twice.")
         if r.P == r.D:
             pair_txt = f"The same number twice: {pl(r.P)}'s qualities are doubled."
-        facts = [("Missing from your birth date", (join_and(r.missing) + "." if r.missing else "None: every number is present.")
+        facts = [("Missing from your Lo Shu grid", (join_and(r.missing) + "." if r.missing else "None: every number is present.")
                   + (f" The {empty[0]['name'].lower()} plane ({'-'.join(map(str, empty[0]['digits']))}) is empty." if empty else "")),
-                 ("Complete in your birth date", (join_and([f"The {p['name'].lower()} plane ({'-'.join(map(str, p['digits']))})" for p in full]) + "." if full else "No plane is complete; every line is partly filled or empty.")),
-                 ("Repeated", (join_and(reps) + "." if reps else "No number repeats in your birth date.")),
+                 ("Complete on your Lo Shu grid", (join_and([f"The {p['name'].lower()} plane ({'-'.join(map(str, p['digits']))})" for p in full]) + "." if full else "No plane is complete; every line is partly filled or empty.")),
+                 ("Repeated", (join_and(reps) + "." if reps else "No number repeats on your Lo Shu grid.")),
                  (f"Your {r.P} and {r.D} together", pair_txt),
                  (f"Best window of {Y}", (good[0]["label"] + "." if good else "No single favourable stretch; use your support dates.")),
                  ("Windows to protect", (join_and([c["label"] for c in care[:3]]) + "." if care else "No careful stretch this year."))]
@@ -263,11 +263,11 @@ class Deck:
             miss = r.support_missing
             sup = ((f"Your support number, {sw}, supports both sides of your chart" if one else
                     f"{'Two numbers' if len(s) == 2 else 'Your support numbers'}, {sw}, support both sides of your chart")
-                   + f", and {join_and(miss)} {'is' if len(miss) == 1 else 'are'} missing from your birth date."
+                   + f", and {join_and(miss)} {'is' if len(miss) == 1 else 'are'} missing from your Lo Shu grid."
                    + f" Bringing {'it' if len(miss) == 1 else 'them'} in through your name, your phone number and your dates is the most useful adjustment you can make this year.")
         else:
-            sup = (f"Your support number, {sw}, already sits in your birth date. Choosing it again in names, numbers and dates keeps the year on your side." if one else
-                   f"Your support numbers, {sw}, already sit in your birth date. Choosing them again in names, numbers and dates keeps the year on your side.")
+            sup = (f"Your support number, {sw}, already sits in your Lo Shu grid. Choosing it again in names, numbers and dates keeps the year on your side." if one else
+                   f"Your support numbers, {sw}, already sit in your Lo Shu grid. Choosing them again in names, numbers and dates keeps the year on your side.")
         title = f"{Y} ASKS<br>YOU {r.frame['verb']}"
         inner = f"""
 {self.L.blob(T.PINK, 430, 430, 360, 760, "cloud")}
@@ -294,7 +294,7 @@ class Deck:
                 else "For you, the big pieces are already in place; the work this year is timing and the small daily things.")
         layers = [("Your birth date", "Fixed for life. It gives your psychic number, your destiny number and your Lo Shu grid.", T.PINK),
                   ("Your name", "Changeable. Each letter has a value; the total supports your birth numbers or rubs against them.", T.LBLUE),
-                  ("What you carry", "Changeable. Your mobile number, your watch, your colours. Your phone sits on the same grid as your birth date.", T.ORANGE),
+                  ("What you carry", "Changeable. Your mobile number, your watch, your colours. Your phone sits on the same grid as your birth numbers.", T.ORANGE),
                   ("Time", "Moving. Every year and month carries a number for you. This forecast is mostly about this layer.", T.WHITE)]
         lay = "".join(f'<div class="tile" style="background:{bg};color:{T.INK}">{self.ptitle(t, T.NAVY, 20)}<div class="small">{d}</div></div>' for t, d, bg in layers)
         inner = f"""
@@ -508,8 +508,8 @@ class Deck:
         else:
             supline = f"{'It is a friend' if one else 'They are friends'} of your birth number {r.P}"
         miss = r.support_missing
-        supline += (f", and {join_and(miss)} {'is' if len(miss) == 1 else 'are'} missing from your birth date." if miss
-                    else (", and it already sits in your birth date." if one else ", and they already sit in your birth date."))
+        supline += (f", and {join_and(miss)} {'is' if len(miss) == 1 else 'are'} missing from your Lo Shu grid." if miss
+                    else (", and it already sits in your Lo Shu grid." if one else ", and they already sit in your Lo Shu grid."))
         supline += f" Whenever you can choose a number, a date, a name spelling or a phone number, choosing {join_and(sup)} feeds your chart."
         inner = f"""
 {self.head("Read as a pair", f"Your {r.P} and {r.D}<br>together", sub=lead + (" " + sub if sub else ""))}
@@ -590,9 +590,9 @@ class Deck:
         inner = f"""
 <div style="margin-top:6px">{self.L.plate("Your", 54, -5, T.NAVY)}</div>
 <div style="margin:-8px 0 0 40px">{self.L.plate("Lo Shu grid", 54, 3, T.NAVY)}</div>
-<div class="lead" style="margin-top:28px;width:620px">A 3 by 3 square in which every row, column and diagonal adds up to 15. Each digit of your date of birth (zeros are skipped) sits in its own cell. Filled cells are qualities you were born with; empty cells are qualities you build.</div>
+<div class="lead" style="margin-top:28px;width:620px">A 3 by 3 square in which every row, column and diagonal adds up to 15. Each digit of your date of birth sits in its own cell (zeros are skipped), and your destiny number is added to it. Filled cells are qualities you were born with; empty cells are qualities you build.</div>
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:26px;width:500px">{cells}</div>
-<div class="abs" style="left:575px;top:600px;width:110px"><div class="caps" style="font-size:10.5px;color:{T.NAVY}">Your digits</div><div class="small" style="color:{T.DEEP}">{dig}</div>
+<div class="abs" style="left:575px;top:600px;width:110px"><div class="caps" style="font-size:10.5px;color:{T.NAVY}">Your digits</div><div class="small" style="color:{T.DEEP}">{dig}, plus destiny {r.D}</div>
 <div class="caps" style="font-size:10.5px;color:{T.NAVY};margin-top:14px">Missing</div><div class="small" style="color:{T.DEEP}">{join_and(r.missing) or "none"}</div></div>
 <div class="lead" style="margin-top:22px;width:620px">{say}</div>
 {self.L.asterisk(T.BERRY, 80, 590, 70, 10)}
@@ -686,7 +686,7 @@ class Deck:
             what = (g + (" " if g and c else "") + (f"Care: {c[0].lower() + c[1:]}" if c else "")).strip()
             ytitle = y["title"].split(" (")[0] if "Depression" in y["title"] else y["title"]
             yrows += f"<tr><td>{ytitle}</td><td>{formed}</td><td>{what}</td></tr>"
-        ytable = (f'<div class="caps" style="color:{T.BERRY};margin:16px 0 10px">Yogas on your birth date</div>'
+        ytable = (f'<div class="caps" style="color:{T.BERRY};margin:16px 0 10px">Yogas on your Lo Shu grid</div>'
                   f'<table class="t"><tr><th>Yoga</th><th>Formed by</th><th>What it brings</th></tr>{yrows}</table>'
                   f'<div class="tiny" style="margin-top:10px">Birth-date yogas are fixed for life. Your name and mobile number can soften the difficult ones.</div>'
                   if yrows else '<div class="small" style="margin-top:16px">No birth-date yoga forms on your grid, so your name and mobile number carry more of the weight.</div>')

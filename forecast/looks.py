@@ -316,7 +316,7 @@ table.t td{{border-bottom:1.5px solid rgba(59,36,22,.35)}}
 <div style="font-family:SourceSerif;font-size:31px;line-height:1.15">Personal Year Forecast</div>
 <div class="body" style="margin-top:14px">A private reading for {esc(r.name_full)}, born {r.dob_text}</div></div>
 <div class="abs" style="left:292px;top:330px">{cells}</div>
-<div class="abs caps" style="left:292px;top:540px;font-size:11px;letter-spacing:.12em">your birth-date grid</div>
+<div class="abs caps" style="left:292px;top:540px;font-size:11px;letter-spacing:.12em">your Lo Shu grid</div>
 <div class="abs" style="left:524px;top:70px;width:150px">
 <div class="small">Psychic {r.P}<br>Destiny {r.D}<br>{extra}{("Name " + str(r.NT) + "<br>") if r.NT else ""}Personal Year {r.PY}</div>
 <div class="small" style="margin-top:22px">Designed for Mulank {r.P}, {PLANET[r.P]}.</div></div>
@@ -424,7 +424,7 @@ table.t td{{border-bottom:1.5px solid {T.RULE}}}
 <div style="font-family:Corben;font-weight:700;font-size:150px;line-height:.9;color:{T.CREAM};text-shadow:8px 8px 0 {T.BERRY};margin-top:14px">{Y}</div>
 </div>
 <div class="abs" style="left:450px;top:860px">{cells}</div>
-<div class="abs" style="left:450px;top:1060px;width:200px;font-family:Newsreader;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:{T.PINK}">Your birth-date grid</div>
+<div class="abs" style="left:450px;top:1060px;width:200px;font-family:Newsreader;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:{T.PINK}">Your Lo Shu grid</div>
 <div class="abs" style="left:112px;top:870px;width:300px;color:{T.CREAM}">
 <div style="font-family:Newsreader;font-size:17px;line-height:1.5">A private reading for {esc(r.name_full)}, born {r.dob_text}.</div>
 <div style="font-family:Newsreader;font-size:14px;line-height:1.6;margin-top:16px;color:{T.PINK}">Psychic {r.P} &#183; Destiny {r.D}{extra}<br>{("Name " + str(r.NT) + " &#183; ") if r.NT else ""}Personal Year {r.PY}</div>
@@ -586,7 +586,7 @@ table.t td{{border-bottom:1.5px solid rgba(20,20,22,.28)}}
 <span class="caps" style="font-size:13px;letter-spacing:.14em;font-weight:700">{Y} &#183; designed for Mulank {r.P} &#183; {PLANET[r.P]}</span></div>
 <div class="abs" style="left:46px;top:40px"><div class="disp" style="font-size:190px;line-height:.9;color:{T.INK}">{Y}</div></div>
 <div class="abs" style="left:108px;top:800px">{cells}</div>
-<div class="abs caps" style="left:108px;top:1014px;font-size:11px;letter-spacing:.14em;font-weight:700">Your birth-date grid</div>
+<div class="abs caps" style="left:108px;top:1014px;font-size:11px;letter-spacing:.14em;font-weight:700">Your Lo Shu grid</div>
 <div class="abs" style="left:150px;top:742px;width:120px;height:34px;background:rgba(232,220,192,.8);transform:rotate(-8deg)"></div>
 <div class="abs" style="left:440px;top:880px;width:240px;font-family:Newsreader;font-size:16px;line-height:1.6;color:{T.INK}">Psychic {r.P} &#183; Destiny {r.D}{extra}<br>{("Name " + str(r.NT) + " &#183; ") if r.NT else ""}Personal Year {r.PY}</div>
 """
@@ -747,7 +747,7 @@ table.t th{{font-family:Smooch;font-weight:800;font-size:15px;letter-spacing:.04
 <div style="font-family:Rubik;font-size:15px;margin-top:6px">Born {r.dob_text}</div>
 <div class="kick" style="margin-top:18px">Mulank {r.P} &#183; {PLANET[r.P]} edition</div>
 <div class="abs" style="left:440px;top:930px;background:{T.WHITE};border-radius:22px;padding:20px 22px 24px;box-shadow:inset 0 -5px 0 rgba(31,42,20,.18),0 6px 0 rgba(31,42,20,.2)">
-{cells}<div class="caps" style="font-size:10.5px;letter-spacing:.12em;margin-top:12px;text-align:center">Your birth-date grid</div></div>
+{cells}<div class="caps" style="font-size:10.5px;letter-spacing:.12em;margin-top:12px;text-align:center">Your Lo Shu grid</div></div>
 <div class="abs" style="left:50px;top:1110px;font-family:Rubik;font-weight:500;font-size:15px;line-height:1.5;color:{T.INK};background:{T.WHITE};border-radius:12px;padding:10px 14px;box-shadow:inset 0 -4px 0 rgba(31,42,20,.16)">Psychic {r.P} &#183; Destiny {r.D}{extra}<br>{("Name " + str(r.NT) + " &#183; ") if r.NT else ""}Personal Year {r.PY}</div>
 """
         return T.CREAM, inner

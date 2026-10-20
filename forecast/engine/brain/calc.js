@@ -52,6 +52,9 @@ export function counts(digits) {
 export const birthNumber = dob => reduce(dob.d);
 // Destiny number (conductor, bhagyank) = every digit of the date added and reduced (T01 example: 18 Sep 2001 -> 3).
 export const destinyNumber = dob => reduce(digitSum(`${dob.d}${dob.m}${dob.y}`));
+// The Lo Shu grid: every non-zero digit of the date of birth, plus the destiny number (owner decision, 20 Oct 2026:
+// the destiny number is always added to the grid).
+export const gridDigits = dob => [...dobDigits(dob), destinyNumber(dob)];
 // Master destiny (B-CHALDEAN p. 50): month, day and year reduced separately, then added; 11, 22 or 33 is a master number.
 // Worked example: May 18 1970 -> 5 + 9 + 8 = 22.
 export function masterDestiny(dob) {

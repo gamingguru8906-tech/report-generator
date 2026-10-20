@@ -49,7 +49,7 @@ const remedy = rulebook.remedies.rules.find(r => r.birth_number === psychic) || 
 const remedyDestiny = rulebook.remedies.rules.find(r => r.birth_number === destiny) || null;
 
 // Birth-date yogas (same rule set and test the mobile engine uses on a number's grid).
-const cnt = c.counts(c.dobDigits(dob));
+const cnt = c.counts(c.gridDigits(dob));   // date of birth + destiny number, as on the Lo Shu page
 const dobYogas = rulebook.yogas.rules
   .filter(r => r.present.every(d => cnt[d] > 0) && r.absent.every(d => cnt[d] === 0))
   .map(r => {

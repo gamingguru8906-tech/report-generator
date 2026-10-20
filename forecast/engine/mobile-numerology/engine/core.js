@@ -8,7 +8,7 @@ export const MAX_PLANNED = 3;
 // Shared calculations come from the brain (../../brain/calc.js), so both segments count exactly the same way.
 import { brainReading } from '../../brain/read.js';
 import { braceletFor, BRACELET_SHOP } from '../../brain/calc.js';
-import { digitSum, reduce, parseDob, digitsNoZero, counts, dobDigits, birthNumber, destinyNumber, personalYear, nameNumbers } from '../../brain/calc.js';
+import { digitSum, reduce, parseDob, digitsNoZero, counts, dobDigits, gridDigits, birthNumber, destinyNumber, personalYear, nameNumbers } from '../../brain/calc.js';
 export { digitSum, reduce, parseDob, digitsNoZero, dobDigits, birthNumber, destinyNumber, personalYear };
 export const gridCounts = counts;
 
@@ -269,7 +269,7 @@ export function createEngine(rulebook) {
     if (Object.keys(errors).length) return { ok: false, errors };
 
     const cur = mobileFeatures(mob.value);
-    const dobCounts = gridCounts(dobDigits(dob.value));
+    const dobCounts = gridCounts(gridDigits(dob.value));   // date of birth + destiny number
     const dobYogas = yogasFor(dobCounts);
     const { areas, words } = concernAreas(concern, keywords);
     const nameNo = nameNumber(name, method.chaldean);

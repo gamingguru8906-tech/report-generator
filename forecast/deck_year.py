@@ -294,7 +294,7 @@ class YearPages:
         elif d in r.support:
             s1 = f"{d} is a support number, so this month works in your favour."
         elif d in r.missing:
-            s1 = f"{d} is missing from your birth date, so this month asks for effort rather than ease."
+            s1 = f"{d} is missing from your Lo Shu grid, so this month asks for effort rather than ease."
         else:
             rel = r.rel(r.P, d)
             s1 = {"friend": f"{Pl(d)} is friendly to your {r.P}.", "enemy": f"{Pl(d)} and your {r.P} do not get along, so expect some friction.",
@@ -548,7 +548,7 @@ class YearPages:
         adds = [d for d in r.missing if cnt.get(d)]
         still = [d for d in r.missing if not cnt.get(d)]
         sup_in = [d for d in r.support if cnt.get(d)]
-        adds_txt = (f"<b>{join_and(adds)}</b>" + (f", {'one of your support numbers' if len([x for x in adds if x in r.support]) == 1 else 'including your support numbers'}" if any(x in r.support for x in adds) else "") + "." if adds else "Nothing new: every digit in it is already in your birth date.")
+        adds_txt = (f"<b>{join_and(adds)}</b>" + (f", {'one of your support numbers' if len([x for x in adds if x in r.support]) == 1 else 'including your support numbers'}" if any(x in r.support for x in adds) else "") + "." if adds else "Nothing new: every digit in it is already on your Lo Shu grid.")
         still_txt = (f"<b>{join_and(still)}</b>." + (f" Your support number{'s' if len([x for x in still if x in r.support]) > 1 else ''} {join_and([x for x in still if x in r.support])} {'is' if len([x for x in still if x in r.support]) == 1 else 'are'} not in it." if any(x in r.support for x in still) else "") if still else "None: together they fill your grid.")
         cl = m.get("clarity") or {}
         change = cl.get("change", True)
@@ -567,7 +567,7 @@ class YearPages:
 <div style="flex:1">
 <div class="caps" style="color:{T.BERRY};font-size:11px">On the number's grid</div>
 <div class="body" style="margin-top:6px">{on_grid}</div>
-<div class="caps" style="color:{T.GREEN};font-size:11px;margin-top:14px">What it adds to your birth date</div>
+<div class="caps" style="color:{T.GREEN};font-size:11px;margin-top:14px">What it adds to your Lo Shu grid</div>
 <div class="body" style="margin-top:6px">{adds_txt}</div>
 <div class="caps" style="color:{T.ORANGE};font-size:11px;margin-top:14px">Still missing</div>
 <div class="body" style="margin-top:6px">{still_txt}</div>

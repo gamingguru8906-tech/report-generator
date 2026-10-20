@@ -5,7 +5,7 @@ import * as c from './calc.js';
 
 // Everything the rules can ask about a person, from their date of birth and name.
 export function personFacts({ dob, name, year, today }) {
-  const cnt = c.counts(c.dobDigits(dob));
+  const cnt = c.counts(c.gridDigits(dob));   // date of birth + destiny number
   const n = name ? c.nameNumbers(name) : null;
   const psychic = c.birthNumber(dob);
   const destiny = c.destinyNumber(dob);
