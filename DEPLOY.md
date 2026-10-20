@@ -94,3 +94,15 @@ command runs `python build_fonts.py`, which downloads and builds them into `font
 A safety net in `app.py` also rebuilds them on first boot if missing.
 
 Running locally? Just run `python build_fonts.py` once before generating reports.
+
+
+## WhatsApp orders: making a report yourself
+Open `https://<your-app>/admin/make` on your phone (bookmark it or add it to the home screen).
+Enter the ADMIN_TOKEN once (it is saved in that phone's browser only), pick the report, type the customer's
+details and tap **Make report**. About a minute later tap **Send on WhatsApp**: the phone's share sheet opens
+with the PDF attached, pick the customer's chat. **Open the customer's chat** opens their WhatsApp with a
+greeting typed in; **Download PDF** saves it.
+
+It builds the same PDF a website order gets (the forecast in the customer's Mulank design), logs a row in the
+Orders sheet with an order id starting `wa-`, and keeps a Drive copy. Emailing the customer is optional.
+Palmistry is not on this page because it needs the palm photos from the website form.

@@ -44,7 +44,7 @@ except Exception:
 import requests
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
 
 # Ensure brand fonts exist before the report engine uses them. The fonts are
 # committed to the repo, so this normally no-ops; it is only a safety net.
@@ -477,7 +477,7 @@ def append_to_sheet(row, creds):
 #          current_issue, children, main_question
 #   T = report URL (Drive link)   U = status   V = status timestamp
 #   W = error message             X = pipeline version
-PIPELINE_VERSION = "report-pipeline-v8-mulank-designs-email-check-2026-10-18"
+PIPELINE_VERSION = "report-pipeline-v9-owner-make-page-2026-10-20"
 TERMINAL_STATUSES = {"SENT", "DELIVERED"}
 
 class _LoggedFailure(Exception):
@@ -1247,3 +1247,228 @@ async def admin_fulfil(request: Request):
         import traceback
         return JSONResponse({"status": "error", "error": repr(e),
                              "trace": traceback.format_exc()[-1800:]}, status_code=500)
+
+
+# ───────────────────────── Owner's "Make a report" page (WhatsApp orders) ─────────────────────────
+# Orders that come in on WhatsApp are paid outside the website (UPI). The owner opens /admin/make, types
+# the customer's details and gets the same PDF a website order gets, then shares it straight into the
+# customer's WhatsApp chat. Rows are logged to the Sheet with an order id starting "wa-" (the crash
+# recovery only re-runs website orders, so these are never re-sent by email on their own).
+import time as _time
+import secrets as _secrets
+
+_IST = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+_MAKE_JOBS = {}
+_MAKE_LOCK = threading.Lock()
+_MAKE_KEEP_S = 12 * 3600
+MAKE_PRODUCTS = [k for k in ("forecast", "complete", "mobile", "name", "love", "business", "baby", "career", "money",
+                             "snapshot", "house", "vehicle", "astrology_life_path", "divorce_separation_report")
+                 if k in PRODUCTS]
+
+
+def _admin_from_header(request):
+    tok = request.headers.get("x-admin-token", "")
+    if not ADMIN_TOKEN or not hmac.compare_digest(tok.encode(), ADMIN_TOKEN.encode()):
+        raise HTTPException(403, "bad or missing admin key")
+
+
+def _ten_digits(s):
+    d = re.sub(r"\D+", "", str(s or ""))
+    if len(d) == 12 and d.startswith("91"):
+        d = d[2:]
+    elif len(d) == 11 and d.startswith("0"):
+        d = d[1:]
+    return d if re.fullmatch(r"[6-9]\d{9}", d) else ""
+
+
+def _job_view(j):
+    out = {k: j.get(k) for k in ("id", "status", "name", "label", "phone", "filename", "drive", "email", "error", "pages")}
+    out["made"] = datetime.datetime.fromtimestamp(j["created"], _IST).strftime("%d %b, %I:%M %p")
+    out["elapsed"] = int(_time.time() - j["started"]) if j.get("started") and j["status"] == "building" else None
+    out["size_kb"] = (os.path.getsize(j["path"]) // 1024) if j.get("path") and os.path.exists(j["path"]) else None
+    return out
+
+
+def _sweep_make_jobs():
+    now = _time.time()
+    with _MAKE_LOCK:
+        for jid in [k for k, j in _MAKE_JOBS.items() if now - j["created"] > _MAKE_KEEP_S]:
+            p = _MAKE_JOBS.pop(jid).get("path")
+            try:
+                if p and os.path.exists(p):
+                    os.remove(p)
+            except Exception:
+                pass
+
+
+def _make_inputs(d):
+    """Validate the page's fields and turn them into build_report_pdf arguments (same shapes as website orders)."""
+    product = (d.get("product") or "").strip()
+    if product not in MAKE_PRODUCTS:
+        raise HTTPException(400, "choose a report")
+    name = _proper_name((d.get("name") or "").strip())
+    dob = (d.get("dob") or "").strip()
+    if not name:
+        raise HTTPException(400, "the customer's name is required")
+    try:
+        datetime.datetime.strptime(dob, "%Y-%m-%d")
+    except Exception:
+        raise HTTPException(400, "date of birth is required")
+    raw_phone = (d.get("phone") or "").strip()
+    phone = _ten_digits(raw_phone)
+    if raw_phone and not phone:
+        raise HTTPException(400, "the WhatsApp number should be a 10-digit Indian mobile number")
+    gender = (d.get("gender") or "").strip().lower()
+    gender = gender if gender in ("male", "female") else ""
+    email = (d.get("email") or "").strip()
+    if email and not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+        raise HTTPException(400, "that email address does not look right")
+    g = lambda k: (d.get(k) or "").strip()
+
+    def need(k, label):
+        if not g(k):
+            raise HTTPException(400, f"{label} is required for this report")
+        return g(k)
+
+    kw = {"full_name": name, "dob": dob, "gender": gender, "email": email}
+    extra = ""
+    if product in ("forecast", "complete"):
+        extra = f"mobile: {phone}" if phone else ""
+    elif product == "mobile":
+        extra = _ten_digits(g("number")) or phone
+        if not extra:
+            raise HTTPException(400, "a 10-digit mobile number to read is required")
+    elif product == "name":
+        extra = g("check_name")
+    elif product == "business":
+        extra = need("business", "the business name")
+    elif product == "baby":
+        extra = g("baby")
+    elif product == "love":
+        pn, pd = need("partner_name", "the partner's name"), need("partner_dob", "the partner's date of birth")
+        extra = f"{pn} {pd}"
+        kw.update(partner_name=pn, partner_dob=pd)
+    elif product in ("house", "vehicle"):
+        extra = need("number", "the number")
+    elif product in ("snapshot", "career", "money"):
+        extra = g("question")
+    elif product in ("astrology_life_path", "divorce_separation_report"):
+        kw.update(birth_time=need("birth_time", "birth time"), birth_place=need("birth_place", "birth place"),
+                  focus_area=g("focus_area"), main_question=g("main_question"))
+        if product == "divorce_separation_report":
+            kw.update(partner_name=need("partner_name", "the partner's name"),
+                      partner_dob=need("partner_dob", "the partner's date of birth"),
+                      marriage_date=g("marriage_date"), current_issue=g("current_issue"), children=g("children"))
+    kw["extra"] = extra
+    rt, _amt, label = PRODUCTS[product]
+    kw["report_type"] = rt
+    return product, label, phone, kw
+
+
+def _run_make_job(jid, kw):
+    j = _MAKE_JOBS[jid]
+    creds, row_idx = None, None
+    try:
+        creds = _google_creds()
+        row_idx = append_status_row(
+            [_now_ts(), jid, kw["full_name"], _fmt_dob(kw["dob"]), kw.get("email", ""), kw.get("gender", ""),
+             kw["report_type"], kw.get("extra", ""), kw.get("birth_time", ""), kw.get("birth_place", ""),
+             kw.get("focus_area", ""), kw.get("partner_name", ""), _fmt_dob(kw.get("partner_dob", "")), "", "",
+             kw.get("marriage_date", ""), kw.get("current_issue", ""), kw.get("children", ""),
+             kw.get("main_question", ""), "", "RECEIVED", _now_ts(), "WhatsApp order, made by the owner",
+             PIPELINE_VERSION], creds)
+    except Exception as e:
+        print(f"[make] {jid}: no Sheet row ({e!r})")
+
+    def status(st, **x):
+        if creds and row_idx:
+            try:
+                update_status_cells(row_idx, creds, st, **x)
+            except Exception as e:
+                print(f"[make] {jid}: could not write {st}: {e!r}")
+
+    try:
+        with _FULFIL_LOCK:      # one build at a time: website orders and these share 512 MB
+            j.update(status="building", started=_time.time())
+            status("GENERATING")
+            try:
+                pdf = build_report_pdf(out_dir=OUT_DIR, book_cover=BOOK_COVER, **kw)
+            finally:
+                _release_memory()
+        pages = None
+        try:
+            with open(pdf, "rb") as fh:
+                pages = len(re.findall(rb"/Type\s*/Page[^s]", fh.read())) or None
+        except Exception:
+            pass
+        j.update(status="ready", path=pdf, filename=os.path.basename(pdf), pages=pages)
+        print(f"[make] {jid}: ready {os.path.basename(pdf)} {_mem()}")
+    except Exception as e:
+        j.update(status="failed", error=str(e)[:400])
+        status("FAILED", error=f"generate: {e}")
+        print(f"[make] {jid}: FAILED {e!r}")
+        return
+    note = "made for WhatsApp"
+    if kw.get("email"):
+        try:
+            send_email(kw["email"], kw["full_name"], pdf, report_type=kw["report_type"])
+            j["email"] = "sent to " + kw["email"]
+            note += ", emailed"
+        except Exception as e:
+            j["email"] = "not sent (" + str(e)[:120] + ")"
+            note += ", email failed"
+    link = ""
+    if creds:
+        try:
+            link = upload_to_drive(pdf, creds)
+            j["drive"] = link
+        except Exception as e:
+            print(f"[make] {jid}: Drive upload skipped: {e!r}")
+    status("DELIVERED", link=link, error=note)
+
+
+@app.get("/admin/make", response_class=HTMLResponse)
+def admin_make_page():
+    import owner_page
+    return HTMLResponse(owner_page.render([(k, PRODUCTS[k][2]) for k in MAKE_PRODUCTS]),
+                        headers={"Cache-Control": "no-store", "X-Robots-Tag": "noindex"})
+
+
+@app.post("/admin/make-report")
+async def admin_make_report(request: Request):
+    _admin_from_header(request)
+    product, label, phone, kw = _make_inputs(await request.json())
+    _sweep_make_jobs()
+    jid = f"wa-{datetime.datetime.now(_IST):%Y%m%d-%H%M%S}-{_secrets.token_hex(2)}"
+    j = {"id": jid, "status": "waiting" if _FULFIL_LOCK.locked() else "building", "name": kw["full_name"],
+         "label": label, "phone": phone, "created": _time.time()}
+    with _MAKE_LOCK:
+        _MAKE_JOBS[jid] = j
+    threading.Thread(target=_run_make_job, args=(jid, kw), daemon=True).start()
+    return _job_view(j)
+
+
+@app.get("/admin/make-report")
+def admin_make_list(request: Request):
+    _admin_from_header(request)
+    jobs = sorted(_MAKE_JOBS.values(), key=lambda j: j["created"], reverse=True)[:12]
+    return {"jobs": [_job_view(j) for j in jobs]}
+
+
+@app.get("/admin/make-report/{jid}")
+def admin_make_status(jid: str, request: Request):
+    _admin_from_header(request)
+    j = _MAKE_JOBS.get(jid)
+    if not j:
+        raise HTTPException(404, "that report is no longer on the server (it restarts when idle); use the Drive copy")
+    return _job_view(j)
+
+
+@app.get("/admin/make-report/{jid}/pdf")
+def admin_make_pdf(jid: str, request: Request):
+    _admin_from_header(request)
+    j = _MAKE_JOBS.get(jid)
+    if not j or j.get("status") != "ready" or not os.path.exists(j.get("path") or ""):
+        raise HTTPException(404, "that PDF is no longer on the server; use the Drive copy")
+    return FileResponse(j["path"], media_type="application/pdf", filename=j["filename"],
+                        headers={"Cache-Control": "no-store"})
