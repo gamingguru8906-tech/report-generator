@@ -12,6 +12,7 @@ import json
 # per report: the extra inputs it needs (key, label, type, required, hint)
 FIELDS = {
     "forecast": [],
+    "forecast_blend": [],
     "complete": [],
     "mobile": [("number", "Mobile number to read", "tel", False, "Leave empty to read the customer's WhatsApp number")],
     "name": [("check_name", "Name to check", "text", False, "Optional: a new spelling or a nickname")],
@@ -135,7 +136,7 @@ $("saveKey").onclick = () => { KEY = $("key").value.trim(); if (!KEY) return; tr
 $("forget").querySelector("a").onclick = e => { e.preventDefault(); try { localStorage.removeItem("va_admin_pass"); } catch (er) {} KEY = ""; $("key").value = ""; showKey(); };
 $("sendEmail").onchange = () => $("emailBox").classList.toggle("hide", !$("sendEmail").checked);
 
-for (const [k, label] of PRODUCTS) { const o = document.createElement("option"); o.value = k; o.textContent = label; $("product").appendChild(o); }
+for (const [k, label, ready] of PRODUCTS) { const o = document.createElement("option"); o.value = k; o.textContent = label + (ready ? "" : " (not ready yet)"); o.disabled = !ready; $("product").appendChild(o); }
 function drawExtra() {
   const k = $("product").value, box = $("extra"); box.innerHTML = "";
   for (const [key, label, type, req, hint] of (FIELDS[k] || [])) {
@@ -167,7 +168,7 @@ async function check() {
   catch (er) { /* keep polling through a slow wake-up */ }
 }
 
-function waText(d) { const first = (d.name || "").split(" ")[0]; return "Namaste " + first + ", here is your " + d.label + " from Veshannastro."; }
+function waText(d) { const first = (d.name || "").split(" ")[0]; return "Namaste " + first + ", here is your " + (d.title || d.label) + " from Veshannastro."; }
 // Phones share the PDF through the share sheet. Laptops download it and open the customer's WhatsApp chat,
 // because a laptop's share sheet often has no WhatsApp in it.
 const PHONE = window.matchMedia && matchMedia("(pointer: coarse)").matches;
@@ -252,7 +253,7 @@ if (KEY) showForm(); else showKey();
 
 
 def render(products):
-    """products: [(key, label)] in the order to show them."""
+    """products: [(key, label, ready)] in the order to show them; a report that is not ready is listed but cannot be picked."""
     fields = {k: [list(f) for f in v] for k, v in FIELDS.items()}
     return (PAGE.replace("__PRODUCTS__", json.dumps([list(p) for p in products]))
                 .replace("__FIELDS__", json.dumps(fields)))

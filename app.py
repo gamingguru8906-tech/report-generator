@@ -1263,9 +1263,21 @@ _IST = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
 _MAKE_JOBS = {}
 _MAKE_LOCK = threading.Lock()
 _MAKE_KEEP_S = 12 * 3600
-MAKE_PRODUCTS = [k for k in ("forecast", "complete", "mobile", "name", "love", "business", "baby", "career", "money",
-                             "snapshot", "house", "vehicle", "astrology_life_path", "divorce_separation_report")
-                 if k in PRODUCTS]
+
+
+def _make_menu():
+    """The reports the owner makes for WhatsApp orders (owner, 20 Oct 2026: only these two for now).
+    key, menu label, the name the customer sees in the WhatsApp greeting, built yet?"""
+    from forecast.build import forecast_year
+    Y = forecast_year()
+    return [
+        {"key": "forecast", "label": f"Forecast Year Report {Y}: Classic", "title": f"{Y} Forecast Year Report", "ready": True},
+        {"key": "forecast_blend", "label": f"Astro-Numeric Blend: {Y} Forecast Year Report",
+         "title": f"Astro-Numeric Blend {Y} Forecast Year Report", "ready": False},   # its logic comes later
+    ]
+
+
+MAKE_PRODUCTS = ["forecast", "forecast_blend"]
 
 
 def _admin_from_header(request):
@@ -1284,7 +1296,7 @@ def _ten_digits(s):
 
 
 def _job_view(j):
-    out = {k: j.get(k) for k in ("id", "status", "name", "label", "phone", "filename", "drive", "email", "error", "pages")}
+    out = {k: j.get(k) for k in ("id", "status", "name", "label", "title", "phone", "filename", "drive", "email", "error", "pages")}
     out["made"] = datetime.datetime.fromtimestamp(j["created"], _IST).strftime("%d %b, %I:%M %p")
     out["elapsed"] = int(_time.time() - j["started"]) if j.get("started") and j["status"] == "building" else None
     out["size_kb"] = (os.path.getsize(j["path"]) // 1024) if j.get("path") and os.path.exists(j["path"]) else None
@@ -1306,8 +1318,11 @@ def _sweep_make_jobs():
 def _make_inputs(d):
     """Validate the page's fields and turn them into build_report_pdf arguments (same shapes as website orders)."""
     product = (d.get("product") or "").strip()
-    if product not in MAKE_PRODUCTS:
+    menu = {m["key"]: m for m in _make_menu()}
+    if product not in menu:
         raise HTTPException(400, "choose a report")
+    if not menu[product]["ready"]:
+        raise HTTPException(400, f"{menu[product]['label']} is not built yet")
     name = _proper_name((d.get("name") or "").strip())
     dob = (d.get("dob") or "").strip()
     if not name:
@@ -1362,9 +1377,8 @@ def _make_inputs(d):
                       partner_dob=need("partner_dob", "the partner's date of birth"),
                       marriage_date=g("marriage_date"), current_issue=g("current_issue"), children=g("children"))
     kw["extra"] = extra
-    rt, _amt, label = PRODUCTS[product]
-    kw["report_type"] = rt
-    return product, label, phone, kw
+    kw["report_type"] = PRODUCTS[product][0] if product in PRODUCTS else product
+    return product, menu[product], phone, kw
 
 
 def _run_make_job(jid, kw):
@@ -1437,7 +1451,7 @@ MAKE_PAGE_EMBEDDERS = [o.strip().rstrip("/") if o.strip().startswith("http") els
 @app.get("/admin/make", response_class=HTMLResponse)
 def admin_make_page():
     import owner_page
-    return HTMLResponse(owner_page.render([(k, PRODUCTS[k][2]) for k in MAKE_PRODUCTS]),
+    return HTMLResponse(owner_page.render([(m["key"], m["label"], m["ready"]) for m in _make_menu()]),
                         headers={"Cache-Control": "no-store", "X-Robots-Tag": "noindex",
                                  "Content-Security-Policy": "frame-ancestors 'self' " + " ".join(MAKE_PAGE_EMBEDDERS)})
 
@@ -1445,11 +1459,11 @@ def admin_make_page():
 @app.post("/admin/make-report")
 async def admin_make_report(request: Request):
     _admin_from_header(request)
-    product, label, phone, kw = _make_inputs(await request.json())
+    product, item, phone, kw = _make_inputs(await request.json())
     _sweep_make_jobs()
     jid = f"wa-{datetime.datetime.now(_IST):%Y%m%d-%H%M%S}-{_secrets.token_hex(2)}"
     j = {"id": jid, "status": "waiting" if _FULFIL_LOCK.locked() else "building", "name": kw["full_name"],
-         "label": label, "phone": phone, "created": _time.time()}
+         "label": item["label"], "title": item["title"], "phone": phone, "created": _time.time()}
     with _MAKE_LOCK:
         _MAKE_JOBS[jid] = j
     threading.Thread(target=_run_make_job, args=(jid, kw), daemon=True).start()

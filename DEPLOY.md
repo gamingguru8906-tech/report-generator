@@ -103,6 +103,11 @@ details and tap **Make report**. About a minute later tap **Send on WhatsApp**: 
 with the PDF attached, pick the customer's chat. **Open the customer's chat** opens their WhatsApp with a
 greeting typed in; **Download PDF** saves it.
 
-It builds the same PDF a website order gets (the forecast in the customer's Mulank design), logs a row in the
-Orders sheet with an order id starting `wa-`, and keeps a Drive copy. Emailing the customer is optional.
-Palmistry is not on this page because it needs the palm photos from the website form.
+The page offers two reports (owner's choice, Oct 2026):
+1. **Forecast Year Report <year>: Classic**, the forecast deck in the customer's Mulank design, the same PDF a
+   website forecast order gets.
+2. **Astro-Numeric Blend: <year> Forecast Year Report**, listed but not ready: its logic is still to be written.
+   To switch it on, build it and set `ready` to True in `_make_menu()` in `app.py`.
+
+Each report is logged in the Orders sheet with an order id starting `wa-`, and a Drive copy is kept. Emailing the
+customer is optional.
