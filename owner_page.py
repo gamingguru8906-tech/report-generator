@@ -168,6 +168,12 @@ async function check() {
 }
 
 function waText(d) { const first = (d.name || "").split(" ")[0]; return "Namaste " + first + ", here is your " + d.label + " from Veshannastro."; }
+// Phones share the PDF through the share sheet. Laptops download it and open the customer's WhatsApp chat,
+// because a laptop's share sheet often has no WhatsApp in it.
+const PHONE = window.matchMedia && matchMedia("(pointer: coarse)").matches;
+let sharing = false;
+function note(msg, bad) { const p = $("note"); if (p) { p.textContent = msg || ""; p.className = "small" + (bad ? " err" : ""); } }
+function chatUrl(d) { return "https://wa.me/91" + d.phone + "?text=" + encodeURIComponent(waText(d)); }
 function drawJob(d) {
   const c = $("job"); c.classList.remove("hide");
   if (d.status === "failed") { c.innerHTML = '<div class="status"><b class="err">Could not make the report</b></div><p class="small err"></p>'; c.querySelector("p").textContent = d.error || ""; return; }
@@ -177,17 +183,24 @@ function drawJob(d) {
     c.querySelector("b").textContent = what; c.querySelector("span").textContent = (d.label || "") + " for " + (d.name || "") + (d.elapsed ? " · " + d.elapsed + "s" : "");
     return;
   }
+  const canShare = !!navigator.share;
   c.innerHTML = '<div class="status"><b class="okc">Ready</b><span class="small"></span></div>' +
     '<button id="share" type="button">Send on WhatsApp</button>' +
-    (d.phone ? '<a class="btn alt" id="chat" target="_blank" rel="noopener">Open the customer\'s chat</a>' : '') +
-    '<button id="dl" type="button" class="alt">Download PDF</button><p class="small" id="extraInfo" style="margin:12px 0 0"></p>';
+    (PHONE && d.phone ? '<a class="btn alt" id="chat" target="_blank" rel="noopener">Open the customer\'s chat</a>' : '') +
+    (!PHONE && canShare ? '<button id="sys" type="button" class="alt">Share with this computer\'s share menu</button>' : '') +
+    '<button id="dl" type="button" class="alt">Download PDF</button>' +
+    '<p class="small" id="note" style="margin:12px 0 0;min-height:1em"></p><p class="small" id="extraInfo" style="margin:6px 0 0"></p>';
   c.querySelector("span").textContent = d.label + " for " + d.name + " · " + (d.pages ? d.pages + " pages · " : "") + d.size_kb + " KB";
-  if (d.phone) $("chat").href = "https://wa.me/91" + d.phone + "?text=" + encodeURIComponent(waText(d));
+  if ($("chat")) $("chat").href = chatUrl(d);
   const info = [];
   if (d.drive) info.push('Saved to Drive: <a class="link" target="_blank" rel="noopener" href="' + d.drive + '">open</a>');
   if (d.email) info.push("Email: " + d.email.replace(/[<>&]/g, ""));
   $("extraInfo").innerHTML = info.join(" · ");
-  $("share").onclick = () => share(d); $("dl").onclick = () => download(d);
+  $("share").onclick = () => (PHONE ? share(d) : laptopSend(d));
+  if ($("sys")) $("sys").onclick = () => share(d);
+  $("dl").onclick = () => download(d).then(ok => ok && note("Downloaded."));
+  // fetch the PDF now, so the share happens straight from the tap (browsers refuse a share that waits on the network)
+  blobFor(d).catch(er => note(er.message, true));
 }
 async function blobFor(d) {
   if (pdfBlob && pdfBlob.id === d.id) return pdfBlob.blob;
@@ -196,15 +209,28 @@ async function blobFor(d) {
   const b = await r.blob(); pdfBlob = {id: d.id, blob: b}; return b;
 }
 async function share(d) {
-  try {
-    const f = new File([await blobFor(d)], d.filename, {type: "application/pdf"});
-    if (navigator.canShare && navigator.canShare({files: [f]})) { await navigator.share({files: [f], text: waText(d)}); }
-    else { download(d); alert("This browser cannot share files. The PDF was downloaded: attach it in WhatsApp."); }
-  } catch (er) { if (er.name !== "AbortError") alert(er.message); }
+  if (sharing) { note("The share menu is already open. Pick WhatsApp there, or close it first."); return; }
+  const blob = pdfBlob && pdfBlob.id === d.id ? pdfBlob.blob : null;
+  if (!blob) { note("Getting the PDF ready..."); blobFor(d).then(() => note("Ready. Tap Send on WhatsApp again.")).catch(er => note(er.message, true)); return; }
+  const f = new File([blob], d.filename, {type: "application/pdf"});
+  if (!(navigator.canShare && navigator.canShare({files: [f]}))) { laptopSend(d); return; }
+  sharing = true;
+  const release = setTimeout(() => { sharing = false; }, 60000);
+  try { await navigator.share({files: [f], text: waText(d)}); note("Sent to the share menu. Check it reached the customer."); }
+  catch (er) {
+    if (er.name === "AbortError") note("");
+    else if (er.name === "InvalidStateError") note("The share menu is already open. Pick WhatsApp there, or close it first.");
+    else if (er.name === "NotAllowedError") note("Tap Send on WhatsApp again.");
+    else note(er.message, true);
+  } finally { clearTimeout(release); sharing = false; }
+}
+function laptopSend(d) {
+  if (d.phone) window.open(chatUrl(d), "_blank", "noopener");
+  download(d).then(ok => { if (ok) note(d.phone ? "PDF downloaded and the customer's chat is open: attach the PDF there (or drag it in)." : "PDF downloaded: attach it in the customer's WhatsApp chat."); });
 }
 async function download(d) {
-  try { const u = URL.createObjectURL(await blobFor(d)); const a = document.createElement("a"); a.href = u; a.download = d.filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 60000); }
-  catch (er) { alert(er.message); }
+  try { const u = URL.createObjectURL(await blobFor(d)); const a = document.createElement("a"); a.href = u; a.download = d.filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 60000); return true; }
+  catch (er) { note(er.message, true); return false; }
 }
 async function loadRecent() {
   try {
