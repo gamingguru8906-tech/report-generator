@@ -72,6 +72,9 @@ button:disabled{opacity:.55;cursor:default}
 .small{font-size:13px;color:var(--soft)}
 .hide{display:none}
 a.link{color:var(--pink)}
+body.embed{--pink:#C2185B;--pink-l:#FCE7EF;background:#FBF7F8}
+body.embed h1,body.embed .sub{display:none}
+body.embed main{padding-top:16px}
 </style></head><body><main>
 <h1>Make a report</h1>
 <p class="sub">For WhatsApp orders. Builds the same PDF a website order gets, ready to send to the customer.</p>
@@ -110,6 +113,7 @@ a.link{color:var(--pink)}
 const PRODUCTS = __PRODUCTS__;
 const FIELDS = __FIELDS__;
 const $ = id => document.getElementById(id);
+if (new URLSearchParams(location.search).get("embed")) document.body.classList.add("embed");   // inside the Kamala dashboard
 let KEY = ""; try { KEY = localStorage.getItem("va_admin_pass") || ""; } catch (e) {}
 let job = null, pdfBlob = null, poll = null;
 

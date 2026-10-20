@@ -1429,11 +1429,17 @@ def _run_make_job(jid, kw):
     status("DELIVERED", link=link, error=note)
 
 
+# Sites allowed to show the page inside them (the Kamala dashboard's Reports tab). Nobody else can frame it.
+MAKE_PAGE_EMBEDDERS = [o.strip().rstrip("/") if o.strip().startswith("http") else "https://" + o.strip().rstrip("/")
+                       for o in os.environ.get("MAKE_PAGE_EMBEDDERS", "https://1980.veshannastro.co.in").split(",") if o.strip()]
+
+
 @app.get("/admin/make", response_class=HTMLResponse)
 def admin_make_page():
     import owner_page
     return HTMLResponse(owner_page.render([(k, PRODUCTS[k][2]) for k in MAKE_PRODUCTS]),
-                        headers={"Cache-Control": "no-store", "X-Robots-Tag": "noindex"})
+                        headers={"Cache-Control": "no-store", "X-Robots-Tag": "noindex",
+                                 "Content-Security-Policy": "frame-ancestors 'self' " + " ".join(MAKE_PAGE_EMBEDDERS)})
 
 
 @app.post("/admin/make-report")
