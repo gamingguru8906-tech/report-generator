@@ -4,7 +4,7 @@ For orders that come in on WhatsApp and are paid outside the website: the owner 
 customer's details, and the server builds the same PDF a paid website order gets. The page then hands the PDF
 to the phone's share sheet (WhatsApp, straight to the customer's chat), or downloads it.
 
-The page itself holds no data. Every call it makes carries the admin key in a request header, and the key is
+The page itself holds no data. Every call it makes carries the admin pass in a request header, and the pass is
 kept only in this browser's storage on the owner's phone.
 """
 import json
@@ -77,7 +77,7 @@ a.link{color:var(--pink)}
 <p class="sub">For WhatsApp orders. Builds the same PDF a website order gets, ready to send to the customer.</p>
 
 <div class="card" id="keyCard">
-  <label for="key">Admin key <span class="hint">(ADMIN_TOKEN on Render, saved on this phone only)</span></label>
+  <label for="key">Admin pass <span class="hint">(ADMIN_PASS on Render, saved on this phone only)</span></label>
   <input id="key" type="password" autocomplete="off">
   <button id="saveKey" type="button">Continue</button>
 </div>
@@ -104,19 +104,19 @@ a.link{color:var(--pink)}
 
 <div class="card hide" id="recentCard"><label>Made recently</label><div class="recent" id="recent"></div></div>
 
-<p class="small" id="forget" style="text-align:center"><a href="#" class="link">Forget the admin key on this phone</a></p>
+<p class="small" id="forget" style="text-align:center"><a href="#" class="link">Forget the admin pass on this phone</a></p>
 </main>
 <script>
 const PRODUCTS = __PRODUCTS__;
 const FIELDS = __FIELDS__;
 const $ = id => document.getElementById(id);
-let KEY = ""; try { KEY = localStorage.getItem("va_admin_key") || ""; } catch (e) {}
+let KEY = ""; try { KEY = localStorage.getItem("va_admin_pass") || ""; } catch (e) {}
 let job = null, pdfBlob = null, poll = null;
 
-function headers() { return {"Content-Type": "application/json", "X-Admin-Token": KEY}; }
+function headers() { return {"Content-Type": "application/json", "X-Admin-Pass": KEY}; }
 async function api(path, opts) {
   const r = await fetch(path, Object.assign({headers: headers()}, opts || {}));
-  if (r.status === 403) { showKey("That admin key was not accepted."); throw new Error("key"); }
+  if (r.status === 403) { showKey("That admin pass was not accepted."); throw new Error("key"); }
   const t = await r.text(); let d = {}; try { d = JSON.parse(t); } catch (e) { d = {detail: t}; }
   if (!r.ok) throw new Error(d.detail || ("Server error " + r.status));
   return d;
@@ -127,8 +127,8 @@ function showKey(msg) {
 }
 function showForm() { $("keyCard").classList.add("hide"); $("form").classList.remove("hide"); loadRecent(); }
 
-$("saveKey").onclick = () => { KEY = $("key").value.trim(); if (!KEY) return; try { localStorage.setItem("va_admin_key", KEY); } catch (e) {} showForm(); };
-$("forget").querySelector("a").onclick = e => { e.preventDefault(); try { localStorage.removeItem("va_admin_key"); } catch (er) {} KEY = ""; $("key").value = ""; showKey(); };
+$("saveKey").onclick = () => { KEY = $("key").value.trim(); if (!KEY) return; try { localStorage.setItem("va_admin_pass", KEY); } catch (e) {} showForm(); };
+$("forget").querySelector("a").onclick = e => { e.preventDefault(); try { localStorage.removeItem("va_admin_pass"); } catch (er) {} KEY = ""; $("key").value = ""; showKey(); };
 $("sendEmail").onchange = () => $("emailBox").classList.toggle("hide", !$("sendEmail").checked);
 
 for (const [k, label] of PRODUCTS) { const o = document.createElement("option"); o.value = k; o.textContent = label; $("product").appendChild(o); }
@@ -187,7 +187,7 @@ function drawJob(d) {
 }
 async function blobFor(d) {
   if (pdfBlob && pdfBlob.id === d.id) return pdfBlob.blob;
-  const r = await fetch("/admin/make-report/" + d.id + "/pdf", {headers: {"X-Admin-Token": KEY}});
+  const r = await fetch("/admin/make-report/" + d.id + "/pdf", {headers: {"X-Admin-Pass": KEY}});
   if (!r.ok) throw new Error("The PDF is no longer on the server (it restarts when idle). Use the Drive copy.");
   const b = await r.blob(); pdfBlob = {id: d.id, blob: b}; return b;
 }

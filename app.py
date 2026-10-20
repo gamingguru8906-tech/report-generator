@@ -66,7 +66,9 @@ RAZORPAY_KEY_ID         = os.environ.get("RAZORPAY_KEY_ID", "")
 RAZORPAY_KEY_SECRET     = os.environ.get("RAZORPAY_KEY_SECRET", "")
 RAZORPAY_WEBHOOK_SECRET = os.environ.get("RAZORPAY_WEBHOOK_SECRET", "")
 REPORT_AMOUNT_PAISE     = int(os.environ.get("REPORT_AMOUNT_PAISE", "49900"))  # legacy default
-ADMIN_TOKEN             = os.environ.get("ADMIN_TOKEN", "")  # protects /admin/* diagnostic + recovery tools
+# The admin pass protects /admin/* (the Make a report page, diagnostics, recovery). It is set on Render as
+# ADMIN_PASS; the older name ADMIN_TOKEN still works so nothing breaks before it is renamed there.
+ADMIN_PASS              = os.environ.get("ADMIN_PASS") or os.environ.get("ADMIN_TOKEN", "")
 
 # Product catalogue: key -> (report_type, price in paise, customer-facing label)
 # Prices match the live veshannastro.co.in cards (paise: ₹250 = 25000). Override via env vars.
@@ -1164,13 +1166,13 @@ async def trigger_report(request: Request):
 
 # ───────────────────────── Admin tools (diagnose + recover) ─────────────────────────
 def _check_admin(token):
-    if not ADMIN_TOKEN or token != ADMIN_TOKEN:
-        raise HTTPException(403, "bad or missing admin token")
+    if not ADMIN_PASS or not hmac.compare_digest(str(token).encode(), ADMIN_PASS.encode()):
+        raise HTTPException(403, "bad or missing admin pass")
 
 @app.get("/admin/selftest")
 def admin_selftest(token: str = ""):
     """Checks each piece of the pipeline independently and reports pass/fail.
-    Open: https://<your-app>/admin/selftest?token=YOUR_ADMIN_TOKEN"""
+    Open: https://<your-app>/admin/selftest?token=YOUR_ADMIN_PASS"""
     _check_admin(token)
     out = {"env": {
         "RAZORPAY_WEBHOOK_SECRET": bool(RAZORPAY_WEBHOOK_SECRET),
@@ -1267,9 +1269,9 @@ MAKE_PRODUCTS = [k for k in ("forecast", "complete", "mobile", "name", "love", "
 
 
 def _admin_from_header(request):
-    tok = request.headers.get("x-admin-token", "")
-    if not ADMIN_TOKEN or not hmac.compare_digest(tok.encode(), ADMIN_TOKEN.encode()):
-        raise HTTPException(403, "bad or missing admin key")
+    tok = request.headers.get("x-admin-pass", "")
+    if not ADMIN_PASS or not hmac.compare_digest(tok.encode(), ADMIN_PASS.encode()):
+        raise HTTPException(403, "bad or missing admin pass")
 
 
 def _ten_digits(s):

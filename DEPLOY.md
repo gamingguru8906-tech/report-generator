@@ -98,7 +98,7 @@ Running locally? Just run `python build_fonts.py` once before generating reports
 
 ## WhatsApp orders: making a report yourself
 Open `https://<your-app>/admin/make` on your phone (bookmark it or add it to the home screen).
-Enter the ADMIN_TOKEN once (it is saved in that phone's browser only), pick the report, type the customer's
+Enter the admin pass (ADMIN_PASS on Render) once; it is saved in that phone's browser only. Pick the report, type the customer's
 details and tap **Make report**. About a minute later tap **Send on WhatsApp**: the phone's share sheet opens
 with the PDF attached, pick the customer's chat. **Open the customer's chat** opens their WhatsApp with a
 greeting typed in; **Download PDF** saves it.

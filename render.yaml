@@ -55,7 +55,7 @@ services:
         value: "veshannastro@gmail.com"
       - key: BREVO_FROM_NAME
         value: "Veshannastro"
-      - key: ADMIN_TOKEN
+      - key: ADMIN_PASS        # admin pass for /admin/make and the admin tools (ADMIN_TOKEN still works)
         sync: false
       - key: ALLOWED_ORIGINS
         value: "https://veshannastro.co.in,https://www.veshannastro.co.in"
