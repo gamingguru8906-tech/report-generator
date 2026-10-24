@@ -98,8 +98,6 @@ body.embed main{padding-top:16px}
   <label for="phone">Customer's WhatsApp number <span class="hint" id="phoneHint">(adds the free mobile reading to the forecast)</span></label>
   <input id="phone" type="tel" inputmode="numeric" placeholder="10 digits">
   <div id="extra"></div>
-  <label class="chk"><input id="sendEmail" type="checkbox"> Also email it to the customer</label>
-  <div id="emailBox" class="hide"><label for="email">Customer's email</label><input id="email" type="email"></div>
   <button id="go" type="submit">Make report</button>
   <p class="small" style="margin:12px 0 0">Takes about a minute. If the server was asleep, the first one can take two.</p>
 </form>
@@ -134,7 +132,6 @@ function showForm() { $("keyCard").classList.add("hide"); $("form").classList.re
 
 $("saveKey").onclick = () => { KEY = $("key").value.trim(); if (!KEY) return; try { localStorage.setItem("va_admin_pass", KEY); } catch (e) {} showForm(); };
 $("forget").querySelector("a").onclick = e => { e.preventDefault(); try { localStorage.removeItem("va_admin_pass"); } catch (er) {} KEY = ""; $("key").value = ""; showKey(); };
-$("sendEmail").onchange = () => $("emailBox").classList.toggle("hide", !$("sendEmail").checked);
 
 for (const [k, label, ready] of PRODUCTS) { const o = document.createElement("option"); o.value = k; o.textContent = label + (ready ? "" : " (not ready yet)"); o.disabled = !ready; $("product").appendChild(o); }
 function drawExtra() {
@@ -152,7 +149,7 @@ $("product").onchange = drawExtra; drawExtra();
 $("form").onsubmit = async e => {
   e.preventDefault();
   const body = {product: $("product").value, name: $("name").value.trim(), dob: $("dob").value, gender: $("gender").value,
-                phone: $("phone").value.trim(), email: $("sendEmail").checked ? $("email").value.trim() : ""};
+                phone: $("phone").value.trim(), email: ""};  // no email: reports go on WhatsApp
   for (const i of $("extra").querySelectorAll("input")) body[i.dataset.key] = i.value.trim();
   $("go").disabled = true;
   try {

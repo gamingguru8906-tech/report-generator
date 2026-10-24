@@ -98,7 +98,9 @@ DRIVE_FOLDER_ID = os.environ.get("DRIVE_FOLDER_ID", "")
 SHEET_ID        = os.environ.get("SHEET_ID", "")
 SHEET_TAB       = os.environ.get("SHEET_TAB", "Orders")
 
-BREVO_API_KEY   = os.environ.get("BREVO_API_KEY", "")
+# Email (Brevo) is off unless EMAIL_DELIVERY=on: reports go to customers on WhatsApp (Send through Kamala).
+EMAIL_ON        = os.environ.get("EMAIL_DELIVERY", "off").strip().lower() in ("on", "1", "true", "yes")
+BREVO_API_KEY   = os.environ.get("BREVO_API_KEY", "") if EMAIL_ON else ""
 BREVO_FROM_EMAIL= os.environ.get("BREVO_FROM_EMAIL", "veshannastro@gmail.com")
 BREVO_FROM_NAME = os.environ.get("BREVO_FROM_NAME", "Veshannastro")
 
@@ -125,7 +127,9 @@ def _email_status():
     Never includes the key or Brevo's account details."""
     import time as _t
     if _t.time() - _EMAIL_CHECK["at"] > 600:
-        if not BREVO_API_KEY:
+        if not EMAIL_ON:
+            st = "off (reports go on WhatsApp)"
+        elif not BREVO_API_KEY:
             st = "not set"
         else:
             ok, detail = _brevo_status()
@@ -480,7 +484,7 @@ def append_to_sheet(row, creds):
 #   T = report URL (Drive link)   U = status   V = status timestamp
 #   W = error message             X = pipeline version
 PIPELINE_VERSION = "report-pipeline-v9-owner-make-page-2026-10-20"
-TERMINAL_STATUSES = {"SENT", "DELIVERED"}
+TERMINAL_STATUSES = {"SENT", "DELIVERED", "READY FOR WHATSAPP"}
 
 class _LoggedFailure(Exception):
     """Failure already recorded on the order's own Sheet row."""
@@ -680,7 +684,12 @@ def build_report_pdf(**kwargs):
         raise RuntimeError(f"report build failed (exit {proc.returncode}): " + " | ".join(tail)[:600])
     return path
 
+class EmailOff(RuntimeError):
+    """Email delivery is switched off (EMAIL_DELIVERY is not "on")."""
+
 def send_email(to_email, name, pdf_path, report_type="Numerology Report"):
+    if not EMAIL_ON:
+        raise EmailOff("email delivery is off; send it on WhatsApp")
     with open(pdf_path, "rb") as fh:
         pdf_b64 = base64.b64encode(fh.read()).decode("utf-8")
 
@@ -926,19 +935,25 @@ def _fulfil_order(name, dob, email, gender, order_id, report_type, extra,
 
     # 3. Email the customer FIRST. Delivery is what they paid for; the Drive
     #    copy is a nice-to-have and must never stand in front of the email.
-    _status("SENDING")
-    try:
-        send_email(email, name, pdf, report_type=report_type)
-    except Exception as e:
-        _fail("email", e)
-    _status("DELIVERED", link="")
-    print(f"[fulfil] order={order_id} emailed to {email} {_mem()}")
+    if not EMAIL_ON:
+        # No email: the report is ready and waits to be sent on WhatsApp (make-a-report page: Send through Kamala).
+        _status("READY FOR WHATSAPP", link="")
+        print(f"[fulfil] order={order_id} ready, email is off: send it on WhatsApp {_mem()}")
+    else:
+        _status("SENDING")
+        try:
+            send_email(email, name, pdf, report_type=report_type)
+        except Exception as e:
+            _fail("email", e)
+        _status("DELIVERED", link="")
+        print(f"[fulfil] order={order_id} emailed to {email} {_mem()}")
 
     # 4. Owner backup copy + Drive archive — best effort, after delivery.
-    try:
-        send_email("veshannastro@gmail.com", name, pdf, report_type=report_type)
-    except Exception as e:
-        print(f"[fulfil] backup-copy email failed (customer copy already sent): {e!r}")
+    if EMAIL_ON:
+        try:
+            send_email("veshannastro@gmail.com", name, pdf, report_type=report_type)
+        except Exception as e:
+            print(f"[fulfil] backup-copy email failed (customer copy already sent): {e!r}")
     link = "N/A"
     if creds:
         try:
@@ -1002,8 +1017,8 @@ def _recover_stuck_orders(delay_s=20):
     except Exception as e:
         print(f"[recover] could not read the Sheet: {e!r}")
         return
-    brevo_ok, brevo_detail = _brevo_status()
-    if not brevo_ok:
+    brevo_ok, brevo_detail = _brevo_status() if EMAIL_ON else (False, "email is off")
+    if EMAIL_ON and not brevo_ok:
         print(f"[startup] BREVO KEY REJECTED — no report emails can be sent until BREVO_API_KEY "
               f"is replaced on Render: {brevo_detail}")
     cutoff = datetime.datetime.now() - datetime.timedelta(hours=RECOVER_WINDOW_HOURS)
@@ -1444,7 +1459,7 @@ def _run_make_job(jid, kw):
         print(f"[make] {jid}: FAILED {e!r}")
         return
     note = "made for WhatsApp"
-    if kw.get("email"):
+    if kw.get("email") and EMAIL_ON:
         try:
             send_email(kw["email"], kw["full_name"], pdf, report_type=kw["report_type"])
             j["email"] = "sent to " + kw["email"]
