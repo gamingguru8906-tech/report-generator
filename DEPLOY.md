@@ -109,8 +109,9 @@ The page offers two reports (owner's choice, Oct 2026):
 2. **Astro-Numero Blend: <year> Forecast Year Report**, listed but not ready: its logic is still to be written.
    To switch it on, build it and set `ready` to True in `_make_menu()` in `app.py`.
 
-Each report is logged in the Orders sheet with an order id starting `wa-`, and a Drive copy is kept. Emailing the
-customer is optional.
+Each report is logged in the Orders sheet with an order id starting `wa-`, and a Drive copy is kept. Email is off:
+reports go to customers on WhatsApp (Send through Kamala). Set `EMAIL_DELIVERY=on` on Render only if you ever want
+Brevo email back.
 
 ### Send through Kamala (PDF, summary card and voice note)
 Every forecast now also makes a one-page summary card (a 1080 x 1920 PNG in the customer's Mulank design: the year's
