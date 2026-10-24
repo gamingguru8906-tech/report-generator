@@ -74,7 +74,7 @@ def card_html(data):
   <div class="tile" style="flex:1.4;background:{T.LBLUE};color:{T.INK};padding:24px 24px">
     <div class="small" style="opacity:.85;font-size:16px">Wear</div><div class="lead" style="font-size:22px;margin-top:10px;line-height:1.35">{esc(f["colour"] or "Your report lists your colours.")}</div></div>
 </div>
-<div class="small" style="margin-top:40px;opacity:.8;font-size:16px">Your full report is in the PDF. Questions? Reply on WhatsApp, +91 76469 52745.</div>
+<div class="small" style="margin-top:40px;opacity:.8;font-size:16px">Your full report is in the PDF. Questions? Reply on WhatsApp, +91 76469 52745, or call +91 88276 84725.</div>
 {L.sparkle(T.PINK, 54, 610, 64)}
 {L.blob(T.LBLUE, 300, 150, 470, 1150, "bumps")}
 """

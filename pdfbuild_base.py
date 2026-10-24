@@ -301,8 +301,23 @@ def _footer(c, page_num, title="Numerology Report"):
     c.setStrokeColor(LINE); c.setLineWidth(0.4)
     c.line(MARGIN, 14*mm, PW-MARGIN, 14*mm)
 
-# crest: stylised Veshann Astro mark (vector — replace with logo PNG if provided)
+# The Veshannastro logo (assets/logo.png) as the brand mark: a rounded square centred on (cx, cy), 2R across.
+_LOGO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "logo.png")
+def _logo_mark(c, cx, cy, R):
+    if not os.path.exists(_LOGO):
+        return False
+    s = 2 * R
+    c.saveState()
+    p = c.beginPath(); p.roundRect(cx - R, cy - R, s, s, R * 0.36)
+    c.clipPath(p, stroke=0, fill=0)
+    c.drawImage(_LOGO, cx - R, cy - R, width=s, height=s)
+    c.restoreState()
+    return True
+
+# crest: the logo when assets/logo.png is there, else the older vector mark
 def _crest(c, cx, cy, R=42):
+    if _logo_mark(c, cx, cy, R):
+        return
     c.saveState(); c.translate(cx, cy)
     # outer ring
     c.setStrokeColor(GOLD); c.setLineWidth(1.2); c.circle(0,0,R, stroke=1, fill=0)
@@ -683,6 +698,8 @@ CV_NAVY   = HexColor("#2A2E52")
 CV_LINE   = HexColor("#C7B492")
 
 def _studio_crest(c, cx, cy, R=40):
+    if _logo_mark(c, cx, cy, R):
+        return
     import math
     c.saveState(); c.translate(cx, cy)
     c.setStrokeColor(CV_MAROON); c.setLineWidth(1.4); c.circle(0,0,R, stroke=1, fill=0)
