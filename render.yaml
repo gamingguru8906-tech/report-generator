@@ -59,3 +59,7 @@ services:
         sync: false
       - key: ALLOWED_ORIGINS
         value: "https://veshannastro.co.in,https://www.veshannastro.co.in"
+      - key: KAMALA_URL        # Kamala's address, e.g. https://whatsapp-agent-xxxx.onrender.com (for "Send through Kamala")
+        sync: false
+      - key: REPORTS_SECRET    # the same long random value as REPORTS_SECRET on Kamala's service
+        sync: false

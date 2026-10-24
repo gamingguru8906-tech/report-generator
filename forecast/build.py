@@ -135,4 +135,15 @@ def build_forecast(name, dob, year=None, phone=None, gender=None, out_dir=".", c
         if not keep_html:
             shutil.rmtree(tmp, ignore_errors=True)
     meta.update({"render_ms": res.get("ms"), "fit": res.get("fit"), "overflow": res.get("overflow"), "html": html_path if keep_html else None})
+    # The WhatsApp summary card and its facts sit next to the PDF (<name>_card.png, <name>_summary.json).
+    # Best effort: the PDF never waits on or fails because of the card.
+    card_path = pdf_path[:-4] + "_card.png"
+    try:
+        from .card import build_card
+        facts = build_card(data, card_path)
+        with open(pdf_path[:-4] + "_summary.json", "w", encoding="utf-8") as fh:
+            json.dump(facts, fh, ensure_ascii=False)
+        meta.update({"card": card_path, "summary": facts})
+    except Exception as e:  # noqa: BLE001
+        meta.update({"card": None, "card_error": str(e)[:300]})
     return pdf_path, meta

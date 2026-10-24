@@ -1272,8 +1272,8 @@ def _make_menu():
     Y = forecast_year()
     return [
         {"key": "forecast", "label": f"Forecast Year Report {Y}: Classic", "title": f"{Y} Forecast Year Report", "ready": True},
-        {"key": "forecast_blend", "label": f"Astro-Numeric Blend: {Y} Forecast Year Report",
-         "title": f"Astro-Numeric Blend {Y} Forecast Year Report", "ready": False},   # its logic comes later
+        {"key": "forecast_blend", "label": f"Astro-Numero Blend: {Y} Forecast Year Report",
+         "title": f"Astro-Numero Blend {Y} Forecast Year Report", "ready": False},   # its logic comes later
     ]
 
 
@@ -1296,7 +1296,9 @@ def _ten_digits(s):
 
 
 def _job_view(j):
-    out = {k: j.get(k) for k in ("id", "status", "name", "label", "title", "phone", "filename", "drive", "email", "error", "pages")}
+    out = {k: j.get(k) for k in ("id", "status", "name", "label", "title", "phone", "filename", "drive", "email", "error", "pages", "sent")}
+    out["card"] = bool(j.get("card") and os.path.exists(j["card"]))
+    out["kamala"] = bool(KAMALA_URL and REPORTS_SECRET)
     out["made"] = datetime.datetime.fromtimestamp(j["created"], _IST).strftime("%d %b, %I:%M %p")
     out["elapsed"] = int(_time.time() - j["started"]) if j.get("started") and j["status"] == "building" else None
     out["size_kb"] = (os.path.getsize(j["path"]) // 1024) if j.get("path") and os.path.exists(j["path"]) else None
@@ -1307,7 +1309,14 @@ def _sweep_make_jobs():
     now = _time.time()
     with _MAKE_LOCK:
         for jid in [k for k, j in _MAKE_JOBS.items() if now - j["created"] > _MAKE_KEEP_S]:
-            p = _MAKE_JOBS.pop(jid).get("path")
+            old = _MAKE_JOBS.pop(jid)
+            p = old.get("path")
+            for extra in (old.get("card"), (p[:-4] + "_summary.json") if p else None):
+                try:
+                    if extra and os.path.exists(extra):
+                        os.remove(extra)
+                except Exception:
+                    pass
             try:
                 if p and os.path.exists(p):
                     os.remove(p)
@@ -1418,6 +1427,16 @@ def _run_make_job(jid, kw):
         except Exception:
             pass
         j.update(status="ready", path=pdf, filename=os.path.basename(pdf), pages=pages)
+        # The forecast also leaves its WhatsApp summary card and facts next to the PDF (forecast/card.py).
+        card, summ = pdf[:-4] + "_card.png", pdf[:-4] + "_summary.json"
+        if os.path.exists(card):
+            j["card"] = card
+        if os.path.exists(summ):
+            try:
+                with open(summ, encoding="utf-8") as fh:
+                    j["summary"] = json.load(fh)
+            except Exception:
+                pass
         print(f"[make] {jid}: ready {os.path.basename(pdf)} {_mem()}")
     except Exception as e:
         j.update(status="failed", error=str(e)[:400])
@@ -1484,6 +1503,81 @@ def admin_make_status(jid: str, request: Request):
     if not j:
         raise HTTPException(404, "that report is no longer on the server (it restarts when idle); use the Drive copy")
     return _job_view(j)
+
+
+@app.get("/admin/make-report/{jid}/card")
+def admin_make_card(jid: str, request: Request):
+    _admin_from_header(request)
+    j = _MAKE_JOBS.get(jid)
+    if not j or not j.get("card") or not os.path.exists(j["card"]):
+        raise HTTPException(404, "no summary card for this report")
+    return FileResponse(j["card"], media_type="image/png", filename=os.path.basename(j["card"]), headers={"Cache-Control": "no-store"})
+
+
+# ---------- Send through Kamala: the PDF, the summary card and a voice note on the customer's WhatsApp ----------
+# Kamala (whatsapp-agent, POST /report-ready) downloads the files from short-lived signed links below, sends them
+# (as the approved template when the customer's chat window is closed), marks the report delivered on her dashboard
+# and asks for feedback two days later. KAMALA_URL and REPORTS_SECRET are set on both services.
+KAMALA_URL = os.environ.get("KAMALA_URL", "").strip().rstrip("/")
+REPORTS_SECRET = os.environ.get("REPORTS_SECRET", "").strip()
+_LINK_TTL_S = 2 * 3600
+
+
+def _file_sig(jid, kind, exp):
+    return hmac.new(REPORTS_SECRET.encode(), f"{jid}:{kind}:{exp}".encode(), hashlib.sha256).hexdigest()
+
+
+def _public_base(request):
+    base = os.environ.get("PUBLIC_URL", "").strip().rstrip("/")
+    if base:
+        return base
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host") or ""
+    local = host.startswith("localhost") or host.startswith("127.0.0.1")
+    return ("http://" if local else "https://") + host
+
+
+@app.get("/files/{jid}/{kind}")
+def signed_file(jid: str, kind: str, exp: int = 0, sig: str = ""):
+    """A report file for Kamala to download: only with a valid, unexpired signature."""
+    if not REPORTS_SECRET or kind not in ("pdf", "card") or exp < _time.time() or exp > _time.time() + _LINK_TTL_S + 60:
+        raise HTTPException(403, "link expired or not valid")
+    if not hmac.compare_digest(_file_sig(jid, kind, exp), str(sig)):
+        raise HTTPException(403, "link expired or not valid")
+    j = _MAKE_JOBS.get(jid)
+    path = j and (j.get("path") if kind == "pdf" else j.get("card"))
+    if not path or not os.path.exists(path):
+        raise HTTPException(404, "that file is no longer on the server")
+    return FileResponse(path, media_type="application/pdf" if kind == "pdf" else "image/png", filename=os.path.basename(path),
+                        headers={"Cache-Control": "no-store"})
+
+
+@app.post("/admin/make-report/{jid}/send")
+def admin_make_send(jid: str, request: Request):
+    _admin_from_header(request)
+    j = _MAKE_JOBS.get(jid)
+    if not j or j.get("status") != "ready" or not os.path.exists(j.get("path") or ""):
+        raise HTTPException(404, "that report is no longer on the server; make it again")
+    if not j.get("phone"):
+        raise HTTPException(400, "this report has no WhatsApp number; add one and make it again")
+    if not (KAMALA_URL and REPORTS_SECRET):
+        raise HTTPException(503, "sending through Kamala is not set up (KAMALA_URL and REPORTS_SECRET)")
+    exp = int(_time.time()) + _LINK_TTL_S
+    base = _public_base(request)
+    link = lambda kind: f"{base}/files/{jid}/{kind}?exp={exp}&sig={_file_sig(jid, kind, exp)}"
+    body = {"job_id": jid, "phone": "91" + j["phone"], "name": j.get("name", ""), "title": j.get("title") or j.get("label", ""),
+            "filename": j.get("filename"), "pdf_url": link("pdf"), "card_url": link("card") if j.get("card") else None,
+            "summary": j.get("summary")}
+    raw = json.dumps(body, separators=(",", ":"))
+    sig = hmac.new(REPORTS_SECRET.encode(), raw.encode(), hashlib.sha256).hexdigest()
+    try:
+        r = requests.post(KAMALA_URL + "/report-ready", data=raw, timeout=75,
+                          headers={"Content-Type": "application/json", "x-veshannastro-signature": sig})
+    except Exception as e:
+        raise HTTPException(502, f"Kamala did not answer ({str(e)[:120]}); try again in a minute")
+    if r.status_code >= 300:
+        raise HTTPException(502, f"Kamala refused the report (HTTP {r.status_code}): {r.text[:160]}")
+    j["sent"] = "sending"
+    return {"ok": True, "message": "Kamala is sending the PDF, the summary card and the voice note."}
 
 
 @app.get("/admin/make-report/{jid}/pdf")
