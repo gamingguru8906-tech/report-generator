@@ -387,7 +387,8 @@ class YearPages:
         rem_r = r.d.get("remedy") or {}
         screen = rem_r.get("screen_saver")
         if rem_r.get("screen_saver_from") == "destiny" and r.d.get("remedyDestiny"):
-            screen = r.d["remedyDestiny"].get("screen_saver") + " Or: " + rem_r.get("screen_saver", "")
+            # Either side can be missing for some birth numbers: join only what is there.
+            screen = " Or: ".join(x for x in [r.d["remedyDestiny"].get("screen_saver"), rem_r.get("screen_saver")] if x) or None
         work = r.everyone("well-lit")
         rows = []
         if colour_txt:

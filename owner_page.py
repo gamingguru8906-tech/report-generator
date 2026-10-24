@@ -185,11 +185,15 @@ function drawJob(d) {
     return;
   }
   const canShare = !!navigator.share;
+  const viaKamala = d.kamala && d.phone;
   c.innerHTML = '<div class="status"><b class="okc">Ready</b><span class="small"></span></div>' +
-    '<button id="share" type="button">Send on WhatsApp</button>' +
+    (d.card ? '<img id="cardImg" alt="Summary card" style="display:block;width:160px;aspect-ratio:9/16;object-fit:cover;border-radius:8px;margin:4px 0 14px;border:1px solid #0001">' : '') +
+    (viaKamala ? '<button id="kamala" type="button">' + (d.sent ? 'Sent through Kamala. Send again' : 'Send through Kamala: PDF, card and voice note') + '</button>' : '') +
+    '<button id="share" type="button"' + (viaKamala ? ' class="alt"' : '') + '>' + (viaKamala ? 'Send it myself' : 'Send on WhatsApp') + '</button>' +
     (PHONE && d.phone ? '<a class="btn alt" id="chat" target="_blank" rel="noopener">Open the customer\'s chat</a>' : '') +
     (!PHONE && canShare ? '<button id="sys" type="button" class="alt">Share with this computer\'s share menu</button>' : '') +
     '<button id="dl" type="button" class="alt">Download PDF</button>' +
+    (d.card ? '<button id="dlc" type="button" class="alt">Download card</button>' : '') +
     '<p class="small" id="note" style="margin:12px 0 0;min-height:1em"></p><p class="small" id="extraInfo" style="margin:6px 0 0"></p>';
   c.querySelector("span").textContent = d.label + " for " + d.name + " · " + (d.pages ? d.pages + " pages · " : "") + d.size_kb + " KB";
   if ($("chat")) $("chat").href = chatUrl(d);
@@ -200,8 +204,23 @@ function drawJob(d) {
   $("share").onclick = () => (PHONE ? share(d) : laptopSend(d));
   if ($("sys")) $("sys").onclick = () => share(d);
   $("dl").onclick = () => download(d).then(ok => ok && note("Downloaded."));
+  if (d.card) {
+    cardBlob(d).then(b => { const im = $("cardImg"); if (im) im.src = URL.createObjectURL(b); }).catch(() => {});
+    $("dlc").onclick = () => cardBlob(d).then(b => { const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = d.filename.replace(/\.pdf$/, "_card.png"); a.click(); setTimeout(() => URL.revokeObjectURL(u), 60000); }).catch(er => note(er.message, true));
+  }
+  if ($("kamala")) $("kamala").onclick = async () => {
+    const b = $("kamala"); b.disabled = true; note("Handing the report to Kamala. If she is asleep this takes up to a minute...");
+    try { const r = await api("/admin/make-report/" + d.id + "/send", {method: "POST"}); note(r.message || "Sent."); d.sent = "sending"; b.textContent = "Sent through Kamala. Send again"; }
+    catch (er) { if (er.message !== "key") note(er.message, true); }
+    b.disabled = false;
+  };
   // fetch the PDF now, so the share happens straight from the tap (browsers refuse a share that waits on the network)
   blobFor(d).catch(er => note(er.message, true));
+}
+async function cardBlob(d) {
+  const r = await fetch("/admin/make-report/" + d.id + "/card", {headers: {"X-Admin-Pass": KEY}});
+  if (!r.ok) throw new Error("The card is no longer on the server.");
+  return r.blob();
 }
 async function blobFor(d) {
   if (pdfBlob && pdfBlob.id === d.id) return pdfBlob.blob;

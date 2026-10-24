@@ -106,8 +106,22 @@ greeting typed in; **Download PDF** saves it.
 The page offers two reports (owner's choice, Oct 2026):
 1. **Forecast Year Report <year>: Classic**, the forecast deck in the customer's Mulank design, the same PDF a
    website forecast order gets.
-2. **Astro-Numeric Blend: <year> Forecast Year Report**, listed but not ready: its logic is still to be written.
+2. **Astro-Numero Blend: <year> Forecast Year Report**, listed but not ready: its logic is still to be written.
    To switch it on, build it and set `ready` to True in `_make_menu()` in `app.py`.
 
 Each report is logged in the Orders sheet with an order id starting `wa-`, and a Drive copy is kept. Emailing the
 customer is optional.
+
+### Send through Kamala (PDF, summary card and voice note)
+Every forecast now also makes a one-page summary card (a 1080 x 1920 PNG in the customer's Mulank design: the year's
+theme, three things to do, the best months, lucky numbers and colour). On the make-a-report page, after the report is
+ready, **Send through Kamala** hands Kamala the PDF, the card and the summary. She sends the PDF (or the
+`report_ready` template when their 24-hour chat window is closed, then the rest when they reply), the card, and a
+one-minute voice note in Hinglish read from the same summary. 48 hours later she asks once how clear the report was
+(1 to 5) and what they did first; answers land in the dashboard and the Analytics sheet's Report Feedback tab, and a
+rating of 2 or less comes to your WhatsApp.
+
+Needs on this service: `KAMALA_URL` (Kamala's address) and `REPORTS_SECRET` (any long random value, the same on
+Kamala's service). Optional `PUBLIC_URL` if this service is reached at a custom domain. The files Kamala downloads
+are signed links that work for 2 hours.
+
