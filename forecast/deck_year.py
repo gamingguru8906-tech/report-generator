@@ -729,7 +729,7 @@ class YearPages:
 
     def thanks(self):
         r, T = self.r, self.T
-        contacts = [("WhatsApp", WA_NUM, LINKS["wa"]), ("Website", SITE, LINKS["site"]), ("Email", MAIL, LINKS["mail"])]
+        contacts = [("WhatsApp", WA_NUM, LINKS["wa"]), ("Second number", "+91 88276 84725", "tel:+918827684725"), ("Website", SITE, LINKS["site"]), ("Email", MAIL, LINKS["mail"])]
         ch = "".join(f'<a href="{h}" style="display:block;padding:18px 0;border-bottom:1.5px solid rgba(255,255,255,.5)"><div class="caps" style="font-size:10.5px;color:{T.PINK}">{a}</div>'
                      f'<div class="disp" style="font-size:30px;margin-top:6px">{b}</div></a>' for a, b, h in contacts)
         first = esc(r.first)
