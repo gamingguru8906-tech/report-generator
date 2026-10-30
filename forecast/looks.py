@@ -4,7 +4,10 @@ The pages (deck.py, deck_year.py) say *what* goes where (a feature shape behind 
 a corner, a pair of title plates, a band at the foot of the page). A look decides what that becomes:
 Rosette draws flowers, clouds and sparkles; Daktilo draws matted prints and a manila folder; Dabba draws flat
 square colour plates and giant lowercase words; Broadcast draws spines, tabs and shadowed capitals crossed by a
-script phrase; Torn draws torn paper; Contour draws stacked contour-cut paper landscapes.
+script phrase; Torn draws torn paper; Contour draws stacked contour-cut paper landscapes; Foxglove draws
+double-keyline cream plates, gilt medallions and foxglove stalks on a pearly sky; Imperial draws flat stages, square
+seals, purple seams and a caption strip on silk; Cobalt draws sharp paper plates with left seams and flat screenprint
+leaves and suns.
 """
 import math
 import os
@@ -753,7 +756,539 @@ table.t th{{font-family:Smooch;font-weight:800;font-size:15px;letter-spacing:.04
         return T.CREAM, inner
 
 
-LOOKS = {"Rosette": Look, "Daktilo": Daktilo, "Dabba": Dabba, "Broadcast": Broadcast, "Torn": Torn, "Contour": Contour}
+# ════════════════════════════ Foxglove (Mulank 5) ════════════════════════════
+def _svg_uri(svg):
+    from urllib.parse import quote
+    return "url(\"data:image/svg+xml," + quote(svg) + "\")"
+
+
+def _sprig(h, pink, berry, leaf, rng, bells=6, ratio=.42):
+    """A foxglove stalk h px tall, drawn flat in a box about h*ratio wide: stem, two leaves, bells down one side."""
+    w = h * ratio
+    sx = w * .38
+    s = (f'<path d="M{sx:.1f} {h:.1f} C{sx + w * .08:.1f} {h * .6:.1f} {sx - w * .06:.1f} {h * .32:.1f} {sx + w * .1:.1f} {h * .04:.1f}" '
+         f'fill="none" stroke="{leaf}" stroke-width="{max(1.4, h * .012):.1f}" stroke-linecap="round"/>')
+    s += (f'<ellipse cx="{sx - w * .14:.1f}" cy="{h * .9:.1f}" rx="{w * .26:.1f}" ry="{h * .045:.1f}" fill="{leaf}" transform="rotate(-28 {sx - w * .14:.1f} {h * .9:.1f})"/>'
+          f'<ellipse cx="{sx + w * .2:.1f}" cy="{h * .84:.1f}" rx="{w * .24:.1f}" ry="{h * .04:.1f}" fill="{leaf}" opacity=".85" transform="rotate(24 {sx + w * .2:.1f} {h * .84:.1f})"/>')
+    for i in range(bells):
+        t = i / max(1, bells - 1)
+        cy = h * (.66 - .58 * t)
+        bw, bh = w * (.36 - .16 * t), h * (.085 - .035 * t)
+        cx = sx + w * .06 + bw * .55 + rng.uniform(-1.5, 1.5)
+        rot = 18 + rng.uniform(-6, 6)
+        s += (f'<g transform="rotate({rot:.1f} {cx:.1f} {cy:.1f})"><ellipse cx="{cx:.1f}" cy="{cy:.1f}" rx="{bw / 2:.1f}" ry="{bh / 2:.1f}" fill="{pink}"/>'
+              f'<ellipse cx="{cx + bw * .3:.1f}" cy="{cy:.1f}" rx="{bw * .14:.1f}" ry="{bh * .3:.1f}" fill="{berry}" opacity=".55"/></g>')
+    s += f'<circle cx="{sx + w * .1:.1f}" cy="{h * .035:.1f}" r="{max(1.5, h * .014):.1f}" fill="{leaf}"/>'
+    return s, w
+
+
+class Foxglove(Look):
+    plate_em = 0.50
+
+    def _key(self, dark):
+        return "rgba(235,216,162,.55)" if dark else self.T.KEY
+
+    def ground_css(self, ground, dark, n):
+        if dark:
+            return f"background:radial-gradient(120% 55% at 50% -5%,rgba(255,255,255,.09),rgba(255,255,255,0) 62%),{ground}"
+        return ("background:radial-gradient(130% 55% at 12% -6%,rgba(255,255,255,.7),rgba(255,255,255,0) 60%),"
+                "radial-gradient(85% 42% at 104% 104%,rgba(235,216,162,.5),rgba(235,216,162,0) 70%),"
+                f"radial-gradient(70% 38% at -4% 100%,rgba(222,152,180,.28),rgba(222,152,180,0) 70%),{ground}")
+
+    def frame(self, ground, dark, n):
+        k = self._key(dark)
+        return (f'<svg class="frame" width="720" height="1280" viewBox="0 0 720 1280"><g fill="none" stroke="{k}">'
+                f'<rect x="16" y="16" width="688" height="1248" rx="20" stroke-width="1.3"/>'
+                f'<rect x="22" y="22" width="676" height="1236" rx="15" stroke-width=".7"/></g></svg>')
+
+    def footer(self, name, n, dark):
+        return f'<div class="foot fx"><span>Veshannastro</span><span>{esc(name)}</span><span>{n:02d}</span></div>'
+
+    def extra_css(self):
+        T = self.T
+        rule = _svg_uri(f'<svg xmlns="http://www.w3.org/2000/svg" width="150" height="10" viewBox="0 0 150 10"><path d="M0 5H62M88 5H150" stroke="{T.GOLD}" stroke-width="1.2"/>'
+                        f'<path d="M75 0.5L80 5 75 9.5 70 5Z" fill="{T.GOLD}"/><circle cx="66" cy="5" r="1.4" fill="{T.GOLD}"/><circle cx="84" cy="5" r="1.4" fill="{T.GOLD}"/></svg>')
+        rule_d = _svg_uri('<svg xmlns="http://www.w3.org/2000/svg" width="150" height="10" viewBox="0 0 150 10"><path d="M0 5H62M88 5H150" stroke="#EBD8A2" stroke-width="1.2"/>'
+                          '<path d="M75 0.5L80 5 75 9.5 70 5Z" fill="#EBD8A2"/><circle cx="66" cy="5" r="1.4" fill="#EBD8A2"/><circle cx="84" cy="5" r="1.4" fill="#EBD8A2"/></svg>')
+        return f"""
+.fx-cloud circle{{fill:#FFFFFF;opacity:.55}}.dark .fx-cloud circle{{opacity:.08}}
+.num{{line-height:1.08}}
+.foot.fx{{left:58px;right:58px;bottom:32px;font-family:Gentium;font-style:italic;font-weight:400;text-transform:none;letter-spacing:.03em;font-size:12.5px;opacity:.72}}
+.kick{{background:{T.PINK};color:{T.BERRY_D};border-radius:0;font-weight:700;font-size:10.5px;letter-spacing:.2em;padding:6px 19px 5px;clip-path:polygon(0 0,100% 0,calc(100% - 9px) 50%,100% 100%,0 100%,9px 50%)}}
+.kick.pk{{background:{T.ORANGE};color:{T.GOLD}}}.kick.wh{{background:{T.WHITE};color:{T.BERRY_D}}}
+.accent{{width:150px;height:10px;border-radius:0;background:{rule} no-repeat left center}}
+.dark .accent{{background:{rule_d} no-repeat left center}}
+.caps{{letter-spacing:.18em}}
+.plate{{background:{T.WHITE};color:{T.INK};border:1.2px solid {T.KEY};outline:.8px solid {T.KEY};outline-offset:-7px;border-radius:16px;padding:16px 32px 18px;box-shadow:0 14px 28px -22px rgba(47,58,42,.55)}}
+.plate.sig{{background:transparent;border:0;outline:0;box-shadow:none;border-radius:0;padding:0 0 0 8px;font-style:italic;color:{T.BERRY_D}}}
+.dark .plate.sig{{color:{T.ORANGE}}}.dark .onblob .plate.sig{{color:{T.BERRY_D}}}
+.pnl,.tile{{border:1.2px solid rgba(119,147,99,.6);outline:.8px solid rgba(119,147,99,.42);outline-offset:-6px;border-radius:16px}}
+.dark .pnl,.dark .tile{{border-color:rgba(235,216,162,.55);outline-color:rgba(235,216,162,.35)}}
+ul.dots li:before{{border-radius:1px;width:8px;height:8px;transform:rotate(45deg);top:.6em}}
+ul.dots li.neutral{{--dot:{T.KEY}}}ul.dots li.care{{--dot:#C98A3A}}
+.ruled>div{{border-bottom:1px solid {T.RULE}}}.ruled>div:first-child{{border-top:1px solid {T.RULE}}}
+table.t th{{background:{T.TH_BG};color:{T.TH_FG};font-family:Gentium;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:11px}}
+table.t td{{border-bottom:1px solid {T.RULE}}}table.t td:first-child{{color:{T.BERRY_D}}}
+.bar{{background:{T.WHITE};border:1.2px solid {T.KEY};outline:.8px solid {T.KEY};outline-offset:-6px;border-radius:16px}}
+.bar .go{{font-family:Gentium;font-style:italic;font-weight:700;text-transform:none;letter-spacing:.01em;font-size:15px;color:{T.CTA}}}
+.bar .alt{{color:{T.COBALT}}}
+"""
+
+    def blob(self, color, w, h, x, y, kind="cloud", rot=0, opacity=1):
+        T = self.T
+        rng = _rng("fox", x, y, w, h)
+        if kind == "bumps":
+            # a bank of painted morning cloud along the foot of the page
+            s = ""
+            cx = x - 70
+            while cx < x + w + 90:
+                r = rng.uniform(34, 62)
+                s += f'<circle cx="{cx:.0f}" cy="{1262 - r * .35:.0f}" r="{r:.0f}"/>'
+                cx += r * 1.15
+            return f'<svg class="abs fx-cloud" style="left:0;top:0" width="720" height="1280" viewBox="0 0 720 1280">{s}</svg>'
+        if kind in ("disc", "flower"):
+            # an oval medallion with a gilt rim and an inner keyline
+            cx, cy = x + w / 2, y + h / 2
+            rx = min(w / 2 * .92, 692 - cx, cx - 28)
+            ry = min(h / 2, cy - 30, 1236 - cy)
+            return (f'<svg class="abs" style="left:0;top:0;overflow:visible" width="720" height="1280" viewBox="0 0 720 1280">'
+                    f'<ellipse cx="{cx:.0f}" cy="{cy:.0f}" rx="{rx:.0f}" ry="{ry:.0f}" fill="{color}" stroke="{T.GOLD}" stroke-width="3"/>'
+                    f'<ellipse cx="{cx:.0f}" cy="{cy:.0f}" rx="{rx - 9:.0f}" ry="{ry - 9:.0f}" fill="none" stroke="{T.GOLD}" stroke-width=".9" opacity=".7"/></svg>')
+        # a painted cartouche: a soft plate with a double keyline
+        return (f'<div class="abs" style="left:{x}px;top:{y}px;width:{w}px;height:{h}px;background:{color};border-radius:{min(48, h // 4)}px;'
+                f'border:1.2px solid rgba(119,147,99,.7);outline:.8px solid rgba(119,147,99,.5);outline-offset:-8px;opacity:{opacity}"></div>')
+
+    def _inline(self, svg, size):
+        return f'<svg width="{size}" height="{size}" viewBox="0 0 {size} {size}" style="display:inline-block;vertical-align:top">{svg}</svg>'
+
+    def _place(self, svg, w, h, x, y):
+        x = min(x, 700 - w)
+        return f'<svg class="abs" style="left:{x:.0f}px;top:{y:.0f}px;overflow:visible" width="{w:.0f}" height="{h:.0f}" viewBox="0 0 {w:.0f} {h:.0f}">{svg}</svg>'
+
+    def _sprig_mark(self, size, x, y, seed):
+        T = self.T
+        h = size * 1.9 if x is not None else size
+        svg, w = _sprig(h, "#DE98B4", T.BERRY_D, T.COBALT, _rng("sprig", seed, x, y), bells=6 if x is not None else 4)
+        if x is None:
+            return self._inline(f'<g transform="translate({(size - w) / 2:.1f} 0)">{svg}</g>', size)
+        return self._place(svg, w, h, x, y - size * .4)
+
+    def _star(self, size, x, y):
+        c, r = size / 2, size / 2
+        d = (f"M{c} {c - r} Q{c + r * .12} {c - r * .12} {c + r} {c} Q{c + r * .12} {c + r * .12} {c} {c + r} "
+             f"Q{c - r * .12} {c + r * .12} {c - r} {c} Q{c - r * .12} {c - r * .12} {c} {c - r}Z")
+        svg = f'<path d="{d}" fill="{self.T.GOLD}"/><circle cx="{c}" cy="{c}" r="{size * .06:.1f}" fill="#FBF8EF"/>'
+        return self._inline(svg, size) if x is None else self._place(svg, size, size, x, y)
+
+    def _medal(self, size, x, y):
+        c = size / 2
+        svg = (f'<ellipse cx="{c}" cy="{c}" rx="{size * .36:.1f}" ry="{size * .46:.1f}" fill="none" stroke="{self.T.GOLD}" stroke-width="{max(1.5, size * .05):.1f}"/>'
+               f'<ellipse cx="{c}" cy="{c}" rx="{size * .25:.1f}" ry="{size * .34:.1f}" fill="#DE98B4" opacity=".75"/>')
+        return self._inline(svg, size) if x is None else self._place(svg, size, size, x, y)
+
+    def _bell(self, size, x, y):
+        c = size / 2
+        svg = (f'<path d="M{c} {size * .08} C{size * .22} {size * .12} {size * .16} {size * .55} {size * .1} {size * .86} '
+               f'Q{c} {size * .98} {size * .9} {size * .86} C{size * .84} {size * .55} {size * .78} {size * .12} {c} {size * .08}Z" fill="#DE98B4"/>'
+               f'<ellipse cx="{c}" cy="{size * .84:.1f}" rx="{size * .3:.1f}" ry="{size * .07:.1f}" fill="{self.T.BERRY_D}" opacity=".5"/>')
+        return self._inline(svg, size) if x is None else self._place(svg, size, size, x, y)
+
+    def asterisk(self, color, size, x=None, y=None, rot=0, spokes=8, sw=None):
+        return self._sprig_mark(size, x, y, "a")
+
+    def petal_flower(self, color, size, x=None, y=None, petals=8, hole=None):
+        return self._sprig_mark(size, x, y, "p")
+
+    def sparkle(self, color, size, x=None, y=None):
+        return self._star(size, x, y)
+
+    def heart(self, color, size, x=None, y=None):
+        return self._bell(size, x, y)
+
+    def ring(self, color, size, x=None, y=None, inner=None):
+        return self._medal(size, x, y)
+
+    def scallop(self, color, side="right", width=52, count=12, height=1280):
+        # a tall foxglove along the right edge instead of a scalloped border
+        svg, w = _sprig(560, "#DE98B4", self.T.BERRY_D, self.T.COBALT, _rng("scallop-fox"), bells=9)
+        return f'<svg class="abs" style="left:{700 - w:.0f}px;top:690px;overflow:visible" width="{w:.0f}" height="560" viewBox="0 0 {w:.0f} 560">{svg}</svg>'
+
+    def plate(self, text, size, rot, color, bg="#FFFFFF", width=None):
+        if rot > 0:   # the second line of a pair: the italic line that signs the title off
+            s = self.fit(text, round(size * 1.08), width or 600)
+            return f'<div class="plate sig" style="font-size:{s}px">{text}</div>'
+        s = self.fit(text, size, width or 560)
+        return f'<div class="plate" style="font-size:{s}px">{text}</div>'
+
+    def product(self, sku, w, h, x, y):
+        src = self._sq_photo(sku)
+        if not src:
+            return None
+        ww = w - 140
+        return (f'<div class="abs round" style="left:{x + 70}px;top:{y}px;width:{ww}px;height:{int(ww * 1.12)}px;border-radius:50%;overflow:hidden;'
+                f'border:7px double {self.T.GOLD};box-shadow:0 18px 30px -20px rgba(47,58,42,.6)"><img src="{src}" style="width:100%;height:100%;object-fit:cover"></div>')
+
+    def cover(self, deck):
+        r, T, Y = deck.r, self.T, deck.Y
+        cells = self.grid_cells(r.cnt, T.COBALT, "rgba(119,147,99,.6)", T.WHITE, size=46, radius=12, font="Rosarivo", empty_bg="rgba(251,248,239,.6)")
+        extra = f" &#183; Master {r.M}" if r.M else (f" &#183; Karmic {r.K}" if r.K else "")
+        rng = _rng("foxcover", r.P)
+        left, lw = _sprig(600, "#DE98B4", T.BERRY_D, T.COBALT, rng, bells=11, ratio=.2)
+        right, rw = _sprig(500, "#E7A9C1", T.BERRY_D, T.COBALT, rng, bells=9, ratio=.2)
+        small, sw_ = _sprig(260, "#C9B6DE", T.BERRY_D, T.COBALT, rng, bells=7, ratio=.2)
+        clouds = ""
+        cx = -40
+        while cx < 780:
+            rr = rng.uniform(46, 80)
+            clouds += f'<circle cx="{cx:.0f}" cy="{1215 - rr * .3:.0f}" r="{rr:.0f}" fill="#FFFFFF" opacity=".6"/>'
+            cx += rr * 1.1
+        inner = f"""
+<div class="abs" style="left:0;top:0;width:720px;height:1280px;background:linear-gradient(180deg,#F2D9E4 0%,#E6DCEF 34%,#F3E6CB 72%,#E6EDD6 100%)"></div>
+<svg class="abs" style="left:0;top:0" width="720" height="1280" viewBox="0 0 720 1280">{clouds}
+<g transform="translate(30 640)">{left}</g><g transform="translate({690:.0f} 730) scale(-1 1)">{right}</g>
+<g transform="translate(118 1000)">{small}</g></svg>
+<div class="abs" style="left:118px;top:150px;width:484px;padding:40px 36px 36px;background:{T.WHITE};border:1.3px solid {T.KEY};outline:.8px solid {T.KEY};outline-offset:-8px;border-radius:24px;text-align:center;box-shadow:0 26px 50px -34px rgba(47,58,42,.7)">
+<span class="kick">Personal Year &#183; {Y}</span>
+<div class="disp" style="font-size:58px;line-height:1.02;color:{T.INK};margin-top:22px">Personal Year<br>Forecast</div>
+<div class="accent" style="margin:20px auto 0"></div>
+<div class="num" style="font-size:132px;line-height:1;color:{T.GOLD};margin-top:14px">{Y}</div>
+<div class="it" style="font-size:22px;color:{T.BERRY_D};margin-top:16px;line-height:1.3">A private reading for<br>{esc(r.name_full)}</div>
+<div class="small" style="margin-top:8px;color:{T.INK}">Born {r.dob_text}</div></div>
+<div class="abs" style="left:236px;top:862px;padding:22px 26px 18px;background:rgba(251,248,239,.92);border:1.2px solid {T.KEY};outline:.8px solid {T.KEY};outline-offset:-6px;border-radius:18px;text-align:center">
+{cells}<div class="caps" style="font-size:10px;margin-top:12px;color:{T.COBALT}">Your Lo Shu grid</div></div>
+<div class="abs it" style="left:0;width:720px;top:1124px;text-align:center;font-size:17px;color:{T.INK}">Psychic {r.P} &#183; Destiny {r.D}{extra} &#183; {("Name " + str(r.NT) + " &#183; ") if r.NT else ""}Personal Year {r.PY}</div>
+<div class="abs caps" style="left:0;width:720px;top:1166px;text-align:center;font-size:10.5px;color:{T.BERRY_D}">Designed for Mulank {r.P} &#183; {PLANET[r.P]}</div>
+"""
+        return T.LBLUE, inner
+
+
+# ════════════════════════════ Imperial Cabinet (Mulank 3) ════════════════════════════
+_SILK = ('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="132" viewBox="0 0 200 132"><g fill="none" stroke="#FFFFFF" stroke-opacity=".075" stroke-width="2" stroke-linecap="round">'
+         '<path d="M18 74c0-16 13-26 27-26 12 0 21 8 21 19 0 9-7 15-15 15-7 0-12-5-12-11 0-5 4-8 8-8"/>'
+         '<path d="M66 67c6-18 28-26 45-17 12 6 16 19 10 29"/><path d="M121 79c4 9 15 13 24 9 8-4 10-13 6-19-3-5-10-6-13-2"/>'
+         '<path d="M2 90c20 6 44 6 66-2s50-8 72 0 44 8 58 2"/>'
+         '<path d="M118 20c0-10 8-16 17-16 7 0 13 5 13 12 0 5-4 9-9 9-4 0-7-3-7-7"/><path d="M148 14c8-6 22-6 30 4"/>'
+         '<path d="M22 124c8-9 22-10 31-2"/></g></svg>')
+
+
+class Imperial(Look):
+    plate_em = 0.70
+    STRIP = 54
+
+    def ground_css(self, ground, dark, n):
+        if dark:
+            return f"background-color:{ground};background-image:{_svg_uri(_SILK)};background-size:200px 132px"
+        return f"background:{ground}"
+
+    def frame(self, ground, dark, n):
+        T = self.T
+        strip = T.PINK if dark else T.NAVY
+        return (f'<div class="frame"><div style="position:absolute;left:0;right:0;bottom:0;height:{self.STRIP}px;background:{strip}"></div>'
+                f'<div style="position:absolute;left:50px;right:50px;top:34px;height:1px;background:{"rgba(253,191,104,.35)" if dark else "rgba(80,19,69,.28)"}"></div></div>')
+
+    def footer(self, name, n, dark):
+        c = self.T.NAVY if dark else self.T.GOLD
+        return (f'<div class="foot im" style="color:{c}"><span>Obj. {n:02d} &#183; Veshannastro</span>'
+                f'<span>{esc(name)} &#183; Personal Year Forecast</span></div>')
+
+    def extra_css(self):
+        T = self.T
+        return f"""
+.foot.im{{left:50px;right:50px;bottom:20px;opacity:1;font-family:Gantari;font-weight:600;font-size:10.5px;letter-spacing:.16em}}
+.kick{{background:transparent;color:{T.NAVY};border-radius:0;padding:0 0 6px;border-bottom:2.5px solid {T.NAVY};font-weight:600;font-size:11.5px;letter-spacing:.22em}}
+.kick.pk,.kick.wh{{background:transparent;color:{T.NAVY}}}
+.dark .kick,.dark .kick.pk,.dark .kick.wh{{color:{T.GOLD};border-color:{T.GOLD}}}
+.accent{{width:96px;height:2.5px;border-radius:0;background:{T.NAVY}}}.dark .accent{{background:{T.GOLD}}}
+.caps{{letter-spacing:.2em}}
+.plate{{background:{T.NAVY};color:{T.GOLD};letter-spacing:.06em;padding:14px 26px 10px;box-shadow:none}}
+.plate.sig{{background:transparent;color:{T.NAVY};font-family:Castoro;font-style:italic;letter-spacing:0;padding:0 0 0 4px}}
+.dark .plate{{background:{T.GOLD};color:{T.NAVY}}}.dark .plate.sig{{background:transparent;color:{T.GOLD}}}.dark .onblob .plate.sig{{color:{T.NAVY}}}
+.pnl,.tile{{border-top:3px solid {T.NAVY};box-shadow:inset 0 0 0 1px rgba(80,19,69,.16)}}
+.dark .pnl,.dark .tile{{border-top-color:{T.GOLD}}}
+ul.dots li:before{{border-radius:0;width:7px;height:7px;transform:rotate(45deg);top:.62em}}
+ul.dots li.neutral{{--dot:{T.RULE}}}ul.dots li.care{{--dot:#C98A2E}}
+.ruled>div{{border-bottom:2.5px solid {T.NAVY}}}.ruled>div:first-child{{border-top:2.5px solid {T.NAVY}}}
+.dark .ruled>div{{border-color:rgba(253,191,104,.6)}}
+table.t th{{background:{T.NAVY};color:{T.GOLD};font-weight:600;letter-spacing:.14em;text-transform:uppercase;font-size:11px}}
+table.t td{{border-bottom:2px solid rgba(80,19,69,.3)}}
+.bar{{background:{T.NAVY};color:{T.CREAM};border-radius:0}}.bar .go{{color:{T.GOLD}}}.bar .alt{{color:{T.CREAM}}}
+.dark .bar{{background:{T.GOLD};color:{T.NAVY}}}.dark .bar .go,.dark .bar .alt{{color:{T.NAVY}}}
+"""
+
+    def blob(self, color, w, h, x, y, kind="cloud", rot=0, opacity=1):
+        T = self.T
+        if kind == "bumps":
+            return ""   # the caption strip already holds the foot of every page
+        if kind in ("disc", "flower"):
+            # a square seal on its own stage, with an inner frame
+            s = int(min(w, h) * .9)
+            sx, sy = int(x + (w - s) / 2), int(y + (h - s) / 2)
+            return (f'<div class="abs" style="left:{sx}px;top:{sy}px;width:{s}px;height:{s}px;background:{color};border:3px solid {T.NAVY};'
+                    f'outline:1px solid {T.NAVY};outline-offset:-11px"></div>')
+        h = min(h, 1280 - self.STRIP - 6 - y)
+        if h < 40:
+            return ""
+        return (f'<div class="abs" style="left:{x}px;top:{y}px;width:{w}px;height:{h}px;background:{color};'
+                f'box-shadow:inset 0 0 0 1px rgba(80,19,69,.22);outline:1px solid rgba(80,19,69,.3);outline-offset:-12px;opacity:{opacity}"></div>'
+                + self._lozenge(26, x + w - 46, y + h - 46))
+
+    def _lozenge(self, size, x, y, color=None):
+        T = self.T
+        c = size / 2
+        k = size * .42
+        svg = (f'<path d="M{c} {c - k} L{c + k} {c} L{c} {c + k} L{c - k} {c}Z" fill="{color or T.ORANGE}" stroke="{T.NAVY}" stroke-width="{max(1.2, size * .03):.1f}"/>'
+               f'<path d="M{c} {c - k * .55} L{c + k * .55} {c} L{c} {c + k * .55} L{c - k * .55} {c}Z" fill="none" stroke="{T.NAVY}" stroke-width="{max(.8, size * .018):.1f}"/>')
+        if x is None:
+            return f'<svg width="{size}" height="{size}" viewBox="0 0 {size} {size}" style="display:inline-block;vertical-align:top">{svg}</svg>'
+        return f'<svg class="abs" style="left:{min(x, 680 - size)}px;top:{y}px" width="{size}" height="{size}" viewBox="0 0 {size} {size}">{svg}</svg>'
+
+    def asterisk(self, color, size, x=None, y=None, rot=0, spokes=8, sw=None):
+        return self._lozenge(size * .8, x, y)
+
+    def petal_flower(self, color, size, x=None, y=None, petals=8, hole=None):
+        return self._lozenge(size * .8, x, y, self.T.PINK)
+
+    def sparkle(self, color, size, x=None, y=None):
+        return self._lozenge(size * .7, x, y, self.T.GOLD)
+
+    def heart(self, color, size, x=None, y=None):
+        return self._lozenge(size * .7, x, y, self.T.PINK)
+
+    def ring(self, color, size, x=None, y=None, inner=None):
+        return self._lozenge(size * .7, x, y, self.T.LBLUE)
+
+    def scallop(self, color, side="right", width=52, count=12, height=1280):
+        # a narrow lavender stage down the right edge, like the side of a display case
+        T = self.T
+        return f'<div class="abs" style="right:0;top:0;width:34px;height:{1280 - self.STRIP}px;background:{T.PINK};box-shadow:inset 1px 0 0 rgba(80,19,69,.3)"></div>'
+
+    def plate(self, text, size, rot, color, bg="#FFFFFF", width=None):
+        if rot > 0:
+            s = self.fit(text, round(size * 1.05), width or 600)
+            return f'<div class="plate sig" style="font-size:{s}px">{text}</div>'
+        s = self.fit(text, round(size * .86), width or 600)
+        return f'<div class="plate" style="font-size:{s}px">{text}</div>'
+
+    def product(self, sku, w, h, x, y):
+        src = self._sq_photo(sku)
+        if not src:
+            return None
+        T = self.T
+        ww = w - 80
+        return (f'<div class="abs" style="left:{x + 40}px;top:{y}px;width:{ww}px;height:{ww}px;background:{T.PINK};padding:34px">'
+                f'<img src="{src}" style="width:100%;height:100%;object-fit:cover;display:block"></div>'
+                f'<div class="abs caps" style="left:{x + 40}px;top:{y + ww}px;width:{ww}px;background:{T.NAVY};color:{T.GOLD};font-size:10.5px;padding:9px 14px">'
+                f'Obj. &#183; the bracelet for your number</div>')
+
+    def cover(self, deck):
+        r, T, Y = deck.r, self.T, deck.Y
+        cells = self.grid_cells(r.cnt, T.NAVY, "rgba(80,19,69,.45)", T.GOLD, size=52, radius=0, font="CastoroTitling")
+        roman = {1: "I", 2: "II", 3: "III", 4: "IV", 5: "V", 6: "VI", 7: "VII", 8: "VIII", 9: "IX"}[r.P]
+        rows = [("Psychic number", r.P), ("Destiny number", r.D)] + ([("Name number", r.NT)] if r.NT else []) + \
+               ([("Master number", r.M)] if r.M else ([("Karmic number", r.K)] if r.K else [])) + [(f"Personal year {Y}", r.PY)]
+        ledger = "".join(f'<div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 0;border-bottom:2px solid rgba(253,191,104,.55)">'
+                         f'<span class="caps" style="font-size:10.5px;color:#F3E8D2">{a}</span><span class="num" style="font-size:30px;color:{T.GOLD}">{b}</span></div>' for a, b in rows)
+        inner = f"""
+<div class="abs caps" style="left:50px;top:58px;font-size:11px;color:{T.GOLD}">Veshannastro &#183; Vedic numerology</div>
+<div class="abs" style="left:598px;top:112px;width:72px;height:430px;border:2px solid {T.GOLD};outline:1px solid {T.GOLD};outline-offset:-7px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+<div class="num" style="font-size:40px;color:{T.GOLD}">{roman}</div>
+<div class="caps" style="writing-mode:vertical-rl;font-size:12px;letter-spacing:.42em;color:{T.GOLD}">Mulank {r.P}</div></div>
+<div class="abs" style="left:50px;top:200px;width:520px">
+<div class="disp" style="font-size:62px;line-height:1.04;color:{T.GOLD}">Personal year<br>forecast</div>
+<div class="num" style="font-size:176px;line-height:.95;color:{T.GOLD};margin-top:20px">{Y}</div>
+<div class="accent" style="margin-top:24px"></div>
+<div class="it" style="font-size:26px;line-height:1.3;color:#F3E8D2;margin-top:22px">A private reading for {esc(r.name_full)}</div>
+<div class="body" style="color:#E6DDE2;margin-top:6px">Born {r.dob_text}</div></div>
+<div class="abs" style="left:50px;top:820px;width:290px;background:{T.ORANGE};padding:26px 0 0;display:flex;flex-direction:column;align-items:center">
+{cells}<div class="caps" style="align-self:stretch;margin-top:24px;background:{T.NAVY};color:{T.GOLD};font-size:10px;padding:8px 14px;box-shadow:inset 0 0 0 1px rgba(253,191,104,.35)">Obj. 00 &#183; your Lo Shu grid</div></div>
+<div class="abs" style="left:384px;top:820px;width:286px;border-top:2px solid rgba(253,191,104,.55)">{ledger}</div>
+<div class="abs caps" style="left:50px;bottom:20px;font-size:10.5px;color:{T.NAVY}">Designed for Mulank {r.P} &#183; {PLANET[r.P]} &#183; {Y}</div>
+"""
+        return T.NAVY, inner
+
+
+# ════════════════════════════ Cobalt & Cream (Mulank 9) ════════════════════════════
+def _leaf(cx, cy, length, width, angle, fill, line):
+    """A flat screenprint leaf with a thin dark outline and a centre vein."""
+    return (f'<g transform="rotate({angle:.1f} {cx:.1f} {cy:.1f})"><path d="M{cx:.1f} {cy - length / 2:.1f} '
+            f'Q{cx + width:.1f} {cy:.1f} {cx:.1f} {cy + length / 2:.1f} Q{cx - width:.1f} {cy:.1f} {cx:.1f} {cy - length / 2:.1f}Z" '
+            f'fill="{fill}" stroke="{line}" stroke-width="1.6" stroke-linejoin="round"/>'
+            f'<path d="M{cx:.1f} {cy - length / 2 + 6:.1f} L{cx:.1f} {cy + length / 2 - 4:.1f}" stroke="{line}" stroke-width="1.1" opacity=".8"/></g>')
+
+
+class Cobalt(Look):
+    plate_em = 0.52
+
+    def frame(self, ground, dark, n):
+        c = self.T.ORANGE if dark else self.T.COBALT
+        return f'<div class="frame"><div style="position:absolute;left:0;top:0;width:6px;height:1280px;background:{c}"></div></div>'
+
+    def footer(self, name, n, dark):
+        line = "rgba(249,245,234,.35)" if dark else self.T.RULE
+        return (f'<div class="abs" style="left:50px;right:50px;bottom:54px;height:1px;background:{line};z-index:40"></div>'
+                f'<div class="foot cb"><span>Veshannastro</span><span>{esc(name)}</span><span>{n:02d}</span></div>')
+
+    def extra_css(self):
+        T = self.T
+        return f"""
+.foot.cb{{left:50px;right:50px;bottom:28px;opacity:.75;font-weight:600;font-size:10.5px;letter-spacing:.16em}}
+.kick{{background:transparent;color:{T.COBALT};border-radius:0;padding:0;font-family:Jaini;font-weight:400;font-size:18px;letter-spacing:.06em}}
+.kick.pk{{background:transparent;color:{T.BERRY}}}.kick.wh{{background:transparent;color:{T.COBALT}}}
+.dark .kick,.dark .kick.pk,.dark .kick.wh{{color:{T.ORANGE}}}
+.accent{{width:64px;height:2px;border-radius:0;background:{T.COBALT}}}.dark .accent{{background:{T.ORANGE}}}
+.plate{{background:{T.PAPER};color:{T.COBALT};border-left:5px solid {T.COBALT};padding:12px 24px 12px;box-shadow:none}}
+.plate.sig{{background:transparent;border:0;padding:0 0 0 6px;font-style:italic;color:{T.COBALT}}}
+.dark .plate{{background:{T.CREAM};color:{T.NAVY};border-left-color:{T.ORANGE}}}.dark .plate.sig{{background:transparent;color:{T.ORANGE}}}.dark .onblob .plate.sig{{color:{T.NAVY}}}
+.pnl,.tile{{border-left:4px solid {T.COBALT};box-shadow:inset 0 0 0 1px rgba(42,36,32,.07)}}
+.dark .pnl,.dark .tile{{border-left-color:{T.ORANGE}}}
+ul.dots li:before{{border-radius:0;width:8px;height:8px;top:.55em}}
+ul.dots li.neutral{{--dot:#7E93B5}}
+.ruled>div{{border-bottom:1px solid {T.RULE}}}.ruled>div:first-child{{border-top:1px solid {T.RULE}}}
+.dark .ruled>div{{border-color:rgba(249,245,234,.28)}}
+table.t{{font-variant-numeric:tabular-nums lining-nums}}
+table.t th{{background:{T.COBALT};color:{T.CREAM};text-transform:uppercase;letter-spacing:.1em;font-size:11px;font-weight:600}}
+table.t td{{border-bottom:1px solid {T.RULE}}}table.t td:first-child{{color:{T.COBALT}}}
+.num{{font-variant-numeric:lining-nums tabular-nums}}
+.bar{{background:{T.COBALT};color:{T.CREAM};border-radius:0}}.bar .go{{color:{T.ORANGE}}}.bar .alt{{color:{T.CREAM}}}
+.dark .bar{{background:{T.CREAM};color:{T.INK}}}.dark .bar .go{{color:{T.COBALT}}}.dark .bar .alt{{color:{T.NAVY}}}
+"""
+
+    def blob(self, color, w, h, x, y, kind="cloud", rot=0, opacity=1):
+        T = self.T
+        L = T.LINE
+        rng = _rng("cob", x, y, w, h)
+        if kind == "bumps":
+            cols = [T.GREEN, T.COBALT, T.ORANGE, T.GREEN, T.BERRY]
+            s = ""
+            n = 6
+            for i in range(n):
+                cx = x - 40 + (w + 80) * i / (n - 1)
+                s += _leaf(cx, 1250, rng.uniform(110, 150), rng.uniform(26, 34), rng.uniform(-38, 38), cols[i % len(cols)], L)
+            return f'<svg class="abs" style="left:0;top:0" width="720" height="1280" viewBox="0 0 720 1280">{s}</svg>'
+        if kind in ("disc", "flower"):
+            cx, cy = x + w / 2, y + h / 2
+            R = min(min(w, h) / 2, 704 - cx, cx - 16, cy - 24)
+            rays = ""
+            if kind == "flower":
+                for k in range(12):
+                    a = 360 * k / 12
+                    rays += (f'<rect x="{cx - 5:.1f}" y="{cy - R - 2:.1f}" width="10" height="{R * .2:.1f}" fill="{T.ORANGE}" stroke="{L}" stroke-width="1.4" '
+                             f'transform="rotate({a:.0f} {cx:.1f} {cy:.1f})"/>')
+                R *= .82
+            return (f'<svg class="abs" style="left:0;top:0;overflow:visible" width="720" height="1280" viewBox="0 0 720 1280">{rays}'
+                    f'<circle cx="{cx + 7:.1f}" cy="{cy + 7:.1f}" r="{R:.1f}" fill="none" stroke="{T.ORANGE}" stroke-width="2.4"/>'
+                    f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="{R:.1f}" fill="{color}" stroke="{L}" stroke-width="2"/></svg>')
+        # a flat printed block with thin linework, slightly off register
+        return (f'<div class="abs" style="left:{x + 8}px;top:{y + 8}px;width:{w}px;height:{h}px;border:2px solid {T.ORANGE}"></div>'
+                f'<div class="abs" style="left:{x}px;top:{y}px;width:{w}px;height:{h}px;background:{color};border:1.6px solid {L};opacity:{opacity}"></div>')
+
+    def _place(self, svg, size, x, y):
+        if x is None:
+            return f'<svg width="{size}" height="{size}" viewBox="0 0 {size} {size}" style="display:inline-block;vertical-align:top">{svg}</svg>'
+        return f'<svg class="abs" style="left:{min(x, 690 - size)}px;top:{y}px;overflow:visible" width="{size}" height="{size}" viewBox="0 0 {size} {size}">{svg}</svg>'
+
+    def _sprig(self, size, x, y):
+        T = self.T
+        c = size / 2
+        svg = (f'<path d="M{c} {size * .95} Q{c - 2} {c} {c + 2} {size * .08}" stroke="{T.LINE}" stroke-width="1.6" fill="none"/>'
+               + _leaf(c - size * .17, size * .52, size * .42, size * .13, -40, T.GREEN, T.LINE)
+               + _leaf(c + size * .17, size * .36, size * .4, size * .12, 40, T.COBALT, T.LINE)
+               + _leaf(c, size * .14, size * .26, size * .09, 0, T.ORANGE, T.LINE))
+        return self._place(svg, size, x, y)
+
+    def _sun(self, size, x, y, fill=None):
+        T = self.T
+        c = size / 2
+        rays = "".join(f'<rect x="{c - size * .035:.1f}" y="{size * .02:.1f}" width="{size * .07:.1f}" height="{size * .16:.1f}" fill="{T.ORANGE}" stroke="{T.LINE}" stroke-width="1.1" '
+                       f'transform="rotate({360 * k / 8:.0f} {c} {c})"/>' for k in range(8))
+        svg = rays + f'<circle cx="{c}" cy="{c}" r="{size * .27:.1f}" fill="{fill or T.ORANGE}" stroke="{T.LINE}" stroke-width="1.4"/>'
+        return self._place(svg, size, x, y)
+
+    def _dot(self, size, x, y, fill):
+        c = size / 2
+        svg = (f'<circle cx="{c + 3}" cy="{c + 3}" r="{size * .32:.1f}" fill="none" stroke="{self.T.ORANGE}" stroke-width="1.6"/>'
+               f'<circle cx="{c}" cy="{c}" r="{size * .32:.1f}" fill="{fill}" stroke="{self.T.LINE}" stroke-width="1.4"/>')
+        return self._place(svg, size, x, y)
+
+    def asterisk(self, color, size, x=None, y=None, rot=0, spokes=8, sw=None):
+        return self._sprig(size, x, y)
+
+    def petal_flower(self, color, size, x=None, y=None, petals=8, hole=None):
+        return self._sprig(size, x, y)
+
+    def sparkle(self, color, size, x=None, y=None):
+        return self._sun(size, x, y)
+
+    def heart(self, color, size, x=None, y=None):
+        return self._dot(size, x, y, self.T.BERRY)
+
+    def ring(self, color, size, x=None, y=None, inner=None):
+        return self._dot(size, x, y, self.T.COBALT)
+
+    def scallop(self, color, side="right", width=52, count=12, height=1280):
+        T = self.T
+        rng = _rng("cobscal")
+        s = "".join(_leaf(706, 120 + i * 150 + rng.uniform(-14, 14), 120, 28, rng.uniform(-20, 20) + (30 if i % 2 else -30),
+                          [T.GREEN, T.COBALT, T.ORANGE, T.BERRY][i % 4], T.LINE) for i in range(8))
+        return f'<svg class="abs" style="left:0;top:0;overflow:visible" width="720" height="1280" viewBox="0 0 720 1280">{s}</svg>'
+
+    def plate(self, text, size, rot, color, bg="#FFFFFF", width=None):
+        if rot > 0:
+            s = self.fit(text, round(size * 1.06), width or 600)
+            return f'<div class="plate sig" style="font-size:{s}px">{text}</div>'
+        s = self.fit(text, size, width or 580)
+        return f'<div class="plate" style="font-size:{s}px">{text}</div>'
+
+    def product(self, sku, w, h, x, y):
+        src = self._sq_photo(sku)
+        if not src:
+            return None
+        T = self.T
+        ww = w - 100
+        return (f'<div class="abs" style="left:{x + 50}px;top:{y}px;width:{ww}px;background:{T.PAPER};border-left:5px solid {T.COBALT};padding:18px 18px 14px">'
+                f'<img src="{src}" style="width:100%;height:{ww - 36}px;object-fit:cover;display:block">'
+                f'<div class="kick" style="margin-top:12px;font-size:16px">The bracelet for your number</div></div>')
+
+    def cover(self, deck):
+        r, T, Y = deck.r, self.T, deck.Y
+        L = T.LINE
+        cells = self.grid_cells(r.cnt, T.COBALT, "rgba(31,78,140,.45)", T.CREAM, size=46, radius=0, font="Tiro")
+        rng = _rng("cobcover", r.P)
+        art = (f'<circle cx="566" cy="232" r="118" fill="{T.ORANGE}" stroke="{L}" stroke-width="2"/>'
+               f'<circle cx="574" cy="240" r="118" fill="none" stroke="{T.CREAM}" stroke-width="1.6" opacity=".55"/>'
+               f'<circle cx="470" cy="380" r="54" fill="{T.PINK}" stroke="{L}" stroke-width="2"/>'
+               + _leaf(640, 420, 210, 46, 28, T.GREEN, L) + _leaf(520, 470, 180, 40, -36, "#2E8A62", L)
+               + _leaf(690, 300, 160, 34, 62, T.BERRY, L) + _leaf(430, 250, 120, 28, -64, T.GREEN, L)
+               + f'<path d="M380 520 Q520 440 700 520" fill="none" stroke="{T.CREAM}" stroke-width="2" opacity=".6"/>')
+        stats = [("Psychic", r.P), ("Destiny", r.D)] + ([("Name", r.NT)] if r.NT else []) + [(f"Year {Y}", r.PY)]
+        seams = [T.COBALT, T.GREEN, T.BERRY, T.ORANGE]
+        plates = "".join(f'<div style="flex:1;background:{T.PAPER};border-left:4px solid {seams[i % 4]};padding:12px 14px 10px">'
+                         f'<div class="num" style="font-size:44px;color:{T.COBALT}">{v}</div>'
+                         f'<div class="caps" style="font-size:10px;margin-top:8px;padding-top:6px;border-top:1px solid {T.RULE};color:{T.INK}">{k}</div></div>'
+                         for i, (k, v) in enumerate(stats))
+        extra = f"Master number {r.M}. " if r.M else (f"Karmic number {r.K}. " if r.K else "")
+        inner = f"""
+<div class="abs" style="left:0;top:0;width:720px;height:600px;background:{T.COBALT}"></div>
+<svg class="abs" style="left:0;top:0" width="720" height="600" viewBox="0 0 720 600">{art}</svg>
+<div class="abs" style="left:50px;top:70px;width:380px">
+<div class="kick" style="color:{T.ORANGE}">Mulank {r.P} &#183; {PLANET[r.P]} edition</div>
+<div class="disp" style="font-size:66px;line-height:1.0;color:{T.CREAM};margin-top:22px">Personal<br>Year<br>Forecast</div>
+<div style="width:64px;height:2px;background:{T.ORANGE};margin-top:26px"></div>
+<div class="body" style="color:#E3EAF5;margin-top:18px;width:300px">A private reading for {esc(r.name_full)}, born {r.dob_text}.</div></div>
+<div class="abs num" style="left:44px;top:600px;font-size:210px;line-height:1;color:{T.COBALT}">{Y}</div>
+<div class="abs" style="left:50px;top:850px;width:620px;display:flex;gap:10px">{plates}</div>
+<div class="abs" style="left:50px;top:1000px;width:330px">
+<div class="kick">The numbers behind this file</div>
+<div class="small" style="margin-top:8px;color:{T.INK}">{extra}Every figure in this forecast comes from that date of birth and that name.</div>
+<div class="caps" style="font-size:10px;margin-top:16px;color:{T.COBALT}">Designed for Mulank {r.P} &#183; {PLANET[r.P]}</div></div>
+<div class="abs" style="left:430px;top:986px;background:{T.PAPER};border-left:4px solid {T.COBALT};padding:18px 20px 14px">
+{cells}<div class="caps" style="font-size:10px;margin-top:10px;color:{T.COBALT}">Your Lo Shu grid</div></div>
+"""
+        return T.CREAM, inner
+
+
+LOOKS = {"Rosette": Look, "Daktilo": Daktilo, "Dabba": Dabba, "Broadcast": Broadcast, "Torn": Torn, "Contour": Contour,
+         "Foxglove": Foxglove, "Imperial": Imperial, "Cobalt": Cobalt}
 
 
 def look_for(T):

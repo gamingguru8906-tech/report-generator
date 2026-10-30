@@ -19,9 +19,14 @@ Every `personal_forecast` order is built here; anything that fails falls back to
 | 4 | Torn | torn-paper collage in kraft, dusty blue, rose and cream, Anton capitals, Newsreader copy |
 | 7 | Contour Stack | stacked contour-cut paper landscapes, Smooch Sans capitals, Rubik copy |
 | 8 | Daktilo Dispatch | case file: cream manila folders on black, Montserrat capitals, Inconsolata memo copy |
-| 3, 5, 6, 9 | Rosette (base) | pink flowers, clouds and sparkles, Savate and Albert |
+| 3 | Imperial Cabinet | flat parchment, lavender and amber stages, imperial-purple silk with a cloud-scroll pattern, a caption strip at every foot, purple seams and square seals; Castoro Titling over Gantari, Castoro italic |
+| 5 | Foxglove | pearly dawn-sky washes, cream plates with a double moss keyline, gilt oval medallions, foxglove stalks and pink ribbon labels; Rosarivo titles, Gentium Book Plus reading |
+| 6 | Rosette (base) | pink flowers, clouds and sparkles, Savate and Albert |
+| 9 | Cobalt & Cream | warm cream paper, deep cobalt act breaks, sharp paper plates with left seams and hairline ledgers, flat screenprint leaves and suns; Tiro Bangla, Source Sans 3, Jaini Purva eyebrows |
 
-To change who gets what, edit `THEME_FOR_MULANK` in `themes.py`; any Mulank not listed gets Rosette.
+To change who gets what, edit `THEME_FOR_MULANK` in `themes.py`; any Mulank not listed gets Rosette. Imperial Cabinet,
+Foxglove and Cobalt & Cream (31 Oct 2026) follow the owner's Gamma references of the same names: their colours, type
+pairings and container styles, redrawn in code.
 A new design needs a theme dict in `themes.py` and a `Look` subclass in `looks.py` (start from an existing one).
 Fonts are static open-licence woff2 files from Fontsource under `assets/fonts/`; shapes and paper textures are
 drawn in code, so no third-party images are used.

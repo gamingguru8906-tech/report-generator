@@ -7,8 +7,9 @@ theme's own shapes, marks, plates, page frame, footer and cover.
 Light roles (PINK, LBLUE, CREAM, ORANGE, WHITE) carry dark ink; dark roles (NAVY, COBALT, BERRY, GREEN) carry
 white text. Each theme keeps that contract, so every page reads in every theme.
 
-Owner's mapping (18 Oct 2026): Mulank 1 Dabba, 2 Broadcast Cookbook, 4 Torn, 7 Contour Stack, 8 Daktilo
-Dispatch; every other Mulank gets Rosette, the base design.
+Owner's mapping (18 Oct 2026, extended 31 Oct 2026): Mulank 1 Dabba, 2 Broadcast Cookbook, 3 Imperial Cabinet, 4 Torn,
+5 Foxglove, 7 Contour Stack, 8 Daktilo Dispatch, 9 Cobalt & Cream; Mulank 6 (and anything unlisted) keeps Rosette, the
+base design.
 """
 import os
 
@@ -132,10 +133,72 @@ CONTOUR = {
     "grain": "paper-soft.png", "grain_size": 256, "square": False,
 }
 
-THEMES = {t["id"]: t for t in (ROSETTE, DAKTILO, DABBA, BROADCAST, TORN, CONTOUR)}
+# Mulank 5: Foxglove. A pearly dawn sky over a meadow; copy sits on dew-washed cream plates with a double moss-green
+# keyline; foxglove-pink ribbons, gold numerals, a calligraphic serif for titles and a warm book serif for reading.
+# Soft contrast, rounded plates, one italic line to sign off. (Owner's reference: Gamma "Foxglove", 31 Oct 2026.)
+FOXGLOVE = {
+    "id": "foxglove", "label": "Foxglove", "look": "Foxglove",
+    "PINK": "#EBC3D3", "LBLUE": "#DCD5EA", "CREAM": "#F5F0E3", "NAVY": "#33452E",
+    "COBALT": "#5E7A4A", "BERRY": "#7A2357", "GREEN": "#45603B", "ORANGE": "#EBD8A2",
+    "INK": "#2F3A2A", "DEEP": "#26301F", "BERRY_D": "#6E0D46", "WHITE": "#FBF8EF",
+    "CTA": "#920063", "CARE": "#9A4A1E", "RULE": "#B7C4A4", "TH_BG": "#5E7A4A", "TH_FG": "#FBF8EF",
+    "GOLD": "#7F621C", "KEY": "#779363",
+    "display": _f("Rosarivo", ("rosarivo-latin-400-normal.woff2", 400, "normal"), ("rosarivo-latin-400-italic.woff2", 400, "italic")),
+    "body": _f("Gentium", ("gentium-book-plus-latin-400-normal.woff2", 400, "normal"), ("gentium-book-plus-latin-700-normal.woff2", 700, "normal"),
+               ("gentium-book-plus-latin-400-italic.woff2", 400, "italic")),
+    "extra_fonts": [],
+    "type": {"disp_w": 400, "disp_bw": 400, "plate_w": 400, "num_w": 400, "case": "none", "track": "0",
+             "lh": "1.04", "scale": 0.96, "it_family": "Gentium", "it_w": 400, "it_style": "italic",
+             "caps_family": "Gentium", "caps_w": 700},
+    "grain": "paper-soft.png", "grain_size": 256, "square": False,
+}
 
-# Mulank -> theme id (owner's choice). Any Mulank not listed gets Rosette.
-THEME_FOR_MULANK = {1: "dabba", 2: "broadcast", 4: "torn", 7: "contour", 8: "daktilo"}
+# Mulank 3: Imperial Cabinet. An exhibition cabinet: each page shows its key thing on a flat stage (muted parchment,
+# lavender, amber) named in a slim caption strip at the foot; dark imperial-purple silk with a quiet cloud pattern
+# sets the pauses apart. Inscriptional capitals over a calm label sans, purple row seams, formal square cards.
+# (Owner's reference: Gamma "Imperial Cabinet", 31 Oct 2026.)
+IMPERIAL = {
+    "id": "imperial", "label": "Imperial Cabinet", "look": "Imperial",
+    "PINK": "#CDBBC4", "LBLUE": "#E6DDE2", "CREAM": "#F3E8D2", "NAVY": "#501345",
+    "COBALT": "#34454C", "BERRY": "#6A2457", "GREEN": "#3D5247", "ORANGE": "#EDC47E",
+    "INK": "#3A0F33", "DEEP": "#2A0B25", "BERRY_D": "#501345", "WHITE": "#FBF6EC",
+    "CTA": "#501345", "CARE": "#8A3B12", "RULE": "#8C6A83", "TH_BG": "#501345", "TH_FG": "#FDBF68",
+    "GOLD": "#FDBF68",
+    "display": _f("CastoroTitling", ("castoro-titling-latin-400-normal.woff2", 400, "normal")),
+    "body": _f("Gantari", ("gantari-latin-400-normal.woff2", 400, "normal"), ("gantari-latin-500-normal.woff2", 500, "normal"),
+               ("gantari-latin-600-normal.woff2", 600, "normal"), ("gantari-latin-700-normal.woff2", 700, "normal")),
+    "extra_fonts": [_f("Castoro", ("castoro-latin-400-normal.woff2", 400, "normal"), ("castoro-latin-400-italic.woff2", 400, "italic"))],
+    "type": {"disp_w": 400, "disp_bw": 400, "plate_w": 400, "num_w": 400, "case": "none", "track": ".03em",
+             "lh": "1.06", "scale": 0.84, "it_family": "Castoro", "it_w": 400, "it_style": "italic",
+             "caps_family": "Gantari", "caps_w": 600},
+    "grain": "paper-soft.png", "grain_size": 256, "square": True,
+}
+
+# Mulank 9: Cobalt & Cream. Warm cream paper and a calm, high-contrast bookish serif; deep cobalt for eyebrows, seams
+# and the act breaks; sharp paper plates with thin left seams and hairline ledgers so the figures read clearly; flat
+# screenprint shapes in cobalt, emerald, coral and mustard with thin dark linework. (Owner's reference: Gamma
+# "Cobalt & Cream", 31 Oct 2026.)
+COBALT = {
+    "id": "cobalt", "label": "Cobalt & Cream", "look": "Cobalt",
+    "PINK": "#F0CDBE", "LBLUE": "#D6E0EE", "CREAM": "#F9F5EA", "NAVY": "#1E3F73",
+    "COBALT": "#1F4E8C", "BERRY": "#A9472A", "GREEN": "#196B4C", "ORANGE": "#E7AD4B",
+    "INK": "#2A2420", "DEEP": "#1E3F73", "BERRY_D": "#8C3A1F", "WHITE": "#FFFDF7",
+    "CTA": "#1F4E8C", "CARE": "#A9472A", "RULE": "#DCD1BD", "TH_BG": "#1F4E8C", "TH_FG": "#F9F5EA",
+    "PAPER": "#F3EBDC", "LINE": "#2A2420",
+    "display": _f("Tiro", ("tiro-bangla-latin-400-normal.woff2", 400, "normal"), ("tiro-bangla-latin-400-italic.woff2", 400, "italic")),
+    "body": _f("SourceSans", ("source-sans-3-latin-400-normal.woff2", 400, "normal"), ("source-sans-3-latin-600-normal.woff2", 600, "normal"),
+               ("source-sans-3-latin-700-normal.woff2", 700, "normal"), ("source-sans-3-latin-400-italic.woff2", 400, "italic")),
+    "extra_fonts": [_f("Jaini", ("jaini-purva-latin-400-normal.woff2", 400, "normal"))],
+    "type": {"disp_w": 400, "disp_bw": 400, "plate_w": 400, "num_w": 400, "case": "none", "track": "-.012em",
+             "lh": "1.02", "scale": 0.98, "it_family": "Tiro", "it_w": 400, "it_style": "italic",
+             "caps_family": "SourceSans", "caps_w": 600},
+    "grain": "grain.png", "grain_size": 110, "square": True,
+}
+
+THEMES = {t["id"]: t for t in (ROSETTE, DAKTILO, DABBA, BROADCAST, TORN, CONTOUR, FOXGLOVE, IMPERIAL, COBALT)}
+
+# Mulank -> theme id (owner's choice). Any Mulank not listed gets Rosette, which stays Mulank 6's design.
+THEME_FOR_MULANK = {1: "dabba", 2: "broadcast", 3: "imperial", 4: "torn", 5: "foxglove", 7: "contour", 8: "daktilo", 9: "cobalt"}
 
 
 def theme_for(mulank):
