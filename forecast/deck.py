@@ -175,25 +175,36 @@ class Deck:
 
     def contents(self):
         T, Y = self.T, self.Y
+        from . import framework as F
+        sun = F.sun_sign(self.r.dob_date)
+        els = F.elements_of(self.r.cnt)
+        weak = [e["name"] for e in els if e["level"] in ("missing", "light")]
+        pins, _ = F.pinnacles(self.r.dob_date, self.r.D, Y)
+        cur = next((p for p in pins if p["current"]), pins[0])
+        a0 = F.age_on_jan1(self.r.dob_date, Y)
         items = [("Your chart at a glance", "The whole chart in one look"),
                  ("How numerology reads you", "The method, worked out on your numbers"),
+                 ("Your Vedic sun sign", f"{sun['sa']} ({sun['en']}), ruled by {PLANET[sun['lord']]}"),
                  (f"Psychic {self.r.P} and Destiny {self.r.D}", f"{PLANET[self.r.P]}, {PLANET[self.r.D]}" + (f" and master {self.r.M}" if self.r.M else "")),
                  ("Your Lo Shu grid", "Planes, missing and repeated numbers"),
+                 ("Your five elements", ("To build: " + join_and(weak)) if weak else "Every element present"),
                  ("Your name", f"{esc(self.r.name_full)} in numbers"),
+                 ("Your four pinnacles", f"Now: pinnacle {cur['i']}, {cur['label']}"),
+                 ("Your 10-year life graph", f"Age {a0} to {a0 + 10}"),
                  (f"{Y}, your {PLANET[self.r.PY]} year", f"The cycle, and what year {self.r.PY} asks"),
                  (f"{Y} by life area", "Career, money, love, health"),
                  ("Your timing map", "Windows, dates, month by month"),
                  (f"Practices for {Y}", "Habits, colours, bracelet"),
                  ("Your watch and your phone" if self.mob else "Your watch", "The things you carry daily"),
                  ("Going further", "Next steps chosen for your chart")]
-        rows = "".join(f'<div style="display:flex;gap:18px;align-items:baseline"><span class="disp" style="font-size:24px;color:{T.BERRY};width:44px">{i + 1:02d}</span>'
-                       f'<span style="flex:1"><span class="disp b" style="font-size:20px;color:{T.NAVY}">{t}</span><br><span class="small">{d}</span></span></div>'
+        rows = "".join(f'<div style="display:flex;gap:16px;align-items:baseline;padding:7px 0"><span class="disp" style="font-size:20px;color:{T.BERRY};width:40px">{i + 1:02d}</span>'
+                       f'<span style="flex:1"><span class="disp b" style="font-size:18px;color:{T.NAVY}">{t}</span><br><span class="small">{d}</span></span></div>'
                        for i, (t, d) in enumerate(items))
         inner = f"""
 {self.L.blob(T.COBALT, 300, 180, 170, 1110, "bumps")}
 {self.L.asterisk(T.BERRY, 120, 520, 110, 8)}
-<h2 class="disp t1" style="color:{T.BERRY};margin-top:40px">Inside</h2>
-<div class="lead" style="margin:14px 0 30px;color:{T.DEEP};width:420px">Eleven parts. The first five read who you are; the last six read {Y}.</div>
+<h2 class="disp t1" style="color:{T.BERRY};margin-top:20px">Inside</h2>
+<div class="lead" style="margin:12px 0 22px;color:{T.DEEP};width:440px">Fifteen parts. The first nine read who you are and where your life is heading; the last six read {Y}, month by month.</div>
 <div class="ruled" style="width:600px">{rows}</div>
 """
         self.pg.add(T.LBLUE, inner)

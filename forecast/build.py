@@ -66,18 +66,25 @@ def brain_data(name, dob_iso, year, phone=None, gender=None, concern=None, timeo
 
 def build_html(data):
     from .deck import Deck
+    from .deck_more import MorePages
     from .deck_year import YearPages
 
-    class ForecastDeck(Deck, YearPages):
+    class ForecastDeck(Deck, YearPages, MorePages):
         pass
 
     k = ForecastDeck(data)
     k.pg.subs = {"{{FILE}}": f"{k.r.P:02d}-{k.Y}"}
+    # who you are: the chart, the sun sign, the two numbers, the grid and its elements, the name
     k.cover(); k.letter(); k.contents(); k.glance(); k.statement(); k.method(); k.planets_page(); k.worked()
+    k.zodiac_page()
     k.pair_opener(); k.psychic(); k.destiny(); k.pair(); k.pair_remedies()
     k.loshu(); k.planes_page(); k.missing_page(); k.repeated()
+    k.elements_page(); k.elements_balance()
     if k.name_open():
         k.name_meaning(); k.name_offer(); k.pers_mat()
+    # the long view, then the year: four pinnacles, the next ten years, then 2027 itself
+    k.pinnacles_page(); k.pinnacle_now()
+    k.graph_page(); k.graph_read()
     k.year_open(); k.year_rules(); k.asks()
     for area in ("career", "money", "relationships", "health"):
         k.area_page(area)

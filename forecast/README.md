@@ -5,7 +5,10 @@ Every `personal_forecast` order is built here; anything that fails falls back to
 - `data.mjs` — runs the vendored Veshannastro brain (`engine/brain`) and mobile rulebook
   (`engine/mobile-numerology`) for one person and prints JSON.
 - `content.py` — turns that JSON into the forecast's facts: support numbers, windows, months, verdicts.
-- `deck.py`, `deck_year.py` — the 40–44 pages (mobile pages only when the order has a phone number).
+- `deck.py`, `deck_year.py`, `deck_more.py` — the 47–51 pages (mobile pages only when the order has a phone number).
+- `framework.py` — the 12-parameter framework's calculations and reading tables for the Vedic sun sign (Swiss Ephemeris,
+  Lahiri, with the solar month), the five elements (Earth 2, 5, 8 · Fire 1, 9 · Wood 3, 4 · Metal 6, 7 · Water 2), the
+  four pinnacles (11 and 22 kept) and the 10-year life graph (DDMM x YYYY, life-need line). Edit the meanings there.
 - `kit.py` — page kit (CSS, shapes, plates, icons) shared by every design.
 - `themes.py` — colours, fonts, paper and type settings per design, and which Mulank gets which design.
 - `looks.py` — how each design draws its shapes, marks, title plates, page frame, footer and cover.
