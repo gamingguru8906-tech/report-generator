@@ -8,7 +8,9 @@ Every `personal_forecast` order is built here; anything that fails falls back to
 - `deck.py`, `deck_year.py`, `deck_more.py` — the 47–51 pages (mobile pages only when the order has a phone number).
 - `framework.py` — the 12-parameter framework's calculations and reading tables for the Vedic sun sign (Swiss Ephemeris,
   Lahiri, with the solar month), the five elements (Earth 2, 5, 8 · Fire 1, 9 · Wood 3, 4 · Metal 6, 7 · Water 2), the
-  four pinnacles (11 and 22 kept) and the 10-year life graph (DDMM x YYYY, life-need line). Edit the meanings there.
+  four pinnacles (11 and 22 kept) and the life graph (DDMM x YYYY, life-need line): one page draws the whole life,
+  birth to 90, with every peak and dip named and the forecast decade shaded; the next zooms into that decade (age on
+  1 January of the forecast year, ten years on), with the nearest turns either side drawn faintly. Edit the meanings there.
 - `kit.py` — page kit (CSS, shapes, plates, icons) shared by every design.
 - `themes.py` — colours, fonts, paper and type settings per design, and which Mulank gets which design.
 - `looks.py` — how each design draws its shapes, marks, title plates, page frame, footer and cover.

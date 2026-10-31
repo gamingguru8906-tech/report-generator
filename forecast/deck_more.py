@@ -240,45 +240,171 @@ class MorePages:
         self.pg.add(T.CREAM, inner)
 
     # ═══════════════ 6. 10-year life graph ═══════════════
-    def _graph_svg(self, g, W=620, H=420):
+    def _chart(self, g, path, a0, a1, W=620, H=420, xticks=None, band=None, labels=(), dots=(), cid="lg", ctx=None, bg=None):
+        """A line chart of life levels (0-9) against age, with the life-need line and the area above it in green and
+        below it in orange. band: (from_age, to_age, text) shaded; labels: (age, level, text), placed on the side of the
+        dot the line leaves free (above a peak, below a dip, beside a slope); ctx: a fainter line drawn around `path`
+        for context; xticks: (age, top, sub[, faint]); bg: the page colour, used as a halo behind every label."""
         T = self.T
-        L, R, Tp, B = 34, 14, 18, 56
-        a0, a1 = g["start_age"], g["end_age"]
-        X = lambda a: L + (a - a0) / (a1 - a0) * (W - L - R)
-        Yv = lambda v: Tp + (9 - v) / 9 * (H - Tp - B)
-        fam = self.T.body["family"]
-        grid = "".join(f'<line x1="{L}" x2="{W - R}" y1="{Yv(v):.1f}" y2="{Yv(v):.1f}" stroke="{T.INK}" stroke-opacity="{.16 if v in (0, 9) else .07}"/>'
-                       f'<text x="{L - 10}" y="{Yv(v) + 4:.1f}" text-anchor="end" font-family="{fam}" font-size="11" fill="{T.INK}" fill-opacity=".6">{v}</text>'
+        bg = bg or T.CREAM
+        Lm, Rm, Bm = 34, 14, 56
+        Tm = 50 if band else 30
+        pad = 24 if labels else 0          # room under level 0 for a dip's label
+        X = lambda a: Lm + (a - a0) / (a1 - a0) * (W - Lm - Rm)
+        Yv = lambda v: Tm + (9 - v) / 9 * (H - Tm - Bm - pad)
+        line = ctx or path
+        lv = lambda a: F.level_at(line, min(max(a, line[0][0]), line[-1][0]))
+        fam = T.body["family"]
+        halo = f'paint-order="stroke" stroke="{bg}" stroke-width="4" stroke-linejoin="round"'
+        grid = "".join(f'<line x1="{Lm}" x2="{W - Rm}" y1="{Yv(v):.1f}" y2="{Yv(v):.1f}" stroke="{T.INK}" stroke-opacity="{.16 if v in (0, 9) else .07}"/>'
+                       f'<text x="{Lm - 10}" y="{Yv(v) + 4:.1f}" text-anchor="end" font-family="{fam}" font-size="11" fill="{T.INK}" fill-opacity=".6">{v}</text>'
                        for v in range(10))
-        ticks = "".join(f'<line x1="{X(y["age"]):.1f}" x2="{X(y["age"]):.1f}" y1="{H - B}" y2="{H - B + 5}" stroke="{T.INK}" stroke-opacity=".4"/>'
-                        f'<text x="{X(y["age"]):.1f}" y="{H - B + 20}" text-anchor="middle" font-family="{fam}" font-size="11.5" font-weight="700" fill="{T.INK}">{y["age"]}</text>'
-                        f'<text x="{X(y["age"]):.1f}" y="{H - B + 36}" text-anchor="middle" font-family="{fam}" font-size="10" fill="{T.INK}" fill-opacity=".65">{y["year"]}</text>'
-                        for y in g["years"])
-        pts = " ".join(f"{X(a):.1f},{Yv(v):.1f}" for a, v in g["path"])
+        ticks = ""
+        for t in (xticks or []):
+            a, top, sub = t[:3]
+            op = .45 if (len(t) > 3 and t[3]) else 1
+            ticks += (f'<line x1="{X(a):.1f}" x2="{X(a):.1f}" y1="{H - Bm}" y2="{H - Bm + 5}" stroke="{T.INK}" stroke-opacity=".4"/>'
+                      + (f'<text x="{X(a):.1f}" y="{H - Bm + 20}" text-anchor="middle" font-family="{fam}" font-size="11.5" font-weight="700" fill="{T.INK}" fill-opacity="{op}">{top}</text>' if top else "")
+                      + (f'<text x="{X(a):.1f}" y="{H - Bm + 36}" text-anchor="middle" font-family="{fam}" font-size="10" fill="{T.INK}" fill-opacity="{.65 * op:.2f}">{sub}</text>' if sub else ""))
+        pts = " ".join(f"{X(a):.1f},{Yv(v):.1f}" for a, v in path)
         ny = Yv(g["need"])
-        area = f'{pts} {X(a1):.1f},{ny:.1f} {X(a0):.1f},{ny:.1f}'
-        turns = "".join(f'<circle cx="{X(a):.1f}" cy="{Yv(v):.1f}" r="7" fill="{T.BERRY}" stroke="#FFFFFF" stroke-width="2"/>'
-                        f'<text x="{X(a):.1f}" y="{Yv(v) - 14:.1f}" text-anchor="middle" font-family="{fam}" font-size="11" font-weight="700" fill="{T.BERRY}">age {a}</text>'
-                        for a, v in g["path"][1:-1])
-        dots = "".join(f'<circle cx="{X(y["age"]):.1f}" cy="{Yv(y["level"]):.1f}" r="3.2" fill="{T.NAVY}"/>' for y in g["years"])
+        area = f'{pts} {X(path[-1][0]):.1f},{ny:.1f} {X(path[0][0]):.1f},{ny:.1f}'
+        bnd = ""
+        if band:
+            b0, b1, txt = band
+            bnd = (f'<rect x="{X(b0):.1f}" y="{Tm - 26}" width="{X(b1) - X(b0):.1f}" height="{H - Bm - Tm + 26}" fill="{T.PINK}" fill-opacity=".45"/>'
+                   f'<text x="{(X(b0) + X(b1)) / 2:.1f}" y="{Tm - 32}" text-anchor="middle" font-family="{fam}" font-size="11" font-weight="700" fill="{T.NAVY}">{txt}</text>')
+        lab = ""
+        for a, v, t in labels:
+            x, y = X(a), Yv(v)
+            l, r = lv(a - 1.5), lv(a + 1.5)
+            w = 6.2 * len(t)
+            if l <= v + .01 and r <= v + .01:            # a peak: the space above is free
+                tx, ty, anc = x, y - 13, "middle"
+            elif l >= v - .01 and r >= v - .01:          # a dip: the space below is free
+                tx, ty, anc = x, y + 21, "middle"
+            elif l < v:                                  # climbing: the line leaves the upper left free
+                tx, ty, anc = x - 9, y - 7, "end"
+            else:                                        # falling: the upper right is free
+                tx, ty, anc = x + 9, y - 7, "start"
+            if anc == "middle":
+                tx = min(max(tx, Lm + w / 2), W - Rm - w / 2)
+            lab += (f'<circle cx="{x:.1f}" cy="{y:.1f}" r="6" fill="{T.BERRY}" stroke="#FFFFFF" stroke-width="2"/>'
+                    f'<text x="{tx:.1f}" y="{ty:.1f}" text-anchor="{anc}" font-family="{fam}" font-size="10.5" font-weight="700" fill="{T.BERRY}" {halo}>{t}</text>')
+        dt = "".join(f'<circle cx="{X(a):.1f}" cy="{Yv(v):.1f}" r="3.2" fill="{T.NAVY}"/>' for a, v in dots)
+        # the life-need label goes wherever along its line the graph keeps furthest away (tested segment by segment,
+        # so a steep drop between two samples can't slip through the label)
+        nw = 92
+        pp = [(X(a), Yv(v)) for a, v in line]
+
+        def clearance(xl, xr, yl, yh):
+            gap = 999
+            for (xa, ya), (xb, yb) in zip(pp, pp[1:]):
+                lo, hi = max(xa, xl), min(xb, xr)
+                if lo > hi:
+                    continue
+                f = (lambda x: ya) if xb == xa else (lambda x: ya + (yb - ya) * (x - xa) / (xb - xa))
+                s0, s1 = sorted((f(lo), f(hi)))
+                if s1 < yl:
+                    gap = min(gap, yl - s1)
+                elif s0 > yh:
+                    gap = min(gap, s0 - yh)
+                else:
+                    return 0
+            return gap
+
+        best = None
+        xs = [W - Rm - nw] + [Lm + 6 + k * 8 for k in range(int((W - Rm - nw - Lm - 6) / 8))]
+        for x0 in xs:
+            for above in (True, False):
+                y_lo, y_hi = (ny - 19, ny - 4) if above else (ny + 5, ny + 20)
+                gap = clearance(x0 - 6, x0 + nw + 6, y_lo, y_hi)
+                if best is None or gap > best[0] + 2:
+                    best = (gap, x0, above)
+        gap, nx, above = best
+        need_lab = "" if gap < 3 else (f'<text x="{nx:.1f}" y="{ny - 8 if above else ny + 17:.1f}" font-family="{fam}" font-size="12" font-weight="700" fill="{T.BERRY}" {halo}>Life need {g["need"]}</text>')
+        ctx_line = ""
+        if ctx:
+            cp = " ".join(f"{X(a):.1f},{Yv(v):.1f}" for a, v in ctx)
+            ctx_line = f'<polyline points="{cp}" fill="none" stroke="{T.NAVY}" stroke-opacity=".38" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>'
         return f"""<svg width="{W}" height="{H}" viewBox="0 0 {W} {H}" style="display:block;overflow:visible">
-<defs><clipPath id="lgA"><rect x="0" y="0" width="{W}" height="{ny:.1f}"/></clipPath><clipPath id="lgB"><rect x="0" y="{ny:.1f}" width="{W}" height="{H}"/></clipPath></defs>
-{grid}
-<polygon points="{area}" fill="{T.GREEN}" fill-opacity=".22" clip-path="url(#lgA)"/>
-<polygon points="{area}" fill="{T.ORANGE}" fill-opacity=".35" clip-path="url(#lgB)"/>
-<line x1="{L}" x2="{W - R}" y1="{ny:.1f}" y2="{ny:.1f}" stroke="{T.BERRY}" stroke-width="2" stroke-dasharray="7 6"/>
-<text x="{W - R}" y="{ny - 8:.1f}" text-anchor="end" font-family="{fam}" font-size="12" font-weight="700" fill="{T.BERRY}">Life need {g["need"]}</text>
+<defs><clipPath id="{cid}A"><rect x="0" y="0" width="{W}" height="{ny:.1f}"/></clipPath><clipPath id="{cid}B"><rect x="0" y="{ny:.1f}" width="{W}" height="{H}"/></clipPath></defs>
+{bnd}{grid}
+<polygon points="{area}" fill="{T.GREEN}" fill-opacity=".22" clip-path="url(#{cid}A)"/>
+<polygon points="{area}" fill="{T.ORANGE}" fill-opacity=".35" clip-path="url(#{cid}B)"/>
+<line x1="{Lm}" x2="{W - Rm}" y1="{ny:.1f}" y2="{ny:.1f}" stroke="{T.BERRY}" stroke-width="2" stroke-dasharray="7 6"/>
+{ctx_line}
 <polyline points="{pts}" fill="none" stroke="{T.NAVY}" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
-{dots}{turns}
-<line x1="{L}" x2="{W - R}" y1="{H - B}" y2="{H - B}" stroke="{T.INK}" stroke-opacity=".4"/>
+{dt}{need_lab}{lab}
+<line x1="{Lm}" x2="{W - Rm}" y1="{H - Bm}" y2="{H - Bm}" stroke="{T.INK}" stroke-opacity=".4"/>
 {ticks}
-<text x="{L}" y="{H - 2}" font-family="{fam}" font-size="10" fill="{T.INK}" fill-opacity=".6">AGE AND YEAR</text>
 </svg>"""
 
     def graph_page(self):
         r, T, Y = self.r, self.T, self.Y
         g = F.life_graph(r.dob_date, Y)
         self.graph = g
+        by = r.dob_date.year
+        a0, a1 = g["start_age"], g["end_age"]
+        xt = [(a, str(a), "birth" if a == 0 else str(Y + a - a0)) for a in range(0, g["life_end"] + 1, 10)]
+        labels = [(t["age"], t["level"], f"{'peak' if t['kind'] == 'peak' else 'dip'} {t['age']}") for t in g["turns"]]
+        chart = self._chart(g, g["life"], 0, g["life_end"], H=440, xticks=xt, band=(a0, a1, f"{Y} to {Y + 10}"), labels=labels,
+                            dots=[(a, v) for a, v in g["life"][1:] if a <= g["life_end"]], cid="lgL", bg=T.CREAM)
+        peaks = [t for t in g["turns"] if t["kind"] == "peak" and t["year"] >= Y]
+        dips = [t for t in g["turns"] if t["kind"] == "dip" and t["year"] >= Y]
+        nxt_peak = peaks[0] if peaks else None
+        nxt_dip = dips[0] if dips else None
+        bits = []
+        if nxt_peak:
+            bits.append(f"your next peak is at age {nxt_peak['age']} ({nxt_peak['year']})")
+        if nxt_dip:
+            bits.append(f"your next dip at age {nxt_dip['age']} ({nxt_dip['year']})")
+        ahead = (" Looking ahead, " + " and ".join(bits) + ".") if bits else ""
+        inner = f"""
+{self.head("Your life graph", "Your life, peak<br>by peak", sub=f"Your birth day and month, {g['dm']}, multiplied by your birth year, {by}, give {g['main']:,}. Each digit is a point in your life, a decade apart: the line climbs to peaks and comes down to dips, and the cycle repeats. The dotted line is your life need: the level at which life feels satisfying to you.")}
+<div style="margin-top:8px">{chart}</div>
+<div class="small" style="margin-top:4px;color:{T.INK}">Age along the bottom, with the year beneath it. The shaded band is your next ten years; the dashed line is your life need, {g["need"]}.</div>
+<div class="lead" style="margin-top:16px;width:620px">You are {a0} as {Y} begins.{ahead} The next page reads your ten years from {Y} to {Y + 10} up close.</div>
+{self._turns_table(g)}
+"""
+        self.pg.add(T.CREAM, inner)
+
+    def _turns_table(self, g):
+        a0 = g["start_age"]
+        rows = "".join(f'<tr><td>{"Peak" if t["kind"] == "peak" else "Dip"}</td><td>{t["age"]}</td><td>{t["year"]}</td><td>{t["level"]:g}</td>'
+                       f'<td>{"behind you" if t["age"] < a0 else ("in your next ten years" if t["age"] <= a0 + 10 else "ahead")}</td></tr>'
+                       for t in g["turns"])
+        if not rows:
+            return ""
+        return (f'<table class="t" style="margin-top:16px;width:620px"><tr><th>Turn</th><th>Age</th><th>Year</th><th>Level</th><th>When</th></tr>{rows}</table>')
+
+    def _year_strip(self, g):
+        T = self.T
+        cells = ""
+        for y in g["years"]:
+            up = y["level"] >= g["need"]
+            cells += (f'<div style="flex:1;text-align:center;padding:6px 0 5px;background:{T.WHITE if up else T.ORANGE};'
+                      f'border-radius:6px;font-family:{T.body["family"]};color:{T.INK}">'
+                      f'<div style="font-size:10.5px;font-weight:700">{y["year"]}</div>'
+                      f'<div style="font-size:16px;font-weight:700;line-height:1.25;color:{T.NAVY if up else T.DEEP}">{y["level"]:g}</div>'
+                      f'<div style="font-size:9.5px;opacity:.7">age {y["age"]}</div></div>')
+        return f'<div style="display:flex;gap:4px;margin-top:12px;width:620px">{cells}</div>'
+
+    def graph_read(self):
+        r, T, Y = self.r, self.T, self.Y
+        g = getattr(self, "graph", None) or F.life_graph(r.dob_date, Y)
+        a0, a1 = g["start_age"], g["end_age"]
+        before = [t["age"] for t in g["turns"] if a0 - 10 <= t["age"] < a0]
+        after = [t["age"] for t in g["turns"] if a1 < t["age"] <= a1 + 10]
+        c0 = max(0, min(a0 - 5, before[-1] - 1) if before else a0 - 5)
+        c1 = max(a1 + 5, after[0] + 1) if after else a1 + 5
+        lv = lambda a: round(F.level_at(g["points"], a), 2)
+        ctx = [(c0, lv(c0))] + [(a, v) for a, v in g["points"] if c0 < a < c1] + [(c1, lv(c1))]
+        xt = [(a, str(a), str(Y + a - a0), not (a0 <= a <= a1)) for a in range(a0 - 4 if a0 >= 4 else a0 % 2, c1 + 1, 2) if c0 <= a <= c1]
+        turn_at = {t["age"]: t["kind"] for t in g["turns"]}
+        labels = [(a, v, f"{turn_at[a]} {a}" if a in turn_at else f"age {a}") for a, v in ctx[1:-1]]
+        chart = self._chart(g, g["path"], c0, c1, H=350, xticks=xt, band=(a0, a1, f"{Y} to {Y + 10}"), labels=labels,
+                            dots=[(y["age"], y["level"]) for y in g["years"]], cid="lgD", ctx=ctx, bg=T.LBLUE)
         n = len(g["years"])
         pk, lw = g["peak"], g["low"]
         first, last = g["years"][0]["level"], g["years"][-1]["level"]
@@ -291,32 +417,31 @@ class MorePages:
             head = f"{g['above']} of these {n} years run at or above your life need of {g['need']}."
         summary = (f"{head} Over the decade the line {trend}, from {first} to {last}; its highest point is {pk['year']}, at age {pk['age']}"
                    + (f", and its lowest {lw['year']}, at age {lw['age']}." if lw["year"] != pk["year"] else "."))
-        inner = f"""
-{self.head("10-year life graph", f"Your life, age<br>{g['start_age']} to {g['end_age']}", sub=f"Your birth day and month, {g['dm']}, multiplied by your birth year, {r.dob_date.year}, give {g['main']:,}. Each digit marks a point in your life, and the dotted line is your life need: the level at which life feels satisfying to you.")}
-<div style="margin-top:6px">{self._graph_svg(g)}</div>
-<div style="display:flex;gap:22px;margin-top:12px" class="small"><span><span style="display:inline-block;width:14px;height:14px;background:{T.GREEN};opacity:.5;vertical-align:-2px"></span> above your life need</span>
-<span><span style="display:inline-block;width:14px;height:14px;background:{T.ORANGE};opacity:.7;vertical-align:-2px"></span> below it: more effort for the same result</span></div>
-<div class="lead" style="margin-top:18px;width:620px">{summary}</div>
-"""
-        self.pg.add(T.CREAM, inner)
-
-    def graph_read(self):
-        r, T, Y = self.r, self.T, self.Y
-        g = getattr(self, "graph", None) or F.life_graph(r.dob_date, Y)
         cards = ""
-        for s in g["stretches"][:4]:
-            ages = f"age {round(s['start_age'])} to {round(s['end_age'])}"
-            col = T.WHITE if s["side"] == "above" else T.ORANGE
-            cards += self.panel(col, self.ptitle(f"{s['start_year']} to {s['end_year']} &#183; {s['title']}", T.NAVY if col == T.WHITE else T.DEEP, 19)
-                                + f'<div class="caps" style="font-size:10px;margin:-2px 0 8px">{ages} &#183; level {s["start_level"]} to {s["end_level"]}</div>'
-                                + f'<div class="small">{s["text"]}</div>')
-        rows = "".join(f'<tr><td>{y["year"]}</td><td>{y["age"]}</td><td>{y["level"]}</td><td>{"above" if y["level"] >= g["need"] else "below"}</td></tr>'
-                       for y in g["years"])
+        st = g["stretches"]
+        if len(st) <= 3:
+            for s in st:
+                ages = f"age {round(s['start_age'])} to {round(s['end_age'])}"
+                col = T.WHITE if s["side"] == "above" else T.ORANGE
+                cards += self.panel(col, self.ptitle(f"{s['start_year']} to {s['end_year']} &#183; {s['title']}", T.NAVY if col == T.WHITE else T.DEEP, 18)
+                                    + f'<div class="caps" style="font-size:10px;margin:-2px 0 6px">{ages} &#183; level {s["start_level"]} to {s["end_level"]}</div>'
+                                    + f'<div class="small">{s["text"]}</div>', pad="14px 18px")
+        else:                                   # a busy decade: every stretch, one compact row each
+            rows = "".join(
+                f'<div style="display:grid;grid-template-columns:118px 1fr;gap:12px;padding:8px 0;{"border-top:1px solid rgba(0,0,0,.12);" if i else ""}">'
+                f'<div><div style="font-weight:700;font-size:13px;color:{T.NAVY if s["side"] == "above" else T.DEEP}">{s["start_year"]} to {s["end_year"]}</div>'
+                f'<div class="caps" style="font-size:9.5px;margin-top:2px">level {s["start_level"]} to {s["end_level"]}</div></div>'
+                f'<div class="small"><b>{s["title"]}.</b> {s["text"]}</div></div>'
+                for i, s in enumerate(st))
+            cards = self.panel(T.WHITE, rows, pad="8px 18px")
         inner = f"""
-{self.head("Reading your graph", "Your decade,<br>stretch by stretch")}
-<div class="body" style="width:620px">{F.GRAPH_NEED}</div>
-<div style="display:grid;gap:10px;margin-top:20px;width:620px">{cards}</div>
-<table class="t" style="margin-top:20px;width:620px"><tr><th>Year</th><th>Age</th><th>Level</th><th>Against your life need</th></tr>{rows}</table>
+{self.head("10-year life graph", f"Your ten years,<br>age {a0} to {a1}")}
+<div style="margin-top:-4px">{chart}</div>
+<div class="small" style="margin-top:2px;color:{T.INK}">The bold stretch is {Y} to {Y + 10}; the faint line either side shows where it sits in your wave. The dashed line is your life need, {g["need"]}.</div>
+{self._year_strip(g)}
+<div class="body" style="margin-top:12px;width:620px">{summary}</div>
+<div style="display:grid;gap:10px;margin-top:16px;width:620px">{cards}</div>
+<div class="small" style="margin-top:14px;width:620px">{F.GRAPH_NEED}</div>
 {self.L.heart(T.BERRY, 46, 616, 64)}
 """
         self.pg.add(T.LBLUE, inner)

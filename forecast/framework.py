@@ -11,7 +11,9 @@ without touching the page code (deck_more.py). Owner's rules:
   11 and 22 are kept as master pinnacles. The first ends at 36 minus the destiny number; the next two last 9 years.
 - 10-year life graph: (day and month as one number) x (birth year). Each digit k of the result is a point at age
   10k + digit with that digit as its level, repeating after the last digit; the life-need line is the digits' total
-  divided by their count. The window runs from the age on 1 January of the forecast year, ten years forward.
+  divided by their count. The window runs from the age on 1 January of the forecast year, ten years forward (born
+  2003, read for 2027: ages 23 to 33), and every age is labelled with the year whose 1 January finds you at that age,
+  so the chart, the table and the text agree.
 """
 from datetime import date
 
@@ -296,17 +298,37 @@ def life_graph(dob, year, span=10):
     g = graph_points(dob)
     a0 = age_on_jan1(dob, year)
     a1 = a0 + span
+    # the whole life, as the video draws it: birth to 90 (further for older readers), every peak and dip named
+    life_end = min(120, max(90, ((a1 + 15) // 10 + 1) * 10))
+    life = [(a, v) for a, v in g["points"] if a <= life_end]
+    nxt = next(((a, v) for a, v in g["points"] if a > life_end), None)
+    if nxt:
+        life.append((life_end, level_at(g["points"], life_end)))
+    turns = []
+    for (pa, pv), (a, v), (na, nv) in zip(life, life[1:], life[2:]):
+        if v > pv and v >= nv:
+            turns.append(dict(kind="peak", age=a, level=v, year=year + (a - a0)))
+        elif v < pv and v <= nv:
+            turns.append(dict(kind="dip", age=a, level=v, year=year + (a - a0)))
     years = [dict(age=a, year=year + (a - a0), level=round(level_at(g["points"], a), 1)) for a in range(a0, a1 + 1)]
     inside = [(a, v) for a, v in g["points"] if a0 < a < a1]
     path = [(a0, level_at(g["points"], a0))] + inside + [(a1, level_at(g["points"], a1))]
     # stretches between the turning points inside the window
     stretches = []
-    for (sa, sv), (ea, ev) in zip(path, path[1:]):
+    need = g["need"]
+    cut = []                                    # split each segment where it crosses the life need, so a stretch is all
+    for (sa, sv), (ea, ev) in zip(path, path[1:]):   # above or all below
+        if (sv - need) * (ev - need) < 0:
+            xa = sa + (need - sv) / (ev - sv) * (ea - sa)
+            cut += [((sa, sv), (xa, need)), ((xa, need), (ea, ev))]
+        else:
+            cut.append(((sa, sv), (ea, ev)))
+    for (sa, sv), (ea, ev) in cut:
         if ea - sa < 0.5:
             continue
         d = "up" if ev - sv > 0.25 else ("down" if sv - ev > 0.25 else "flat")
         mid = (sv + ev) / 2
-        side = "above" if mid >= g["need"] else "below"
+        side = "above" if mid >= need else "below"
         title, text = GRAPH_STRETCH[(d, side)]
         y0 = year + int(round(sa)) - a0
         y1 = year + int(round(ea)) - a0
@@ -319,4 +341,4 @@ def life_graph(dob, year, span=10):
     peak = max(years, key=lambda y: (y["level"], -y["age"]))
     low = min(years, key=lambda y: (y["level"], y["age"]))
     return dict(g, start_age=a0, end_age=a1, years=years, path=path, stretches=stretches, above=above, peak=peak, low=low,
-                dm=f"{dob.day:02d}{dob.month:02d}")
+                dm=f"{dob.day:02d}{dob.month:02d}", life=life, life_end=life_end, turns=turns)
